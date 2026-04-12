@@ -1,0 +1,159 @@
+<style>
+    #admin-live-map {
+        height: 650px !important;
+        width: 100% !important;
+        background: #0f172a;
+    }
+</style>
+
+<div class="bg-slate-900/60 backdrop-blur-3xl rounded-3xl border border-white/5 overflow-hidden shadow-2xl transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(163,230,53,0.15)] relative">
+    <div class="px-8 py-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center relative overflow-hidden">
+        <!-- Shine effect -->
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent -translate-x-full animate-[shimmer_3s_infinite] pointer-events-none"></div>
+        
+        <div class="flex items-center gap-4 relative z-10">
+            <div class="p-2.5 bg-sky-500/10 rounded-xl border border-sky-500/20">
+                <span class="material-symbols-rounded text-sky-400 text-2xl">explore</span>
+            </div>
+            <div>
+                <h3 class="font-bold text-white text-xl tracking-tight font-outfit">Live Operations Command</h3>
+                <p class="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-1.5 uppercase mt-0.5">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse"></span>
+                    Real-time Telemetry Active
+                </p>
+            </div>
+        </div>
+        <div class="flex gap-4 relative z-10">
+            <div class="bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/5 flex items-center gap-3">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Map Engine</span>
+                <span class="text-sm font-bold text-sky-400 font-outfit">Google Enterprise</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="relative w-full" style="height: 650px; background: #020617;">
+        <div id="admin-live-map" style="height: 650px; width: 100%;">
+            <div class="flex items-center justify-center h-full text-slate-500 font-medium">
+                <div class="text-center">
+                    <span class="material-symbols-rounded text-4xl mb-4 animate-spin text-sky-500">sync</span>
+                    <p>Initializing Google Maps Engine...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map Overlay UI -->
+        <div class="absolute top-6 left-6 z-[1000] flex flex-col gap-4">
+            <div class="bg-slate-900/80 backdrop-blur-xl p-5 rounded-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] w-72">
+                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Platform Intelligence</h4>
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="space-y-1">
+                        <p class="text-3xl font-bold text-white tracking-tight font-outfit" id="online-drivers-count">{{ online_drivers }}</p>
+                        <p class="text-[10px] text-lime-400/80 font-bold uppercase tracking-wider">Active Fleet</p>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-3xl font-bold text-white tracking-tight font-outfit" id="active-rides-count">{{ active_rides }}</p>
+                        <p class="text-[10px] text-sky-400/80 font-bold uppercase tracking-wider">Live Trips</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-5 border-t border-white/5">
+                    <button class="w-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-400 hover:to-sky-500 text-white py-3 rounded-2xl font-bold transition-all duration-300 shadow-lg shadow-sky-500/25 active:scale-95 flex items-center justify-center gap-2 text-sm">
+                        <span class="material-symbols-rounded text-lg">sync_alt</span>
+                        Re-sync Network
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    console.log("[Map] Component initialized. Key present:", "{{ google_maps_api_key }}".substring(0, 5) + "...");
+    let map;
+    let markers = {};
+
+    function initMap() {
+        console.log("[Map] initMap callback triggered");
+        const center = { lat: 5.6037, lng: -0.1870 }; // Default Accra
+        
+        const mapElement = document.getElementById("admin-live-map");
+        if (!mapElement) {
+             console.error("[Map] Could not find element with ID admin-live-map");
+             return;
+        }
+
+        map = new google.maps.Map(mapElement, {
+            zoom: 13,
+            center: center,
+            styles: [
+                { elementType: 'geometry', stylers: [{ color: '#1e293b' }] },
+                { elementType: 'labels.text.stroke', stylers: [{ color: '#1e293b' }] },
+                { elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+                { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#cbd5e1' }] },
+                { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#cbd5e1' }] },
+                { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#334155' }] },
+                { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1e293b' }] },
+                { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#94a3b8' }] },
+                { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#475569' }] },
+                { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+            ],
+            disableDefaultUI: true,
+            zoomControl: true,
+        });
+
+        console.log("[Map] Google Map object created");
+        initWebSocket();
+    }
+
+    function initWebSocket() {
+        const socketPath = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws/rides/global/';
+        console.log("[Map] Connecting to WebSocket:", socketPath);
+        const chatSocket = new WebSocket(socketPath);
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'location_update') {
+               updateMarker(data.driver_id, data.latitude, data.longitude, data.status);
+            }
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly. Retrying in 5s...');
+            setTimeout(initWebSocket, 5000);
+        };
+    }
+
+    function updateMarker(id, lat, lng, status) {
+        const pos = { lat: lat, lng: lng };
+        const color = status === 'active' ? '#22c55e' : '#f59e0b';
+
+        if (markers[id]) {
+            markers[id].setPosition(pos);
+        } else {
+            markers[id] = new google.maps.Marker({
+                position: pos,
+                map: map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    fillColor: color,
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: '#FFFFFF',
+                    scale: 10,
+                },
+            });
+        }
+    }
+
+    // Load Google Maps script
+    if (typeof google === 'undefined') {
+        console.log("[Map] Loading Google Maps JS SDK...");
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap`;
+        script.defer = true;
+        document.head.appendChild(script);
+    } else {
+        console.log("[Map] Google object already exists, triggering initMap");
+        initMap();
+    }
+</script>

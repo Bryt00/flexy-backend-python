@@ -1,0 +1,174 @@
+import logging
+from django.utils import timezone
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.db.models import F
+from profiles.models import Profile
+from rides.models import Ride
+from flexy_backend.redis_client import redis_geo
+
+logger = logging.getLogger(__name__)
+
+class MatchingService:
+    @staticmethod
+    def find_nearby_drivers(ride_id, radius_km=3.0, exclude_locked=True):
+        """
+        Calculates a pool of verified, online drivers within the radius.
+        Includes Redis-based concurrency locking check.
+        """
+        try:
+            ride = Ride.objects.get(id=ride_id)
+            if ride.status not in ['pending', 'requested']:
+                return [], {}
+            
+            # 1. Category Matching (Restore Cascade/Auto-Upgrades - Point 3)
+            requested_category = ride.preferred_vehicle_type or 'go'
+            target_categories = [requested_category]
+            
+            if requested_category == 'go':
+                target_categories.extend(['standard', 'comfort', 'xl', 'exec'])
+            elif requested_category == 'standard':
+                target_categories.extend(['comfort', 'xl', 'exec'])
+            elif requested_category == 'comfort':
+                target_categories.extend(['xl', 'exec'])
+                
+            # 2. Redis Geospatial Filter with Distance
+            nearby_data = redis_geo.geo_radius_drivers_with_dist(ride.pickup_lat, ride.pickup_lng, radius_km)
+            
+            if not nearby_data:
+                return [], {}
+                
+            # Map of driver_id -> distance for sorting later
+            distance_map = {d_id: dist for d_id, dist in nearby_data}
+            nearby_driver_ids = list(distance_map.keys())
+            
+            # 2.5 Redis Lock Filter (Point 5 - Redis Locking)
+            if exclude_locked:
+                nearby_driver_ids = [d_id for d_id in nearby_driver_ids if not redis_geo.is_driver_locked(d_id)]
+            
+            if not nearby_driver_ids:
+                return [], {}
+                
+            # 3. DB Filter for Eligibility
+            stale_threshold = timezone.now() - timezone.timedelta(minutes=30)
+            available_drivers = Profile.objects.filter(
+                pk__in=nearby_driver_ids,
+                user__role='driver',
+                is_online=True,
+                verification__is_verified=True,
+                last_location_update__gte=stale_threshold,
+                vehicles__type__in=target_categories,
+                vehicles__is_active=True,
+                vehicles__is_verified=True
+            ).distinct()
+            
+            # 4. Sort by distance
+            drivers_list = list(available_drivers)
+            drivers_list.sort(key=lambda d: distance_map.get(str(d.pk), 999.0))
+            
+            return drivers_list, distance_map
+            
+        except Ride.DoesNotExist:
+            logger.error(f"Ride {ride_id} does not exist for matching.")
+            return []
+        except Exception as e:
+            logger.error(f"Error finding nearby drivers: {e}")
+            return []
+
+    @classmethod
+    def dispatch_ride_request(cls, ride_id):
+        """
+        Orchestrates finding drivers and sending targeted WebSocket messages.
+        """
+        from rides.serializers import RideSerializer
+        
+        drivers = cls.find_nearby_drivers(ride_id)
+        
+        if not drivers:
+            logger.info(f"Matching: No eligible drivers found within radius for ride {ride_id}.")
+            return 0
+
+        try:
+            ride = Ride.objects.get(id=ride_id)
+            if ride.status not in ['pending', 'requested']:
+                return 0
+
+            # 1. Get Sorted Pool with Distance Data
+            drivers, current_distances = cls.find_nearby_drivers(ride_id)
+            if not drivers:
+                logger.info(f"Matching: No eligible drivers found within radius for ride {ride_id}.")
+                return 0
+
+            # 2. Load Dispatch Metadata
+            metadata = ride.dispatch_metadata or {}
+            polled_ids = metadata.get('polled_driver_ids', [])
+            rejected_ids = metadata.get('rejected_driver_ids', [])
+            distance_history = metadata.get('distance_history', {}) # driver_id -> last_dist
+            
+            # Point 2: Skip on Move Away (Efficiency Check)
+            if polled_ids:
+                last_id = polled_ids[-1]
+                if last_id not in rejected_ids:
+                    curr_dist = current_distances.get(last_id)
+                    prev_dist = distance_history.get(last_id)
+                    if curr_dist and prev_dist and curr_dist > prev_dist + 0.15: # Moved away by > 150m
+                        logger.info(f"Matching: Driver {last_id} is moving away. Skipping to next.")
+                        rejected_ids.append(last_id)
+                        # Track missed opportunity for moving away
+                        Profile.objects.filter(pk=last_id).update(missed_opportunities_count=F('missed_opportunities_count') + 1)
+
+            # Point 4: Adaptive Batching
+            batch_size = 2 if len(drivers) > 5 else 1
+            
+            # 3. Find Next Target Driver(s)
+            target_drivers = []
+            for d in drivers:
+                d_id = str(d.pk)
+                if d_id not in polled_ids and d_id not in rejected_ids:
+                    target_drivers.append(d)
+                    if len(target_drivers) >= batch_size:
+                        break
+            
+            if not target_drivers:
+                # Point 6: Track Missed Opportunities for the driver who just timed out
+                if polled_ids:
+                    last_id = polled_ids[-1]
+                    if last_id not in rejected_ids:
+                        Profile.objects.filter(pk=last_id).update(missed_opportunities_count=F('missed_opportunities_count') + 1)
+                logger.info(f"Matching: All available drivers for ride {ride_id} have already been polled.")
+                return 0
+
+            # 4. Dispatch Targeted WebSocket Messages
+            ride_data = RideSerializer(ride).data
+            channel_layer = get_channel_layer()
+            
+            for next_driver in target_drivers:
+                d_id = str(next_driver.pk)
+                target_group = f'driver_discovery_{next_driver.user.id}'
+                async_to_sync(channel_layer.group_send)(
+                    target_group,
+                    {
+                        'type': 'ride_update',
+                        'event_type': 'ride_requested',
+                        'data': ride_data
+                    }
+                )
+                
+                # 5. Update Metadata & Set Redis Lock (Point 5)
+                polled_ids.append(d_id)
+                distance_history[d_id] = current_distances.get(d_id)
+                redis_geo.set_driver_lock(d_id, 15) # Lock for 15s dispatch window
+            
+            metadata['polled_driver_ids'] = polled_ids
+            metadata['rejected_driver_ids'] = rejected_ids
+            metadata['distance_history'] = distance_history
+            metadata['last_dispatch_at'] = timezone.now().isoformat()
+            ride.dispatch_metadata = metadata
+            ride.save()
+            
+            logger.info(f"Matching: Dispatched ride {ride_id} to {len(target_drivers)} driver(s).")
+            return len(target_drivers)
+            
+        except Exception as e:
+            logger.error(f"Error in targeted dispatch for ride {ride_id}: {e}")
+            return 0

@@ -9,20 +9,19 @@ def process_ride_earnings(driver_user_id, amount, ride_id, metadata=None):
         with transaction.atomic():
             wallet, created = Wallet.objects.get_or_create(user_id=driver_user_id)
             
-            # Create transaction record
+            # Create transaction record for off-app sale tracker
             Transaction.objects.create(
                 wallet=wallet,
                 amount=amount,
-                type='deposit', # Go called it earnings, we use deposit for balance increase
+                type='off_app_sale', 
                 reference_id=str(ride_id),
                 status='completed',
-                description=f"Earnings for ride {ride_id}"
+                description=f"Sales record for ride {ride_id} (Collected Off-App)"
             )
             
-            # Update wallet balance
-            wallet.balance += amount
-            wallet.save()
+            # wallet.balance update removed per user requirement: 
+            # "payment of fare to driver is handled by the drivers themselves"
             
-            print(f"Task: Processed ${amount} earnings for driver {driver_user_id} on ride {ride_id}")
+            print(f"Task: Logged ${amount} off-app sale for driver {driver_user_id} on ride {ride_id}")
     except Exception as e:
         print(f"Error processing earnings: {e}")

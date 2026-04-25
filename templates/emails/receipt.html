@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header { background-color: #1e293b; padding: 40px; color: white; text-align: center; }
+        .receipt-no { font-size: 14px; opacity: 0.8; margin-top: 10px; }
+        .fare-total { font-size: 48px; font-weight: 700; margin: 20px 0; color: #A3E635; }
+        .section { padding: 30px 40px; border-bottom: 1px solid #f1f5f9; }
+        .item-row { display: flex; justify-content: space-between; margin-bottom: 15px; color: #334155; font-size: 15px; }
+        .item-label { font-weight: 500; }
+        .item-value { text-align: right; }
+        .total-row { display: flex; justify-content: space-between; padding: 20px 40px; background: #f8fafc; font-size: 18px; font-weight: 700; color: #1e293b; }
+        .footer { padding: 30px; text-align: center; color: #94a3b8; font-size: 12px; }
+        .location { font-size: 14px; margin-bottom: 10px; display: flex; align-items: start; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 10px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h3>Trip Completed</h3>
+            <div class="fare-total">GHS {{ receipt.total_fare|floatformat:2 }}</div>
+            <div class="receipt-no">Receipt #{{ receipt.receipt_no }}</div>
+        </div>
+
+        <div class="section">
+            <div class="location">
+                <span class="dot" style="background-color: #A3E635;"></span>
+                <span>{{ ride.pickup_address|default:"Pickup Location" }}</span>
+            </div>
+            <div class="location">
+                <span class="dot" style="background-color: #00B4FF;"></span>
+                <span>{{ ride.dropoff_address|default:"Destination Location" }}</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h4 style="margin-top: 0; color: #64748b; font-size: 12px; text-transform: uppercase;">Fare Breakdown</h4>
+            <div class="item-row">
+                <span class="item-label">Base Fare</span>
+                <span class="item-value">GHS {{ receipt.base_fare|floatformat:2 }}</span>
+            </div>
+            <div class="item-row">
+                <span class="item-label">Distance & Surge ({{ ride.distance|floatformat:1 }} km)</span>
+                <span class="item-value">GHS {{ receipt.distance_fare|floatformat:2 }}</span>
+            </div>
+            <div class="item-row">
+                <span class="item-label">Waiting Fee</span>
+                <span class="item-value">GHS {{ receipt.waiting_fee|floatformat:2 }}</span>
+            </div>
+            {% if receipt.cancellation_fee > 0 %}
+            <div class="item-row">
+                <span class="item-label">Cancellation Fee</span>
+                <span class="item-value">GHS {{ receipt.cancellation_fee|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="total-row">
+            <span>Total Paid</span>
+            <span>GHS {{ receipt.total_fare|floatformat:2 }}</span>
+        </div>
+
+        <div class="footer">
+            <p>Vehicle: {{ ride.driver.vehicle.make|default:"FlexyRide" }} {{ ride.driver.vehicle.model|default:"" }}</p>
+            <p>Driver: {{ ride.driver.full_name|default:"Flexy Driver" }}</p>
+            <p style="margin-top: 20px;">Thank you for riding with FlexyRide!</p>
+        </div>
+    </div>
+</body>
+</html>

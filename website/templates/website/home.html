@@ -1,0 +1,151 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}FlexyRide | Moving Ghana Forward{% endblock %}
+{% block meta_description %}FlexyRide connects you with top-rated drivers in minutes. Experience the safest, most reliable, and affordable rides across Ghana.{% endblock %}
+{% block og_title %}FlexyRide | Moving Ghana Forward{% endblock %}
+{% block og_description %}FlexyRide connects you with top-rated drivers in minutes. Experience the safest, most reliable, and affordable rides across Ghana.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="animate-fade-in relative min-h-[80vh] flex items-center overflow-hidden" style="background: linear-gradient(rgba(13,13,13,0.7), rgba(13,13,13,0.7)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="container relative z-10 text-center">
+        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Your City, Your Ride</h1>
+        <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10">Experience the safest, most reliable, and affordable rides across Ghana. FlexyRide connects you with top-rated drivers in minutes.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-6 max-w-xl mx-auto">
+            <a href="{% url 'download' %}" class="btn btn-primary w-full sm:w-64">Download Passenger App</a>
+            <a href="{% url 'drive_with_us' %}" class="btn btn-outline w-full sm:w-64">Become a Driver</a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Grid -->
+<section class="container animate-fade-in opacity-0" style="animation-delay: 0.2s;">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass-card flex flex-col items-center text-center p-12">
+            <div class="text-6xl text-brand mb-6">🛡️</div>
+            <h3 class="text-2xl font-bold mb-4">Safety First</h3>
+            <p class="text-gray-400 leading-relaxed">Every driver is verified, and every ride is tracked in real-time. Share your trip status with loved ones.</p>
+        </div>
+        <div class="glass-card flex flex-col items-center text-center p-12">
+            <div class="text-6xl text-brand mb-6">💰</div>
+            <h3 class="text-2xl font-bold mb-4">Affordable Fares</h3>
+            <p class="text-gray-400 leading-relaxed">Get upfront pricing before you ride. No hidden fees, just fair prices that respect your wallet.</p>
+        </div>
+        <div class="glass-card flex flex-col items-center text-center p-12">
+            <div class="text-6xl text-brand mb-6">⚡</div>
+            <h3 class="text-2xl font-bold mb-4">Fast & Reliable</h3>
+            <p class="text-gray-400 leading-relaxed">Our advanced matching algorithm finds the closest available driver, minimizing your wait time.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="container text-center animate-fade-in opacity-0" style="animation-delay: 0.4s;">
+    <h2 class="text-4xl font-bold mb-16">Our Numbers Speak For Themselves</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-12">
+        <div class="flex flex-col items-center">
+            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">10k+</div>
+            <p class="text-gray-400 text-lg uppercase tracking-wider font-semibold">Active Drivers</p>
+        </div>
+        <div class="flex flex-col items-center">
+            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">500k+</div>
+            <p class="text-gray-400 text-lg uppercase tracking-wider font-semibold">Happy Passengers</p>
+        </div>
+        <div class="flex flex-col items-center col-span-2 md:col-span-1">
+            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">{{ cities_count }}</div>
+            <p class="text-gray-400 text-lg uppercase tracking-wider font-semibold">Active Cities</p>
+        </div>
+    </div>
+</section>
+
+<!-- Availability Map -->
+<section class="container animate-fade-in opacity-0" style="animation-delay: 0.6s;">
+    <div class="glass-card p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
+        <div class="flex-1 z-10">
+            <h2 class="text-4xl font-bold mb-6">We're Growing Fast</h2>
+            <p class="text-gray-400 text-lg mb-8 leading-relaxed">FlexyRide is rapidly expanding across Ghana. Check our live availability map to see where we're operating right now.</p>
+            <a href="{% url 'cities' %}" class="btn btn-primary px-8 py-3">View All Cities</a>
+        </div>
+        
+        <div class="flex-1 relative h-64 md:h-96 w-full rounded-2xl bg-dark-800 border border-white/5 overflow-hidden flex items-center justify-center">
+            <div class="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-brand to-transparent"></div>
+            
+            <!-- Map Container - using a relative div to plot dots -->
+            <div class="relative w-full h-full max-w-[400px] max-h-[400px]">
+                <!-- Base Ghana SVG silhouette could go here. For now, a subtle background grid -->
+                <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                
+                {% for city in cities %}
+                    {% if city.latitude and city.longitude %}
+                    <!-- Pulsar for {{ city.name }} -->
+                    <div class="absolute w-3 h-3 group cursor-pointer" style="left: {{ city.longitude }}%; top: {{ city.latitude }}%; transform: translate(-50%, -50%);">
+                        <div class="absolute inset-0 bg-brand rounded-full"></div>
+                        <div class="absolute inset-0 bg-brand rounded-full animate-ping opacity-75 duration-1000"></div>
+                        
+                        <!-- Tooltip -->
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1 bg-white text-dark-900 text-xs font-bold rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                            {{ city.name }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Fallback if no coordinates -->
+                {% if not cities %}
+                    <div class="absolute inset-0 flex items-center justify-center text-gray-500 font-medium">Map Data Unavailable</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="container animate-fade-in">
+    <h2 class="text-4xl font-bold text-center mb-16">What Our Community Says</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {% for testimonial in testimonials %}
+        <div class="glass-card flex flex-col items-center text-center">
+            <img src="{{ testimonial.photo_url }}" alt="{{ testimonial.name }}" class="w-24 h-24 rounded-full border-4 border-brand object-cover mb-6">
+            <p class="text-gray-300 italic mb-6 leading-relaxed">"{{ testimonial.quote }}"</p>
+            <h4 class="text-xl font-bold mb-1">{{ testimonial.name }}</h4>
+            <span class="text-xs text-gray-500 uppercase tracking-widest">{{ testimonial.role }}</span>
+            <div class="flex gap-1 text-yellow-500 mt-4 text-xl">
+                {% for i in "12345"|make_list %}{% if forloop.counter <= testimonial.rating %}★{% endif %}{% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Blog Section -->
+<section class="container animate-fade-in">
+    <div class="flex flex-col md:row justify-between items-end gap-6 mb-12">
+        <div>
+            <h2 class="text-4xl font-bold">Latest From The Blog</h2>
+            <p class="text-gray-400 mt-2">Stay updated with the latest news and travel tips from Ghana.</p>
+        </div>
+        <a href="{% url 'blog_list' %}" class="btn btn-outline hover:bg-brand hover:text-dark-900 px-8">View All Articles</a>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {% for post in latest_posts %}
+        <a href="{% url 'blog_detail' post.slug %}" class="group">
+            <div class="glass-card p-0 overflow-hidden h-full flex flex-col transition-transform duration-300 group-hover:-translate-y-2">
+                <div class="h-56 relative overflow-hidden">
+                    <img src="{% if post.cover_image %}{{ post.cover_image.url }}{% else %}{{ post.cover_image_url }}{% endif %}" alt="{{ post.title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div class="p-8 flex flex-col flex-1">
+                    <h3 class="text-xl font-bold mb-4 line-clamp-2 transition-colors group-hover:text-brand">{{ post.title }}</h3>
+                    <p class="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">{{ post.excerpt|truncatewords:15 }}</p>
+                    <div class="mt-auto flex items-center text-brand font-bold text-sm tracking-wide">
+                        READ MORE <span class="ml-2 transition-transform duration-300 group-hover:translate-x-2">→</span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

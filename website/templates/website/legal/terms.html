@@ -1,0 +1,38 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Terms of Service | FlexyRide{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in max-w-4xl py-20">
+    <h1 class="text-5xl font-bold mb-4">Terms of Service</h1>
+    <p class="text-gray-500 mb-16 font-medium">Last Updated: January 1, 2026</p>
+
+    <div class="prose prose-invert max-w-none space-y-12 text-gray-300 leading-relaxed">
+        <div>
+            <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                <span class="text-brand">1.</span> Acceptance of Terms
+            </h2>
+            <p>By using the FlexyRide platform, you agree to these Terms of Service. If you do not agree to any part of these terms, you may not use our services.</p>
+        </div>
+        
+        <div>
+            <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                <span class="text-brand">2.</span> Description of Service
+            </h2>
+            <p>FlexyRide is a technology platform that connects passengers with independent drivers for transportation services.</p>
+        </div>
+        
+        <div>
+            <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                <span class="text-brand">3.</span> User Accounts
+            </h2>
+            <p>You must create an account to use our services. You are responsible for maintaining the confidentiality of your account information.</p>
+        </div>
+        
+        <div class="p-8 bg-dark-800 rounded-3xl border border-white/5 italic text-gray-400">
+            Note: This is a summary of our primary terms. Full legal documentation is available via support request.
+        </div>
+    </div>
+</section>
+{% endblock %}

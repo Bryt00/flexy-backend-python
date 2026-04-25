@@ -9,6 +9,6 @@ class PromoCodeAdmin(ModelAdmin):
 
 @admin.register(Campaign)
 class CampaignAdmin(ModelAdmin):
-    list_display = ('title', 'target_audience', 'status', 'scheduled_at', 'created_at')
-    list_filter = ('status', 'target_audience')
+    list_display = ('title', 'status', 'is_active', 'start_date', 'created_at')
+    list_filter = ('status',)
     search_fields = ('title', 'description')

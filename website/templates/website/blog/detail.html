@@ -1,0 +1,58 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ post.title }} | FlexyRide Blog{% endblock %}
+
+{% block meta_description %}{{ post.summary|default:post.title|truncatechars:160 }}{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.summary|default:post.title|truncatechars:200 }}{% endblock %}
+{% block og_image %}{% if post.cover_image %}{{ post.cover_image.url }}{% elif post.cover_image_url %}{{ post.cover_image_url }}{% else %}{% static 'website/images/og-default.png' %}{% endif %}{% endblock %}
+
+
+{% block content %}
+<section class="container animate-fade-in max-w-4xl py-12">
+    {% if post.cover_image or post.cover_image_url %}
+    <div class="rounded-3xl overflow-hidden mb-12 shadow-2xl h-[400px] bg-dark-800">
+        <img src="{% if post.cover_image %}{{ post.cover_image.url }}{% else %}{{ post.cover_image_url }}{% endif %}" alt="{{ post.title }}" class="w-full h-full object-cover">
+    </div>
+    {% endif %}
+
+    <div class="mb-12">
+        <div class="flex items-center gap-4 text-brand font-bold text-sm uppercase tracking-widest mb-6">
+            <span>By {{ post.author_name }}</span>
+            <span class="w-1 h-1 rounded-full bg-gray-600"></span>
+            <span class="text-gray-400 font-medium">{{ post.published_at|date:"F j, Y" }}</span>
+        </div>
+        <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-8">{{ post.title }}</h1>
+    </div>
+
+    <!-- Blog Content with Rich Text Styling -->
+    <div class="prose prose-invert prose-lg max-w-none mb-20 text-gray-300 leading-relaxed space-y-6">
+        <style type="text/tailwindcss">
+            .blog-body h2 { @apply text-3xl font-bold text-white mt-12 mb-6; }
+            .blog-body h3 { @apply text-2xl font-bold text-white mt-10 mb-4; }
+            .blog-body p { @apply mb-6; }
+            .blog-body img { @apply rounded-2xl my-10 shadow-xl; }
+            .blog-body ul { @apply list-disc list-inside space-y-3 mb-6; }
+            .blog-body ol { @apply list-decimal list-inside space-y-3 mb-6; }
+        </style>
+        <div class="blog-body">
+            {{ post.content|safe }}
+        </div>
+    </div>
+
+    <div class="border-t border-white/10 pt-10 flex flex-col md:flex-row justify-between items-center gap-6 mb-20">
+        <a href="{% url 'blog_list' %}" class="btn btn-outline px-8 py-3">
+            &larr; Back to all posts
+        </a>
+        <div class="flex items-center gap-6">
+            <span class="text-gray-500 font-bold uppercase tracking-widest text-xs">Share this story:</span>
+            <div class="flex gap-4">
+                <a href="#" class="text-gray-400 hover:text-brand transition-colors font-bold">Twitter</a>
+                <a href="#" class="text-gray-400 hover:text-brand transition-colors font-bold">LinkedIn</a>
+                <a href="#" class="text-gray-400 hover:text-brand transition-colors font-bold">Facebook</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { background-color: #00B4FF; padding: 40px; text-align: center; color: white; }
+        .content { padding: 40px; color: #333333; line-height: 1.6; }
+        .footer { padding: 20px; text-align: center; color: #999999; font-size: 12px; }
+        .button { display: inline-block; padding: 14px 28px; background-color: #A3E635; color: #1e293b; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to FlexyRide</h1>
+        </div>
+        <div class="content">
+            <p>Hi {{ user.full_name|default:"Rider" }},</p>
+            <p>We're thrilled to have you join the FlexyRide community! You're now ready to book rides, track deliveries, and more with just a few taps.</p>
+            <p>To get started, update your profile and book your first trip today.</p>
+            <a href="#" class="button">Open App</a>
+        </div>
+        <div class="footer">
+            &copy; 2026 FlexyRide Ltd. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

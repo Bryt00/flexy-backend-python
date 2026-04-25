@@ -1,6 +1,6 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin
-from .models import SiteSetting, LegalDocument, PricingRule
+from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(ModelAdmin):
@@ -16,3 +16,15 @@ class LegalDocumentAdmin(ModelAdmin):
 class PricingRuleAdmin(ModelAdmin):
     list_display = ('city', 'base_fare', 'surge_multiplier', 'is_active')
     list_editable = ('surge_multiplier', 'is_active')
+
+@admin.register(VehicleCategory)
+class VehicleCategoryAdmin(ModelAdmin):
+    list_display = ('display_name', 'slug', 'base_fare', 'multiplier', 'is_active')
+    list_editable = ('base_fare', 'multiplier', 'is_active')
+    search_fields = ('display_name', 'slug')
+
+@admin.register(DistanceTier)
+class DistanceTierAdmin(ModelAdmin):
+    list_display = ('name', 'min_km', 'max_km', 'rate_per_km', 'is_active')
+    list_editable = ('rate_per_km', 'is_active')
+

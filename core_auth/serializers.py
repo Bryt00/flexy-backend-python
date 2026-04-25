@@ -5,10 +5,12 @@ from .models import DeletionRequest
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    phone = serializers.ReadOnlyField(source='profile.phone_number')
+    
     class Meta:
         model = User
-        fields = ('id', 'email', 'role', 'created_at')
-        read_only_fields = ('id', 'created_at')
+        fields = ('id', 'email', 'role', 'phone', 'is_email_verified', 'google_id', 'apple_id', 'created_at')
+        read_only_fields = ('id', 'created_at', 'phone', 'is_email_verified')
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -17,11 +19,26 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('email', 'password', 'role')
 
+    def validate_role(self, value):
+        # Normalize role: 'passenger' or 'Passenger' -> 'rider'
+        # ensure it matches the keys in User.ROLE_CHOICES
+        value = value.lower()
+        if value == 'passenger':
+            return 'rider'
+        
+        # Check if the value is a valid choice key
+        valid_choices = [choice[0] for choice in User.ROLE_CHOICES]
+        if value not in valid_choices:
+            raise serializers.ValidationError(f"Invalid role. Choose from: {', '.join(valid_choices)}")
+        
+        return value
+
     def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
-            role=validated_data.get('role', 'rider')
+            role=validated_data.get('role', 'rider'),
+            is_active=False # Deactivate until email is verified
         )
         return user
 
@@ -30,3 +47,33 @@ class DeletionRequestSerializer(serializers.ModelSerializer):
         model = DeletionRequest
         fields = '__all__'
         read_only_fields = ('id', 'user', 'requested_at', 'processed_at')
+
+class LoginRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+class TokenResponseSerializer(serializers.Serializer):
+    user = UserSerializer()
+    token = serializers.CharField()
+    refresh_token = serializers.CharField()
+
+class OTPRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    type = serializers.ChoiceField(choices=['email_verification', 'password_reset'])
+
+class OTPVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField()
+    type = serializers.ChoiceField(choices=['email_verification', 'password_reset'])
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+class RefreshTokenRequestSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField()
+
+class RefreshTokenResponseSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    refresh_token = serializers.CharField()

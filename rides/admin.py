@@ -4,8 +4,8 @@ from .models import Ride, Incident
 
 @admin.register(Ride)
 class RideAdmin(ModelAdmin):
-    list_display = ('id', 'rider', 'driver', 'status', 'service_type', 'fare', 'created_at')
-    list_filter = ('status', 'service_type')
+    list_display = ('id', 'rider', 'driver', 'status', 'type', 'fare', 'created_at')
+    list_filter = ('status', 'type')
     search_fields = ('id', 'rider__email', 'driver__user__email')
 
 @admin.register(Incident)

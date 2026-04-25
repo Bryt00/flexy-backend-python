@@ -32,15 +32,44 @@ def dashboard_callback(request, context):
                 "metric": online_drivers,
                 "icon": "directions_car",
             },
-        ],
         "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
     })
 
     return [
         {
+            "title": _("Operational Snapshot"),
+            "style": "grid-column: span 12 / span 12;",
+            "items": [
+                {
+                    "title": _("Active Rides"),
+                    "metric": active_rides,
+                    "footer": _("Total Rides: {}").format(total_rides),
+                    "icon": "commute",
+                    "color": "sky",
+                    "link": "/admin/rides/ride/?status=in_progress",
+                },
+                {
+                    "title": _("SOS Alerts"),
+                    "metric": active_sos,
+                    "footer": _("Critical incidents"),
+                    "icon": "report_problem",
+                    "color": "red",
+                    "link": "/admin/rides/incident/?type=SOS&status=ACTIVE",
+                },
+                {
+                    "title": _("Fleet Online"),
+                    "metric": online_drivers,
+                    "footer": _("Drivers ready"),
+                    "icon": "directions_car",
+                    "color": "lime",
+                    "link": "/admin/profiles/profile/",
+                },
+            ],
+        },
+        {
             "template": "admin/components/map_dashboard.html",
             "title": _("Command & Control - Live Fleet Monitoring"),
-            "style": "grid-column: span 12 / span 12;", # Full width
+            "style": "grid-column: span 12 / span 12;",
             "context": {
                 "google_maps_api_key": settings.GOOGLE_MAPS_API_KEY,
                 "active_rides": active_rides,

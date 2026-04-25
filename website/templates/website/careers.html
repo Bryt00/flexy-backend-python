@@ -1,0 +1,95 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Careers | FlexyRide{% endblock %}
+{% block meta_description %}Join the team building Ghana's leading ride-hailing platform. Explore open roles at FlexyRide.{% endblock %}
+{% block og_title %}Careers at FlexyRide{% endblock %}
+{% block og_description %}Join the team building Ghana's leading ride-hailing platform. Explore open roles at FlexyRide.{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="relative py-24 flex items-center overflow-hidden text-center" style="background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="container animate-fade-in">
+        <div class="inline-block px-4 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-sm font-bold uppercase tracking-widest mb-6">
+            We're Hiring
+        </div>
+        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Build the Future<br>of Mobility</h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">Join a mission-driven team transforming how Ghana moves. We are fast, ambitious, and just getting started.</p>
+        {% if total_openings %}
+        <div class="mt-8 inline-block bg-brand/10 border border-brand/20 rounded-full px-6 py-2 text-brand font-bold">
+            {{ total_openings }} open position{{ total_openings|pluralize }}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Culture Section -->
+<section class="container animate-fade-in">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-0">
+        <div class="glass-card p-10 text-center group hover:border-brand/30 transition-colors">
+            <div class="text-5xl mb-6">🚀</div>
+            <h3 class="text-xl font-bold mb-3">Move Fast</h3>
+            <p class="text-gray-400">We build, ship, and iterate quickly. Every week you will see your work impact real people across Ghana.</p>
+        </div>
+        <div class="glass-card p-10 text-center group hover:border-brand/30 transition-colors">
+            <div class="text-5xl mb-6">🌍</div>
+            <h3 class="text-xl font-bold mb-3">Real Impact</h3>
+            <p class="text-gray-400">Your work improves how hundreds of thousands of Ghanaians commute every single day.</p>
+        </div>
+        <div class="glass-card p-10 text-center group hover:border-brand/30 transition-colors">
+            <div class="text-5xl mb-6">💚</div>
+            <h3 class="text-xl font-bold mb-3">People First</h3>
+            <p class="text-gray-400">Competitive pay, flexible hours, and a team that genuinely cares about each other.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Open Roles -->
+<section class="container animate-fade-in mb-8">
+    <h2 class="text-4xl font-bold mb-16 text-center">Open Positions</h2>
+
+    {% if grouped_jobs %}
+        {% for department, jobs in grouped_jobs.items %}
+        <div class="mb-16">
+            <h3 class="text-xl font-bold text-brand uppercase tracking-widest mb-6 border-b border-brand/20 pb-3">{{ department }}</h3>
+            <div class="space-y-4">
+                {% for job in jobs %}
+                <div class="glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-8 hover:border-brand/30 transition-colors group">
+                    <div class="flex-1">
+                        <h4 class="text-xl font-bold mb-2 group-hover:text-brand transition-colors">{{ job.title }}</h4>
+                        <div class="flex flex-wrap gap-3 text-sm">
+                            <span class="flex items-center gap-1 text-gray-400"><span>📍</span> {{ job.location }}</span>
+                            <span class="px-3 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/20 font-semibold">{{ job.get_job_type_display }}</span>
+                        </div>
+                    </div>
+                    {% if job.apply_url %}
+                    <a href="{{ job.apply_url }}" target="_blank" class="btn btn-primary flex-shrink-0 px-8">Apply Now</a>
+                    {% else %}
+                    <a href="{% url 'contact' %}" class="btn btn-outline flex-shrink-0 px-8">Send CV</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="glass-card text-center py-20 border-white/5">
+            <div class="text-6xl mb-6 opacity-30">👀</div>
+            <p class="text-gray-500 text-lg mb-2">No open positions right now.</p>
+            <p class="text-gray-600">Send us your CV anyway — we are always looking for exceptional talent.</p>
+            <a href="{% url 'contact' %}" class="btn btn-primary mt-8 px-10">Get in Touch</a>
+        </div>
+    {% endif %}
+</section>
+
+<!-- Speculative Applications CTA -->
+<section class="container animate-fade-in mb-32">
+    <div class="relative rounded-[50px] overflow-hidden py-20 px-8 text-center border border-white/5" style="background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+        <div class="max-w-2xl mx-auto relative z-10">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4 text-white">Don't see your role?</h2>
+            <p class="text-gray-400 mb-8 leading-relaxed">We are always open to hearing from exceptional people. Send us your CV and tell us how you can help move Ghana forward.</p>
+            <a href="{% url 'contact' %}" class="btn btn-primary px-12">Send Open Application</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

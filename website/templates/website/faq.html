@@ -1,0 +1,78 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}FAQ | FlexyRide{% endblock %}
+{% block meta_description %}Got questions? Find answers to the most common questions about FlexyRide — for riders, drivers, payments, and safety.{% endblock %}
+{% block og_title %}FAQ | FlexyRide{% endblock %}
+{% block og_description %}Got questions? Find answers to the most common questions about FlexyRide — for riders, drivers, payments, and safety.{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="relative py-24 flex items-center overflow-hidden text-center" style="background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="container animate-fade-in">
+        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Got Questions?</h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">Everything you need to know about riding and driving with FlexyRide.</p>
+        {% if total_count %}
+        <p class="mt-4 text-sm text-gray-500 uppercase tracking-widest font-semibold">{{ total_count }} answers ready</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- FAQ Accordion -->
+<section class="container animate-fade-in mb-32">
+    {% if grouped_faqs %}
+        {% for category, faqs in grouped_faqs.items %}
+        <div class="mb-16">
+            <h2 class="text-2xl font-bold mb-8 text-brand border-b border-brand/20 pb-4">{{ category }}</h2>
+            <div class="space-y-4" id="faq-group-{{ forloop.counter }}">
+                {% for faq in faqs %}
+                <div class="glass-card p-0 overflow-hidden border-white/5 hover:border-brand/20 transition-colors">
+                    <button
+                        class="w-full text-left px-8 py-6 flex justify-between items-center gap-4 focus:outline-none"
+                        onclick="toggleFAQ(this)"
+                        aria-expanded="false"
+                    >
+                        <span class="font-semibold text-lg text-white">{{ faq.question }}</span>
+                        <span class="faq-icon flex-shrink-0 w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center text-xl font-bold transition-transform duration-300">+</span>
+                    </button>
+                    <div class="faq-answer hidden px-8 pb-6 text-gray-400 leading-relaxed border-t border-white/5">
+                        <div class="pt-4">{{ faq.answer }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-32">
+            <div class="text-6xl mb-6 opacity-30">❓</div>
+            <p class="text-gray-500 text-lg">FAQ entries will appear here. Add them from the admin panel.</p>
+        </div>
+    {% endif %}
+</section>
+
+<!-- Still have questions CTA -->
+<section class="container animate-fade-in mb-32">
+    <div class="glass-card p-16 text-center border-brand/10">
+        <div class="text-5xl mb-6">💬</div>
+        <h2 class="text-3xl font-bold mb-4">Still have a question?</h2>
+        <p class="text-gray-400 mb-8 max-w-lg mx-auto">Our support team is available 24/7 and happy to help you with anything.</p>
+        <a href="{% url 'contact' %}" class="btn btn-primary px-12">Contact Us</a>
+    </div>
+</section>
+
+{% block extra_js %}
+<script>
+function toggleFAQ(btn) {
+    const answer = btn.nextElementSibling;
+    const icon = btn.querySelector('.faq-icon');
+    const isOpen = !answer.classList.contains('hidden');
+    answer.classList.toggle('hidden', isOpen);
+    icon.textContent = isOpen ? '+' : '−';
+    icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(45deg)';
+    btn.setAttribute('aria-expanded', String(!isOpen));
+}
+</script>
+{% endblock %}
+
+{% endblock %}

@@ -24,6 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('rider', 'Rider'),
         ('driver', 'Driver'),
+        ('partner', 'Partner'),
         ('admin', 'Admin'),
         ('super_admin', 'Super Admin'),
     )
@@ -32,7 +33,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, max_length=255)
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='rider')
     
+    # Social Auth IDs
+    google_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    apple_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    
     is_active = models.BooleanField(default=True)
+    is_email_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(default=timezone.now)
@@ -45,6 +51,25 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+class OTPCode(models.Model):
+    TYPE_CHOICES = (
+        ('email_verification', 'Email Verification'),
+        ('password_reset', 'Password Reset'),
+    )
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='otp_codes')
+    code = models.CharField(max_length=6)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.type} code for {self.user.email}"
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
 
 class DeletionRequest(models.Model):
     STATUS_CHOICES = (

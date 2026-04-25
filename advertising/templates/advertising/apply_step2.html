@@ -1,0 +1,102 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Apply - Step 2 | Advertise{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    @layer components {
+        .form-input {
+            @apply w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-300;
+        }
+        .form-label {
+            @apply block text-sm font-semibold text-gray-400 mb-2 ml-1;
+        }
+        .file-input {
+            @apply block w-full text-sm text-gray-400
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-brand/10 file:text-brand
+            hover:file:bg-brand/20 transition-all cursor-pointer;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in max-w-xl py-12 md:py-20">
+    
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-4">Submit Your Ad Request</h1>
+        <p class="text-gray-400">Upload your creative assets and provide a call to action.</p>
+    </div>
+
+    <!-- Wizard Steps -->
+    <div class="relative flex justify-between items-center mb-16 px-4">
+        <div class="absolute top-1/2 left-0 w-full h-[2px] bg-white/5 -translate-y-1/2 z-0"></div>
+        <div class="z-10 bg-brand-dark text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">✓</div>
+        <div class="z-10 bg-brand text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shadow-[0_0_20px_rgba(0,200,150,0.4)]">2</div>
+        <div class="z-10 bg-dark-800 text-gray-500 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-2 border-white/5">3</div>
+    </div>
+
+    <div class="glass-card">
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-1 h-8 bg-brand rounded-full"></div>
+            <h2 class="text-2xl font-bold">Ad Creative</h2>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div>
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                
+                {% if field.field.widget.input_type == 'file' %}
+                    <div class="p-6 bg-white/5 border border-dashed border-white/10 rounded-2xl">
+                        <input type="file" name="{{ field.name }}" id="{{ field.id_for_label }}" class="file-input">
+                    </div>
+                {% elif field.field.widget.input_type == 'select' %}
+                    <div class="relative">
+                        <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-input appearance-none">
+                            {% for choice in field.field.choices %}
+                                <option value="{{ choice.0 }}" {% if choice.0 == field.value %}selected{% endif %}>{{ choice.1 }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></svg>
+                        </div>
+                    </div>
+                {% else %}
+                    <input type="{{ field.field.widget.input_type|default:'text' }}" 
+                           name="{{ field.name }}" 
+                           id="{{ field.id_for_label }}" 
+                           placeholder="{{ field.label }}"
+                           value="{{ field.value|default:'' }}"
+                           class="form-input">
+                {% endif %}
+                
+                {% if field.errors %}
+                <div class="mt-2 space-y-1">
+                    {% for error in field.errors %}
+                        <p class="text-red-500 text-sm italic">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="flex justify-between items-center pt-6">
+                <button type="submit" name="back" value="1" class="btn btn-outline px-8 py-3" formnovalidate>
+                    ← Back
+                </button>
+                <button type="submit" class="btn btn-primary px-10 py-4 flex items-center gap-3 group">
+                    Final Review 
+                    <span class="transition-transform group-hover:translate-x-1">→</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

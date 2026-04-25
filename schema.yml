@@ -1,0 +1,3116 @@
+openapi: 3.0.3
+info:
+  title: FlexyRide API
+  version: 1.0.0
+  description: Consolidated Backend API for FlexyRide Fleet Management and Mobile
+    Apps.
+paths:
+  /api/auth/token/:
+    post:
+      operationId: api_auth_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: api_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /v1/auth/api/me/:
+    get:
+      operationId: v1_auth_api_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_auth_api_me_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_auth_api_me_partial_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: v1_auth_api_me_destroy
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /v1/auth/apple/login/:
+    get:
+      operationId: v1_auth_apple_login_retrieve
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        description: Social provider name (google, apple, etc.)
+        required: true
+      tags:
+      - v1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/auth/google/callback/:
+    get:
+      operationId: v1_auth_google_callback_retrieve
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        description: Social provider name (google, apple, etc.)
+        required: true
+      tags:
+      - v1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: ''
+  /v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: v1_auth_me_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: v1_auth_me_partial_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: v1_auth_me_destroy
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /v1/auth/phone/otp/:
+    post:
+      operationId: v1_auth_phone_otp_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OTPRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OTPRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/auth/phone/verify/:
+    post:
+      operationId: v1_auth_phone_verify_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTPVerifyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OTPVerifyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OTPVerifyRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/auth/refresh/:
+    post:
+      operationId: v1_auth_refresh_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+          description: ''
+  /v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Register'
+          description: ''
+  /v1/debug-sentry/:
+    get:
+      operationId: v1_debug_sentry_retrieve
+      tags:
+      - v1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: string
+          description: ''
+  /v1/files/upload/:
+    post:
+      operationId: upload_file
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/notifications/:
+    get:
+      operationId: v1_notifications_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: ''
+    post:
+      operationId: v1_notifications_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /v1/notifications/{id}/:
+    get:
+      operationId: v1_notifications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+    put:
+      operationId: v1_notifications_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+    patch:
+      operationId: v1_notifications_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+    delete:
+      operationId: v1_notifications_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /v1/notifications/{id}/read/:
+    post:
+      operationId: v1_notifications_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this notification.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /v1/notifications/me/:
+    get:
+      operationId: v1_notifications_me_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: ''
+  /v1/notifications/read_all/:
+    post:
+      operationId: v1_notifications_read_all_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/payments/initiate/:
+    post:
+      operationId: v1_payments_initiate_create
+      description: Initiate a wallet funding transaction via Paystack.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/payments/stats/:
+    get:
+      operationId: v1_payments_stats_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/payments/transactions/:
+    get:
+      operationId: v1_payments_transactions_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: ''
+  /v1/payments/verify/{reference}/:
+    get:
+      operationId: v1_payments_verify_retrieve
+      description: Verify a wallet funding transaction.
+      parameters:
+      - in: path
+        name: reference
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: ''
+  /v1/payments/wallet/:
+    get:
+      operationId: v1_payments_wallet_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: ''
+  /v1/payments/webhook/:
+    post:
+      operationId: v1_payments_webhook_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: ''
+  /v1/payments/webhooks/paystack/:
+    post:
+      operationId: v1_payments_webhooks_paystack_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: ''
+  /v1/profile/:
+    get:
+      operationId: v1_profile_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+          description: ''
+    post:
+      operationId: v1_profile_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /v1/profile/{user}/:
+    get:
+      operationId: v1_profile_retrieve
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    put:
+      operationId: v1_profile_update
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    patch:
+      operationId: v1_profile_partial_update
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    delete:
+      operationId: v1_profile_destroy
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /v1/profile/{user}/verification/initiate/:
+    post:
+      operationId: v1_profile_verification_initiate_create
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/profile/{user}/verification_status/:
+    get:
+      operationId: v1_profile_verification_status_retrieve
+      parameters:
+      - in: path
+        name: user
+        schema:
+          type: string
+          format: uuid
+        description: A unique value identifying this profile.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DriverVerification'
+          description: ''
+  /v1/profile/me/:
+    get:
+      operationId: v1_profile_me_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    post:
+      operationId: v1_profile_me_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    put:
+      operationId: v1_profile_me_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    patch:
+      operationId: v1_profile_me_partial_update
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfileRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /v1/rides/:
+    get:
+      operationId: v1_rides_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ride'
+          description: ''
+    post:
+      operationId: v1_rides_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /v1/rides/{id}/:
+    get:
+      operationId: v1_rides_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    put:
+      operationId: v1_rides_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    patch:
+      operationId: v1_rides_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRideRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    delete:
+      operationId: v1_rides_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /v1/rides/{id}/accept/:
+    post:
+      operationId: v1_rides_accept_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    put:
+      operationId: v1_rides_accept_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /v1/rides/{id}/chat/:
+    get:
+      operationId: v1_rides_chat_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /v1/rides/{id}/chat_history/:
+    get:
+      operationId: v1_rides_chat_history_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /v1/rides/{id}/sos/:
+    post:
+      operationId: v1_rides_sos_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /v1/rides/{id}/status/:
+    post:
+      operationId: v1_rides_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    put:
+      operationId: v1_rides_status_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RideRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+    patch:
+      operationId: v1_rides_status_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ride.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRideRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRideRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRideRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+          description: ''
+  /v1/rides/operations/settings/:
+    get:
+      operationId: v1_rides_operations_settings_retrieve
+      tags:
+      - v1
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /v1/subscriptions/pay/:
+    post:
+      operationId: v1_subscriptions_pay_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/subscriptions/plans/:
+    get:
+      operationId: v1_subscriptions_plans_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+    post:
+      operationId: v1_subscriptions_plans_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/subscriptions/plans/{id}/:
+    get:
+      operationId: v1_subscriptions_plans_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this subscription plan.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+    put:
+      operationId: v1_subscriptions_plans_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this subscription plan.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+    patch:
+      operationId: v1_subscriptions_plans_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this subscription plan.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscriptionPlanRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+    delete:
+      operationId: v1_subscriptions_plans_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this subscription plan.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+  /v1/subscriptions/plans/pay/:
+    post:
+      operationId: v1_subscriptions_plans_pay_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/subscriptions/plans/status/:
+    get:
+      operationId: v1_subscriptions_plans_status_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/subscriptions/plans/verify/:
+    post:
+      operationId: v1_subscriptions_plans_verify_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/subscriptions/status/:
+    get:
+      operationId: v1_subscriptions_status_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/subscriptions/verify/:
+    post:
+      operationId: v1_subscriptions_verify_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscriptionPlanRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionPlan'
+          description: ''
+  /v1/vehicles/:
+    get:
+      operationId: v1_vehicles_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Vehicle'
+          description: ''
+    post:
+      operationId: v1_vehicles_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: ''
+  /v1/vehicles/{id}/:
+    get:
+      operationId: v1_vehicles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this vehicle.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: ''
+    put:
+      operationId: v1_vehicles_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this vehicle.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VehicleRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: ''
+    patch:
+      operationId: v1_vehicles_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this vehicle.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVehicleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVehicleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVehicleRequest'
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehicle'
+          description: ''
+    delete:
+      operationId: v1_vehicles_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this vehicle.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - ApiKeyAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    CategoryEnum:
+      enum:
+      - standard
+      - comfort
+      - luxury
+      - delivery
+      - pragya
+      - motorbike
+      type: string
+      description: |-
+        * `standard` - Standard
+        * `comfort` - Comfort
+        * `luxury` - Luxury
+        * `delivery` - Delivery
+        * `pragya` - Pragya (Tricycle)
+        * `motorbike` - Motorbike
+    DriverVerification:
+      type: object
+      properties:
+        driver:
+          type: string
+          format: uuid
+        license_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        license_image_url:
+          type: string
+          nullable: true
+        id_card_image_url:
+          type: string
+          nullable: true
+        insurance_url:
+          type: string
+          nullable: true
+        roadworthy_url:
+          type: string
+          nullable: true
+        vehicle_video_url:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/DriverVerificationStatusEnum'
+        is_verified:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        rejected_reason:
+          type: string
+          nullable: true
+      required:
+      - driver
+    DriverVerificationRequest:
+      type: object
+      properties:
+        driver:
+          type: string
+          format: uuid
+        license_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        license_image_url:
+          type: string
+          nullable: true
+        id_card_image_url:
+          type: string
+          nullable: true
+        insurance_url:
+          type: string
+          nullable: true
+        roadworthy_url:
+          type: string
+          nullable: true
+        vehicle_video_url:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/DriverVerificationStatusEnum'
+        is_verified:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        rejected_reason:
+          type: string
+          nullable: true
+      required:
+      - driver
+    DriverVerificationStatusEnum:
+      enum:
+      - PENDING
+      - SUBMITTED
+      - VERIFIED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `SUBMITTED` - Submitted
+        * `VERIFIED` - Verified
+        * `REJECTED` - Rejected
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/IncidentTypeEnum'
+        status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        description:
+          type: string
+          nullable: true
+        location_lat:
+          type: number
+          format: double
+          nullable: true
+        location_lng:
+          type: number
+          format: double
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        ride:
+          type: string
+          format: uuid
+        reporter:
+          type: string
+          format: uuid
+      required:
+      - created_at
+      - id
+      - reporter
+      - ride
+    IncidentRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/IncidentTypeEnum'
+        status:
+          $ref: '#/components/schemas/IncidentStatusEnum'
+        description:
+          type: string
+          nullable: true
+        location_lat:
+          type: number
+          format: double
+          nullable: true
+        location_lng:
+          type: number
+          format: double
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        ride:
+          type: string
+          format: uuid
+        reporter:
+          type: string
+          format: uuid
+      required:
+      - reporter
+      - ride
+    IncidentStatusEnum:
+      enum:
+      - ACTIVE
+      - RESOLVED
+      - INVESTIGATING
+      type: string
+      description: |-
+        * `ACTIVE` - Active
+        * `RESOLVED` - Resolved
+        * `INVESTIGATING` - Investigating
+    IncidentTypeEnum:
+      enum:
+      - SOS
+      - ACCIDENT
+      - THEFT
+      - GENERAL
+      type: string
+      description: |-
+        * `SOS` - SOS Alert
+        * `ACCIDENT` - Accident
+        * `THEFT` - Theft
+        * `GENERAL` - General Incident
+    LoginRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+      - email
+      - password
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        title:
+          type: string
+          maxLength: 255
+        body:
+          type: string
+        is_read:
+          type: boolean
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - id
+      - title
+      - type
+      - user
+    NotificationRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        body:
+          type: string
+          minLength: 1
+        is_read:
+          type: boolean
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - body
+      - title
+      - type
+    NotificationTypeEnum:
+      enum:
+      - PUSH
+      - SMS
+      - EMAIL
+      type: string
+      description: |-
+        * `PUSH` - Push Notification
+        * `SMS` - SMS
+        * `EMAIL` - Email
+    OTPRequestRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 1
+      required:
+      - phone
+    OTPVerifyRequest:
+      type: object
+      properties:
+        phone:
+          type: string
+          minLength: 1
+        otp:
+          type: string
+          minLength: 1
+      required:
+      - otp
+      - phone
+    PatchedNotificationRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        body:
+          type: string
+          minLength: 1
+        is_read:
+          type: boolean
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+    PatchedProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        bio:
+          type: string
+          nullable: true
+        emergency_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        emergency_phone:
+          type: string
+          nullable: true
+          maxLength: 20
+        profile_picture_url:
+          type: string
+          nullable: true
+    PatchedRideRequest:
+      type: object
+      properties:
+        service_type:
+          type: string
+          nullable: true
+          maxLength: 50
+        pickup_location:
+          type: string
+          nullable: true
+        dropoff_location:
+          type: string
+          nullable: true
+        pickup_lat:
+          type: number
+          format: double
+          nullable: true
+        pickup_lng:
+          type: number
+          format: double
+          nullable: true
+        dropoff_lat:
+          type: number
+          format: double
+          nullable: true
+        dropoff_lng:
+          type: number
+          format: double
+          nullable: true
+        status:
+          $ref: '#/components/schemas/RideStatusEnum'
+        fare:
+          type: number
+          format: double
+          nullable: true
+        rider:
+          type: string
+          format: uuid
+        driver:
+          type: string
+          format: uuid
+          nullable: true
+    PatchedSubscriptionPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          description: |-
+            The vehicle category this plan applies to
+
+            * `standard` - Standard
+            * `comfort` - Comfort
+            * `luxury` - Luxury
+            * `delivery` - Delivery
+            * `pragya` - Pragya (Tricycle)
+            * `motorbike` - Motorbike
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        features: {}
+        is_active:
+          type: boolean
+    PatchedUserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    PatchedVehicleRequest:
+      type: object
+      properties:
+        make:
+          type: string
+          nullable: true
+          maxLength: 50
+        model:
+          type: string
+          nullable: true
+          maxLength: 50
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        license_plate:
+          type: string
+          nullable: true
+          maxLength: 20
+        color:
+          type: string
+          nullable: true
+          maxLength: 50
+        type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        license_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        insurance_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        roadworthy_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        video_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        insurance_expiry:
+          type: string
+          format: date
+          nullable: true
+        roadworthy_expiry:
+          type: string
+          format: date
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VehicleStatusEnum'
+    Profile:
+      type: object
+      properties:
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        full_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        bio:
+          type: string
+          nullable: true
+        emergency_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        emergency_phone:
+          type: string
+          nullable: true
+          maxLength: 20
+        profile_picture_url:
+          type: string
+          nullable: true
+        rating:
+          type: number
+          format: double
+          readOnly: true
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/DriverVerification'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - rating
+      - role
+      - user
+      - verification
+    ProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        city:
+          type: string
+          nullable: true
+          maxLength: 100
+        bio:
+          type: string
+          nullable: true
+        emergency_name:
+          type: string
+          nullable: true
+          maxLength: 255
+        emergency_phone:
+          type: string
+          nullable: true
+          maxLength: 20
+        profile_picture_url:
+          type: string
+          nullable: true
+    RefreshTokenRequestRequest:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+      required:
+      - refresh_token
+    RefreshTokenResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+      - token
+    Register:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - password
+    Ride:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        rider_details:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+          readOnly: true
+        service_type:
+          type: string
+          nullable: true
+          maxLength: 50
+        pickup_location:
+          type: string
+          nullable: true
+        dropoff_location:
+          type: string
+          nullable: true
+        pickup_lat:
+          type: number
+          format: double
+          nullable: true
+        pickup_lng:
+          type: number
+          format: double
+          nullable: true
+        dropoff_lat:
+          type: number
+          format: double
+          nullable: true
+        dropoff_lng:
+          type: number
+          format: double
+          nullable: true
+        status:
+          $ref: '#/components/schemas/RideStatusEnum'
+        fare:
+          type: number
+          format: double
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rider:
+          type: string
+          format: uuid
+        driver:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - created_at
+      - id
+      - incidents
+      - rider
+      - rider_details
+      - updated_at
+    RideRequest:
+      type: object
+      properties:
+        service_type:
+          type: string
+          nullable: true
+          maxLength: 50
+        pickup_location:
+          type: string
+          nullable: true
+        dropoff_location:
+          type: string
+          nullable: true
+        pickup_lat:
+          type: number
+          format: double
+          nullable: true
+        pickup_lng:
+          type: number
+          format: double
+          nullable: true
+        dropoff_lat:
+          type: number
+          format: double
+          nullable: true
+        dropoff_lng:
+          type: number
+          format: double
+          nullable: true
+        status:
+          $ref: '#/components/schemas/RideStatusEnum'
+        fare:
+          type: number
+          format: double
+          nullable: true
+        rider:
+          type: string
+          format: uuid
+        driver:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - rider
+    RideStatusEnum:
+      enum:
+      - pending
+      - accepted
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `in_progress` - In Progress
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+    RoleEnum:
+      enum:
+      - rider
+      - driver
+      - admin
+      - super_admin
+      type: string
+      description: |-
+        * `rider` - Rider
+        * `driver` - Driver
+        * `admin` - Admin
+        * `super_admin` - Super Admin
+    SubscriptionPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          description: |-
+            The vehicle category this plan applies to
+
+            * `standard` - Standard
+            * `comfort` - Comfort
+            * `luxury` - Luxury
+            * `delivery` - Delivery
+            * `pragya` - Pragya (Tricycle)
+            * `motorbike` - Motorbike
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        features: {}
+        is_active:
+          type: boolean
+      required:
+      - category
+      - id
+      - name
+      - price
+    SubscriptionPlanRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          description: |-
+            The vehicle category this plan applies to
+
+            * `standard` - Standard
+            * `comfort` - Comfort
+            * `luxury` - Luxury
+            * `delivery` - Delivery
+            * `pragya` - Pragya (Tricycle)
+            * `motorbike` - Motorbike
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        duration_days:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        features: {}
+        is_active:
+          type: boolean
+      required:
+      - category
+      - name
+      - price
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+      required:
+      - access
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
+    TokenResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+        refresh_token:
+          type: string
+      required:
+      - refresh_token
+      - token
+      - user
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        amount:
+          type: number
+          format: double
+        type:
+          type: string
+          nullable: true
+          maxLength: 20
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          maxLength: 20
+        paystack_reference:
+          type: string
+          nullable: true
+          maxLength: 255
+        payment_method:
+          type: string
+          nullable: true
+          maxLength: 50
+        payment_status:
+          type: string
+          maxLength: 20
+        metadata:
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        wallet:
+          type: string
+          format: uuid
+      required:
+      - amount
+      - created_at
+      - id
+      - wallet
+    TransactionRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+        type:
+          type: string
+          nullable: true
+          maxLength: 20
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          maxLength: 20
+        paystack_reference:
+          type: string
+          nullable: true
+          maxLength: 255
+        payment_method:
+          type: string
+          nullable: true
+          maxLength: 50
+        payment_status:
+          type: string
+          minLength: 1
+          maxLength: 20
+        metadata:
+          nullable: true
+        wallet:
+          type: string
+          format: uuid
+      required:
+      - amount
+      - wallet
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+    UserRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 255
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        make:
+          type: string
+          nullable: true
+          maxLength: 50
+        model:
+          type: string
+          nullable: true
+          maxLength: 50
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        license_plate:
+          type: string
+          nullable: true
+          maxLength: 20
+        color:
+          type: string
+          nullable: true
+          maxLength: 50
+        type:
+          type: string
+          maxLength: 50
+        license_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        insurance_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        roadworthy_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        video_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        insurance_expiry:
+          type: string
+          format: date
+          nullable: true
+        roadworthy_expiry:
+          type: string
+          format: date
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VehicleStatusEnum'
+        is_active:
+          type: boolean
+          readOnly: true
+        is_verified:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        driver:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - created_at
+      - driver
+      - id
+      - is_active
+      - is_verified
+      - updated_at
+    VehicleRequest:
+      type: object
+      properties:
+        make:
+          type: string
+          nullable: true
+          maxLength: 50
+        model:
+          type: string
+          nullable: true
+          maxLength: 50
+        year:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        license_plate:
+          type: string
+          nullable: true
+          maxLength: 20
+        color:
+          type: string
+          nullable: true
+          maxLength: 50
+        type:
+          type: string
+          minLength: 1
+          maxLength: 50
+        license_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        insurance_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        roadworthy_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        video_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 1000
+        insurance_expiry:
+          type: string
+          format: date
+          nullable: true
+        roadworthy_expiry:
+          type: string
+          format: date
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VehicleStatusEnum'
+    VehicleStatusEnum:
+      enum:
+      - offline
+      - available
+      - riding
+      type: string
+      description: |-
+        * `offline` - Offline
+        * `available` - Available
+        * `riding` - Riding
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: 'API Key Authentication. Example: fx_prefix_secret'
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

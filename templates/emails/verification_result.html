@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Inter', 'Outfit', sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; }
+        .header { text-align: center; padding-bottom: 20px; border-bottom: 2px solid #00B4FF; }
+        .content { padding: 20px 0; }
+        .status { font-weight: bold; font-size: 1.2em; display: inline-block; padding: 5px 15px; border-radius: 5px; }
+        .approved { background-color: #A3E635; color: #fff; }
+        .rejected { background-color: #FF4D4D; color: #fff; }
+        .footer { font-size: 0.8em; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ app_name }}</h1>
+        </div>
+        <div class="content">
+            <h2>Verification Status Update</h2>
+            <p>Hi {{ user.profile.full_name|default:user.email }},</p>
+            <p>We have finished reviewing your driver verification documents.</p>
+            
+            {% if is_approved %}
+                <p>Status: <span class="status approved">APPROVED</span></p>
+                <p>Congratulations! Your account is now fully verified. You can now go online and start accepting ride requests.</p>
+            {% else %}
+                <p>Status: <span class="status rejected">ACTION REQUIRED</span></p>
+                <p>Unfortunately, your verification was not successful for the following reason:</p>
+                <blockquote style="background: #f9f9f9; padding: 10px; border-left: 5px solid #FF4D4D;">
+                    {{ reason|default:"Incomplete or unclear documentation." }}
+                </blockquote>
+                <p>Please log in to the app and update your documents to retry the verification process.</p>
+            {% endif %}
+            
+            <p>Thank you for choosing {{ app_name }}!</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{ now|date:"Y" }} {{ app_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

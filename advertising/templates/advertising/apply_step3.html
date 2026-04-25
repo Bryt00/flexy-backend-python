@@ -1,0 +1,134 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Apply - Step 3 | Advertise{% endblock %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    @layer components {
+        .week-option {
+            @apply flex justify-between items-center p-5 bg-white/5 border-2 border-white/5 rounded-2xl cursor-pointer transition-all duration-300;
+        }
+        .week-option:hover:not(.disabled) {
+            @apply border-brand/50 bg-brand/5;
+        }
+        .week-option.selected {
+            @apply border-brand bg-brand/10 shadow-[0_0_20px_rgba(0,200,150,0.2)];
+        }
+        .week-option.disabled {
+            @apply opacity-40 cursor-not-allowed grayscale;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in max-w-xl py-12 md:py-20">
+    
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-4">Submit Your Ad Request</h1>
+        <p class="text-gray-400">Choose the perfect week for your campaign to run.</p>
+    </div>
+
+    <!-- Wizard Steps -->
+    <div class="relative flex justify-between items-center mb-16 px-4">
+        <div class="absolute top-1/2 left-0 w-full h-[2px] bg-white/5 -translate-y-1/2 z-0"></div>
+        <div class="z-10 bg-brand-dark text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">✓</div>
+        <div class="z-10 bg-brand-dark text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">✓</div>
+        <div class="z-10 bg-brand text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shadow-[0_0_20px_rgba(0,200,150,0.4)]">3</div>
+    </div>
+
+    <div class="glass-card">
+        <div class="flex items-center gap-4 mb-8">
+            <div class="w-1 h-8 bg-brand rounded-full"></div>
+            <h2 class="text-2xl font-bold">Choose Your Week</h2>
+        </div>
+        <p class="text-gray-400 mb-8 border-l-2 border-white/10 pl-4 py-1 italic text-sm">
+            Ads run from Monday to Sunday. Please select an available week below.
+        </p>
+        
+        <div class="grid grid-cols-1 gap-4 mb-8">
+            {% for week in available_weeks %}
+                <div class="week-option {% if week.is_full %}disabled{% endif %}" 
+                     data-date="{{ week.week_start|date:'Y-m-d' }}">
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="w-2 h-2 rounded-full {% if week.is_full %}bg-red-500{% else %}bg-brand{% endif %}"></div>
+                        <span class="font-bold text-gray-200">Week of {{ week.week_start|date:"M d, Y" }}</span>
+                    </div>
+                    <div>
+                        {% if week.is_full %}
+                            <span class="px-3 py-1 rounded-full text-[0.7rem] font-bold uppercase tracking-tighter bg-red-500/10 text-red-500 border border-red-500/20">Sold Out</span>
+                        {% else %}
+                            <span class="px-3 py-1 rounded-full text-[0.7rem] font-bold uppercase tracking-tighter bg-brand/10 text-brand border border-brand/20">{{ week.slots_remaining }} slots left</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <form method="post" id="step3-form" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="{{ form.week_start_date.name }}" id="{{ form.week_start_date.id_for_label }}" value="{{ form.week_start_date.value|default:'' }}">
+            
+            {% if form.week_start_date.errors %}
+            <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm italic text-center mb-6">
+                {% for error in form.week_start_date.errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="flex justify-between items-center pt-6">
+                <button type="submit" name="back" value="1" class="btn btn-outline px-8 py-3" formnovalidate>
+                    ← Back
+                </button>
+                <button type="button" id="submit-btn" class="btn btn-primary px-10 py-4 flex items-center gap-3 group opacity-50 cursor-not-allowed" disabled>
+                    Review Ad 
+                    <span class="transition-transform group-hover:translate-x-1">→</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% block extra_js %}
+<script>
+    const options = document.querySelectorAll('.week-option:not(.disabled)');
+    const hiddenInput = document.getElementById('{{ form.week_start_date.id_for_label }}');
+    const submitBtn = document.getElementById('submit-btn');
+    const form = document.getElementById('step3-form');
+
+    options.forEach(opt => {
+        opt.addEventListener('click', () => {
+            // Remove selected from all
+            document.querySelectorAll('.week-option').forEach(o => o.classList.remove('selected'));
+            
+            // Add to clicked
+            opt.classList.add('selected');
+            
+            // Update hidden input
+            hiddenInput.value = opt.getAttribute('data-date');
+            
+            // Enable submit
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+    });
+
+    submitBtn.addEventListener('click', () => {
+        if (!submitBtn.disabled) {
+            form.submit();
+        }
+    });
+
+    // Handle initial state if value exists
+    if (hiddenInput.value) {
+        const preSelected = document.querySelector(`.week-option[data-date="${hiddenInput.value}"]`);
+        if (preSelected && !preSelected.classList.contains('disabled')) {
+            preSelected.classList.add('selected');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+</script>
+{% endblock %}
+{% endblock %}

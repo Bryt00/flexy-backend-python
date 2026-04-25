@@ -11,4 +11,5 @@ websocket_urlpatterns = [
     path('v1/rides/<uuid:ride_id>/track/rider', consumers.RideConsumer.as_asgi()),
     path('v1/rides/discovery', consumers.RideConsumer.as_asgi()),
     path('v1/notifications/ws', NotificationConsumer.as_asgi()),
+    path('v1/admin/tracking/ws/', consumers.AdminHeatmapConsumer.as_asgi()),
 ]

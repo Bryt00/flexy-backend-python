@@ -1,0 +1,99 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Drive With Us | FlexyRide{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in mb-32">
+    <div class="flex flex-col lg:flex-row gap-16 items-start">
+        
+        <div class="flex-1">
+            <h1 class="text-5xl font-bold mb-6 leading-tight">Turn Your Drive Into Profit</h1>
+            <p class="text-gray-400 text-lg mb-10 leading-relaxed">Drive on your schedule, earn competitive rates, and get paid instantly. FlexyRide is the partner you need to grow your transport business.</p>
+            
+            <div class="space-y-4 mb-12">
+                <div class="flex items-center gap-3 text-lg text-gray-300">
+                    <span class="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center font-bold">✓</span>
+                    Keep 85% of your fares
+                </div>
+                <div class="flex items-center gap-3 text-lg text-gray-300">
+                    <span class="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center font-bold">✓</span>
+                    Instant daily payouts
+                </div>
+                <div class="flex items-center gap-3 text-lg text-gray-300">
+                    <span class="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center font-bold">✓</span>
+                    24/7 dedicated driver support
+                </div>
+            </div>
+            
+            <a href="https://play.google.com/store/apps/details?id=com.flexyride.driver" class="btn btn-primary px-12 py-4 text-lg" target="_blank">Sign Up to Drive</a>
+        </div>
+        
+        <!-- Driver earnings calculator -->
+        <div class="flex-1 w-full flex justify-center lg:justify-end">
+            <div class="glass-card p-10 lg:p-12 relative overflow-hidden max-w-xl">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-brand/10 blur-3xl rounded-full"></div>
+            <h3 class="text-3xl font-bold mb-2">Earnings Estimator</h3>
+            <p class="text-gray-400 mb-10">See how much you could make per week.</p>
+            
+            <div class="space-y-8">
+                <div class="space-y-3">
+                    <label class="text-xs font-bold uppercase tracking-widest text-gray-500" for="calc-city">Your City</label>
+                    <select id="calc-city" class="w-full px-5 py-4 bg-dark-800 border border-white/10 rounded-xl text-white font-sans focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand appearance-none transition-all">
+                        {% for city in cities %}
+                        <option value="{{ city.name|lower }}">{{ city.name }}</option>
+                        {% empty %}
+                        <option value="accra">Accra</option>
+                        <option value="kumasi">Kumasi</option>
+                        <option value="tamale">Tamale</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold uppercase tracking-widest text-gray-500" for="calc-hours">Hours per week</label>
+                        <div class="text-brand font-bold text-lg" id="hours-display">40 hours</div>
+                    </div>
+                    <input type="range" id="calc-hours" min="5" max="60" value="40" step="1" class="w-full h-2 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-brand">
+                </div>
+                
+                <div class="bg-brand/10 border border-brand/20 rounded-2xl p-8 text-center mt-12 transition-all duration-500 hover:border-brand/50">
+                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400 block mb-2">Estimated Weekly Earnings</span>
+                    <h2 id="earnings-result" class="text-5xl font-black text-brand mb-0">GH₵ 1,200</h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% block extra_js %}
+<script>
+    const calcHours = document.getElementById('calc-hours');
+    const hoursDisplay = document.getElementById('hours-display');
+    const earningsResult = document.getElementById('earnings-result');
+    const citySelect = document.getElementById('calc-city');
+
+    function calculateEarnings() {
+        const baseHourlyRate = {
+            'accra': 30,
+            'kumasi': 25,
+            'tamale': 20
+        };
+        const city = citySelect.value;
+        const hours = parseInt(calcHours.value);
+        const rate = baseHourlyRate[city];
+        
+        const total = hours * rate;
+        
+        hoursDisplay.textContent = hours + ' hours';
+        earningsResult.textContent = 'GH₵ ' + total.toLocaleString();
+    }
+
+    calcHours.addEventListener('input', calculateEarnings);
+    citySelect.addEventListener('change', calculateEarnings);
+    calculateEarnings();
+</script>
+{% endblock %}
+{% endblock %}

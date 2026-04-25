@@ -1,0 +1,128 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Review Your Ad | Advertise{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in py-12 md:py-20 max-w-6xl">
+    
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold mb-4">Review Your Ad</h1>
+        <p class="text-gray-400">See exactly how your ad will appear to passengers in the FlexyRide app.</p>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-16 items-start">
+        
+        <!-- Left: Phone Mockup -->
+        <div class="flex-1 w-full flex justify-center">
+            <div class="relative w-[300px] h-[600px] bg-dark-900 rounded-[3rem] border-[8px] border-dark-700 shadow-2xl overflow-hidden ring-4 ring-white/5">
+                <!-- Speaker/Camera Notch -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-dark-700 rounded-b-2xl z-20"></div>
+                
+                <!-- Mockup Screen Content (Light mode like the app) -->
+                <div class="absolute inset-0 bg-gray-50 flex flex-col pt-8">
+                    <!-- Status Bar -->
+                    <div class="flex justify-between px-6 py-2">
+                        <span class="text-[10px] font-bold text-gray-900">12:00</span>
+                        <div class="flex gap-1">
+                            <div class="w-3 h-2 bg-gray-900 rounded-full"></div>
+                            <div class="w-3 h-2 bg-gray-900 rounded-full"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar Mockup -->
+                    <div class="px-4 mt-2 mb-4">
+                        <div class="h-10 bg-white rounded-full shadow-sm border border-gray-200 w-full flex items-center px-4 gap-2">
+                            <div class="w-3 h-3 rounded-full border-2 border-brand"></div>
+                            <div class="h-2 w-1/2 bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
+
+                    <!-- Map/Interface Mockup -->
+                    <div class="flex-grow bg-gray-200 relative">
+                        <div class="absolute inset-0 opacity-10" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                             <div class="flex flex-col items-center opacity-30">
+                                 <div class="w-12 h-12 bg-dark-700 rounded-full mb-2"></div>
+                                 <div class="h-2 w-20 bg-dark-700 rounded-full"></div>
+                             </div>
+                        </div>
+                    </div>
+
+                    <!-- The Ad Banner (In-App Style) -->
+                    <div class="mt-auto mb-12 px-3">
+                        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                            {% if ad.image %}
+                                <img src="{{ ad.image.url }}" class="w-full h-24 object-cover" alt="Ad image">
+                            {% else %}
+                                <div class="w-full h-24 bg-gray-100 flex items-center justify-center text-gray-400 italic text-xs">No Image Provided</div>
+                            {% endif %}
+                            
+                            <div class="p-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[8px] font-black tracking-widest text-gray-400 uppercase">Sponsored</span>
+                                    <span class="text-[8px] font-black text-brand uppercase">Learn More →</span>
+                                </div>
+                                <h4 class="text-gray-900 font-bold text-sm leading-tight mb-1">{{ ad.headline|default:"Your Headline Here" }}</h4>
+                                <p class="text-gray-500 text-[10px] leading-snug line-clamp-2">{{ ad.body_text|default:"Your descriptive body text will appear here for passengers to read." }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Home Indicator -->
+                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gray-300 rounded-full"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right: Details & Submit -->
+        <div class="flex-1 w-full space-y-8">
+            <div class="glass-card bg-brand/5 border-brand/20 p-8 space-y-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-1 h-8 bg-brand rounded-full"></div>
+                    <h2 class="text-2xl font-bold">Campaign Details</h2>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Business Name</p>
+                        <p class="text-lg font-semibold">{{ ad.business_name }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Scheduled Week</p>
+                        <p class="text-lg font-semibold">Week of {{ ad.week_start_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Price</p>
+                        <p class="text-xl font-black text-brand">GH₵ {{ price }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Contact Email</p>
+                        <p class="text-lg font-semibold truncate">{{ ad.contact_email }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 bg-white/5 rounded-2xl border border-white/10 space-y-4">
+                <div class="flex gap-4 items-start">
+                    <div class="text-brand text-2xl">ℹ️</div>
+                    <p class="text-sm text-gray-400 italic">
+                        By submitting this ad, it will be sent to our team for review. Once approved, you will receive an email with a secure link to complete the payment via Paystack.
+                    </p>
+                </div>
+            </div>
+            
+            <form method="post" class="flex flex-col sm:flex-row gap-4">
+                {% csrf_token %}
+                <a href="{% url 'advertise_apply' %}" class="btn btn-outline py-4 sm:flex-none sm:px-10 whitespace-nowrap text-center">
+                    Edit Ad
+                </a>
+                <button type="submit" class="btn btn-primary py-4 flex-1 whitespace-nowrap text-base">
+                    Confirm &amp; Submit for Review
+                </button>
+            </form>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

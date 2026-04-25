@@ -1,0 +1,84 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Corporate & Business Rides | FlexyRide{% endblock %}
+{% block meta_description %}FlexyRide Corporate offers dedicated fleet solutions for businesses. Reliable staff transport, invoicing, and fleet management for companies across Ghana.{% endblock %}
+
+{% block content %}
+<section class="relative min-h-[55vh] flex items-center text-center" style="background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="container animate-fade-in">
+        <div class="inline-block px-4 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-sm font-bold uppercase tracking-widest mb-6">For Businesses</div>
+        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Move Your Team,<br>Not Your Budget.</h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-10">Reliable, professional, and accountable transport for your entire workforce. Let us handle logistics while you focus on growth.</p>
+        <a href="{% url 'contact' %}" class="btn btn-primary px-12 text-lg">Get a Corporate Quote</a>
+    </div>
+</section>
+
+<section class="container animate-fade-in">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass-card p-10 hover:border-brand/30 transition-colors group">
+            <div class="text-5xl mb-6">🧾</div>
+            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Monthly Invoicing</h3>
+            <p class="text-gray-400 leading-relaxed">Get consolidated invoices for all corporate rides. Simplify your accounting with clear, itemized billing.</p>
+        </div>
+        <div class="glass-card p-10 hover:border-brand/30 transition-colors group">
+            <div class="text-5xl mb-6">🚗</div>
+            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Dedicated Fleet</h3>
+            <p class="text-gray-400 leading-relaxed">Reserve vehicles exclusively for your staff. Guaranteed availability at peak hours, even during events.</p>
+        </div>
+        <div class="glass-card p-10 hover:border-brand/30 transition-colors group">
+            <div class="text-5xl mb-6">📊</div>
+            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Usage Dashboard</h3>
+            <p class="text-gray-400 leading-relaxed">Track rides, costs, and usage patterns across your entire organization in one admin panel.</p>
+        </div>
+        <div class="glass-card p-10 hover:border-brand/30 transition-colors group">
+            <div class="text-5xl mb-6">🛡️</div>
+            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Verified Drivers Only</h3>
+            <p class="text-gray-400 leading-relaxed">Every corporate driver is fully background-checked, licensed, and assigned exclusively to business accounts.</p>
+        </div>
+        <div class="glass-card p-10 hover:border-brand/30 transition-colors group">
+            <div class="text-5xl mb-6">🎯</div>
+            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Account Manager</h3>
+            <p class="text-gray-400 leading-relaxed">Every corporate client gets a dedicated account manager available during business hours for any support.</p>
+        </div>
+        <div class="glass-card p-10 hover:border-brand/30 transition-colors group">
+            <div class="text-5xl mb-6">💰</div>
+            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Volume Discounts</h3>
+            <p class="text-gray-400 leading-relaxed">Businesses with high ride volumes get preferential per-kilometer rates negotiated directly with our team.</p>
+        </div>
+    </div>
+</section>
+
+<section class="container animate-fade-in">
+    <div class="glass-card p-12 md:p-20 flex flex-col lg:flex-row items-center gap-12 border-brand/20">
+        <div class="flex-1 space-y-6">
+            <h2 class="text-4xl font-bold leading-tight">Who is this for?</h2>
+            <div class="space-y-3">
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Banks &amp; Financial Services</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Hotels &amp; Hospitality</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Hospitals &amp; Healthcare</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Law Firms &amp; Professional Services</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>NGOs &amp; Embassies</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Manufacturing Companies</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Schools &amp; Universities</div>
+                </div>
+        </div>
+        <div class="flex-1 glass-card bg-brand/5 border-brand/20 p-10 text-center">
+            <p class="text-brand font-bold uppercase tracking-widest text-sm mb-4">Get Started Today</p>
+            <h3 class="text-3xl font-bold mb-6 text-white">Request a Tailored Quote</h3>
+            <p class="text-gray-400 mb-8 leading-relaxed">Tell us about your fleet size and transport needs. We will get back to you within 24 hours with a custom package.</p>
+            <a href="{% url 'contact' %}" class="btn btn-primary w-full text-lg py-4">Contact Our Business Team</a>
+        </div>
+    </div>
+</section>
+
+<section class="container animate-fade-in mb-32">
+    <div class="relative rounded-[50px] overflow-hidden py-20 px-8 text-center border border-white/5" style="background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover;">
+        <div class="max-w-2xl mx-auto">
+            <h2 class="text-4xl font-bold mb-4 text-white">Ready to optimize your staff transport?</h2>
+            <p class="text-gray-400 mb-10">Join dozens of companies across Ghana that trust FlexyRide Corporate for their daily transport needs.</p>
+            <a href="{% url 'contact' %}" class="btn btn-primary px-12">Talk to Our Team</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -2,46 +2,97 @@ from celery import shared_task
 from django.utils import timezone
 from .models import Ride
 from profiles.models import Profile
-import math
+from .services.matching_service import MatchingService
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+import logging
 
-def haversine(lat1, lon1, lat2, lon2):
-    # Simplified haversine distance in km
-    R = 6371
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return R * c
+logger = logging.getLogger(__name__)
 
 @shared_task
-def process_ride_matching(ride_id):
+def broadcast_heatmap_snapshot():
+    from flexy_backend.redis_client import redis_geo
+    
+    # Global lock with 15s expiry
+    if not redis_geo.r.set('heatmap_cron_lock', 'locked', nx=True, ex=15):
+        return
+
+    # Efficient retrieval of online drivers location data
+    locations = list(Profile.objects.filter(
+        is_online=True, 
+        last_lat__isnull=False, 
+        last_lng__isnull=False
+    ).values('user_id', 'last_lat', 'last_lng'))
+
+    data = [
+        {
+            'driver_id': str(loc['user_id']),
+            'latitude': loc['last_lat'],
+            'longitude': loc['last_lng']
+        } for loc in locations
+    ]
+
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'admin_heatmap',
+            {
+                'type': 'heatmap_update',
+                'data': data
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to broadcast heatmap: {str(e)}")
+
+    # Reschedule in 10s (Simulating GOLANG Ticker)
+    broadcast_heatmap_snapshot.apply_async(countdown=10)
+
+
+@shared_task(bind=True, max_retries=7)
+def process_ride_matching(self, ride_id):
+    """
+    Orchestrates finding drivers. Retries every 15s for up to 2 minutes until ride is accepted.
+    """
     try:
         ride = Ride.objects.get(id=ride_id)
-        if ride.status != 'pending':
+        if ride.status not in ['pending', 'requested']:
             return
+
+        MatchingService.dispatch_ride_request(ride_id)
         
-        # Simple Logic: Find nearest verified online drivers in profiles
-        # In a production monolithic Django app, we might use PostGIS or a 
-        # simpler spatial query if not using PostGIS.
-        # Since we switched to FloatField for local stability:
-        
-        available_drivers = Profile.objects.filter(
-            user__role='driver',
-            verification__is_verified=True
-        )
-        
-        # Filtering for drivers within 5km of pickup
-        for driver in available_drivers:
-            # We assume driver location is stored in another model or on Profile
-            # For MVP, we'll just log the attempt
-            pass
+        # Always retry every 15s until status changes (accepted/cancelled)
+        # 15 retries * 15s = 225 seconds
+        self.retry(countdown=15)
             
-        print(f"Task: Matching ride {ride_id} with available drivers...")
     except Ride.DoesNotExist:
         pass
+    except Exception as e:
+        logger.error(f"Error in process_ride_matching: {e}")
+
 
 @shared_task
 def cancel_stale_rides():
-    # Cleanup task for rides pending for > 15 mins
-    limit = timezone.now() - timezone.timedelta(minutes=15)
+    limit = timezone.now() - timezone.timedelta(minutes=2)
     Ride.objects.filter(status='pending', created_at__lt=limit).update(status='cancelled')
+
+@shared_task
+def activate_scheduled_rides():
+    from datetime import timedelta
+    now = timezone.now()
+    threshold = now + timedelta(minutes=15)
+    
+    scheduled_rides = Ride.objects.filter(
+        is_scheduled=True,
+        status='pending',
+        scheduled_for__lte=threshold,
+        scheduled_for__gte=now - timedelta(minutes=30)
+    )
+    
+    count = 0
+    for ride in scheduled_rides:
+        process_ride_matching.delay(str(ride.id))
+        count += 1
+            
+    if count > 0:
+        logger.info(f"Activated {count} scheduled rides.")
+

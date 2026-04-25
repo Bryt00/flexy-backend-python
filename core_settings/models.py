@@ -34,3 +34,32 @@ class PricingRule(models.Model):
 
     def __str__(self):
         return f"Pricing for {self.city}"
+
+class VehicleCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    slug = models.SlugField(max_length=50, unique=True, help_text="Short name for code (e.g. 'standard', 'pragya', 'comfort')")
+    display_name = models.CharField(max_length=100, help_text="Human readable name (e.g. 'Go', 'Pragya')")
+    base_fare = models.FloatField(default=0.0)
+    multiplier = models.FloatField(default=1.0, help_text="Fare multiplier for this category")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Vehicle Categories"
+
+    def __str__(self):
+        return f"{self.display_name} ({self.slug})"
+
+class DistanceTier(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, default="Tier", help_text="e.g. 'Short Distance', 'Long Distance'")
+    min_km = models.FloatField(default=0.0)
+    max_km = models.FloatField(default=0.0, help_text="Use a very large number like 9999 for the last tier")
+    rate_per_km = models.FloatField(default=0.0)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['min_km']
+
+    def __str__(self):
+        return f"{self.name}: {self.min_km}km - {self.max_km}km @ {self.rate_per_km}/km"

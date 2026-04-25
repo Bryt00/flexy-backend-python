@@ -1,37 +1,23 @@
-version: "3.9"
-
 services:
-  db:
-    image: postgis/postgis:15-3.3-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: flexy_backend
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
+  # Infrastructure Only (Redis and RabbitMQ)
+  # Database is now local (flexyride_db)
+  
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-      
-  web:
-    build: .
-    command: sh -c "python manage.py makemigrations core_auth profiles vehicles rides payments && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-    volumes:
-      - .:/app
+
+  rabbitmq:
+    image: rabbitmq:3-management
     ports:
-      - "8000:8000"
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      - DATABASE_URL=postgis://postgres:postgres@db:5432/flexy_backend
-      - REDIS_URL=redis://redis:6379/2
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    depends_on:
-      - db
-      - redis
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+# Note: web, celery, and db have been moved to host-side execution for performance.
+# To run the app, use 'python manage.py runserver' and 'celery' locally.
 
 volumes:
   postgres_data:

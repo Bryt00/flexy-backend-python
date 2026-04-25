@@ -29,14 +29,24 @@ class QueryAuthMiddleware:
 
         if token_key:
             try:
-                # Use raw token key from list
                 token = token_key[0]
                 access_token = AccessToken(token)
-                user_id = access_token['user_id']
-                scope['user'] = await get_user(user_id)
-            except Exception:
+                
+                # Support both 'user_id' and 'sub' claims
+                user_id = access_token.get('user_id') or access_token.get('sub')
+                
+                if user_id:
+                    scope['user'] = await get_user(user_id)
+                    if scope['user'].is_anonymous:
+                        print(f"QueryAuthMiddleware: User ID {user_id} not found in database.")
+                else:
+                    print("QueryAuthMiddleware: No user_id or sub claim found in token.")
+                    scope['user'] = AnonymousUser()
+            except Exception as e:
+                print(f"QueryAuthMiddleware: Token validation failed: {str(e)}")
                 scope['user'] = AnonymousUser()
         else:
+            print("QueryAuthMiddleware: No token found in query parameters.")
             scope['user'] = AnonymousUser()
 
         return await self.inner(scope, receive, send)

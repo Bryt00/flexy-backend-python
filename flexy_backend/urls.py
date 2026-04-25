@@ -10,7 +10,11 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 from .tests_monitoring import debug_sentry
 
+from django.views.generic import RedirectView
+
 urlpatterns = [
+    path('', include('website.urls')),
+    path('advertise/', include('advertising.website_urls')),
     path('admin/', admin.site.urls),
     path('v1/debug-sentry/', debug_sentry, name='debug_sentry'),
     
@@ -22,14 +26,21 @@ urlpatterns = [
     # Versioned API Services (Mobile App Parity)
     path('v1/auth/', include('core_auth.urls')),
     path('v1/rides/', include('rides.urls')),
-    path('v1/api/', include('core_auth.urls')),
+    path('v1/vehicles/', include('vehicles.urls')),
     path('v1/profile/', include('profiles.urls')),
+    path('v1/subscriptions/', include('subscriptions.urls')),
     path('v1/notifications/', include('notification.urls')),
     path('v1/payments/', include('payments.urls')),
+    path('v1/files/', include('file_manager.urls')),
+    path('v1/deliveries/', include('courier.urls')),
+    path('v1/integrations/', include('integrations.urls')),
+    path('v1/ads/', include('advertising.urls')),
+    path('', include('marketing.urls')), # To match /campaigns/active
     
     # Generic API Auth (Standard DRF)
     path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('ckeditor5/', include('django_ckeditor_5.urls'), name='ck_editor_5_upload'),
 ]
 
 if settings.DEBUG:

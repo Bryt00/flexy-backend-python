@@ -4,9 +4,11 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         if self.scope['user'].is_anonymous:
+            print("NotificationConsumer: Connection rejected. User is anonymous.")
             await self.close()
         else:
             self.user_id = self.scope['user'].id
+            print(f"NotificationConsumer: Connection accepted for user {self.user_id}")
             self.room_group_name = f'notifications_{self.user_id}'
 
             await self.channel_layer.group_add(

@@ -1,0 +1,54 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Covered Cities | FlexyRide{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in mb-20">
+    <div class="text-center mb-16">
+        <h1 class="text-5xl font-bold mb-4">Cities We Keep Moving</h1>
+        <p class="text-gray-400 max-w-2xl mx-auto text-lg">See where FlexyRide is currently operating and connecting people across Ghana.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {% for city in cities %}
+        <div class="glass-card p-0 overflow-hidden group transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,200,150,0.2)]">
+            <div class="h-48 relative overflow-hidden">
+                <img src="{% if city.cover_image %}{{ city.cover_image.url }}{% else %}{{ city.cover_image_url }}{% endif %}" alt="{{ city.name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark-900/90 via-dark-900/40 to-transparent flex items-end p-6">
+                    <h3 class="text-2xl font-bold text-white mb-0">{{ city.name }}</h3>
+                </div>
+            </div>
+            <div class="p-6 text-center">
+                <p class="text-brand font-bold uppercase tracking-widest text-sm mb-2">{{ city.region }}</p>
+                {% if city.driver_count > 0 %}
+                <div class="flex items-center justify-center gap-2 text-gray-400 text-sm italic">
+                    <span class="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+                    {{ city.driver_count }}+ drivers active
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center">
+            <div class="text-6xl mb-6 opacity-30">📍</div>
+            <p class="text-gray-500 text-lg">No city data available yet. We're expanding fast!</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Bottom CTA -->
+<section class="container animate-fade-in mb-32">
+    <div class="relative rounded-[40px] overflow-hidden py-24 px-8 text-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+        <div class="max-w-2xl mx-auto relative z-10">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">Ride with confidence.</h2>
+            <p class="text-xl text-gray-200 mb-10 leading-relaxed">Join the thousands of riders choosing FlexyRide for their daily commute across Ghana.</p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'download' %}" class="btn btn-primary px-10 py-4 text-lg">Download the App</a>
+                <a href="{% url 'how_it_works' %}" class="btn btn-outline px-10 py-4 text-lg border-white/30 text-white hover:bg-white hover:text-dark-900 transition-all">How it Works</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

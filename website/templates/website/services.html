@@ -1,0 +1,67 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Our Services | FlexyRide{% endblock %}
+{% block meta_description %}Explore the wide range of ride-hailing and mobility services offered by FlexyRide.{% endblock %}
+{% block og_title %}Our Services | FlexyRide{% endblock %}
+{% block og_description %}Explore the wide range of ride-hailing and mobility services offered by FlexyRide.{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in mb-20">
+    <div class="text-center mb-16">
+        <h1 class="text-5xl md:text-6xl font-bold mb-4 hero-gradient-text leading-tight">Our Services</h1>
+        <p class="text-gray-400 max-w-2xl mx-auto text-lg">From quick solo trips to comfortable executive rides, we have a vehicle for every occasion.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="glass-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
+            <h3 class="text-2xl font-bold text-brand mb-2">Flexy Go</h3>
+            <p class="text-gray-400 mb-6 flex-grow">Affordable everyday rides. Perfect for short trips around the city or your daily commute.</p>
+            <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" style="background-image: url('{% static "img/vehicle_go.png" %}');"></div>
+        </div>
+
+        <div class="glass-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
+            <h3 class="text-2xl font-bold text-brand mb-2">Flexy Comfort</h3>
+            <p class="text-gray-400 mb-6 flex-grow">Newer, more spacious cars with top-rated drivers. Ideal for longer rides or when you just want extra legroom.</p>
+            <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=600');"></div>
+        </div>
+
+        <div class="glass-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
+            <h3 class="text-2xl font-bold text-brand mb-2">Flexy XL</h3>
+            <p class="text-gray-400 mb-6 flex-grow">SUVs and minivans for groups up to 6 people. Great for family outings or airport transfers with luggage.</p>
+            <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1517524008436-bbdb53c57759?q=80&w=600');"></div>
+        </div>
+
+        <div class="glass-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
+            <h3 class="text-2xl font-bold text-brand mb-2">Flexy Executive</h3>
+            <p class="text-gray-400 mb-6 flex-grow">Premium luxury vehicles for business professionals and special events.</p>
+            <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=600');"></div>
+        </div>
+
+        <div class="glass-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
+            <h3 class="text-2xl font-bold text-brand mb-2">Flexy Pragya</h3>
+            <p class="text-gray-400 mb-6 flex-grow">Quick and cheap 3-wheeler rides to beat the traffic for short distances.</p>
+            <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1594731802114-03f44217159c?q=80&w=600');"></div>
+        </div>
+
+        <div class="glass-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
+            <h3 class="text-2xl font-bold text-brand mb-2">Flexy Delivery</h3>
+            <p class="text-gray-400 mb-6 flex-grow">Send packages anywhere in the city securely. Real-time tracking from pickup to drop-off.</p>
+            <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" style="background-image: url('{% static "img/service_delivery.png" %}');"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Bottom CTA -->
+<section class="container animate-fade-in mb-32">
+    <div class="relative rounded-[40px] overflow-hidden py-24 px-8 text-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+        <div class="max-w-2xl mx-auto relative z-10">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">Request your first ride today.</h2>
+            <p class="text-xl text-gray-200 mb-10 leading-relaxed">Join thousands of riders who choose FlexyRide for their daily commute every single day.</p>
+            <div class="flex justify-center">
+                <a href="{% url 'download' %}" class="btn btn-primary px-12 py-4 text-lg">Get the App Now</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

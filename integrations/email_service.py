@@ -107,3 +107,97 @@ class EmailService:
             logger.info(f"Verification email sent to {user.email} (Approved: {is_approved})")
         except Exception as e:
             logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+
+    @staticmethod
+    def send_admin_verification_notification_email(driver_name, driver_email):
+        """
+        Notifies the admin that a new driver profile is pending verification.
+        """
+        subject = f'NEW VERIFICATION: {driver_name} is pending review'
+        message = f"A new driver profile has been submitted for verification.\n\nDriver: {driver_name}\nEmail: {driver_email}\n\nPlease log in to the admin dashboard to review the documents."
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [settings.ADMIN_EMAIL],
+                fail_silently=False,
+            )
+            logger.info(f"Admin verification notification sent for {driver_email}")
+        except Exception as e:
+            logger.error(f"Failed to send admin verification notification: {str(e)}")
+
+    @staticmethod
+    def send_admin_ad_notification_email(business_name, contact_email):
+        """
+        Notifies the admin that a new ad booking has been submitted.
+        """
+        subject = f'NEW AD SUBMISSION: {business_name}'
+        message = f"A new ad booking has been submitted for review.\n\nBusiness: {business_name}\nContact: {contact_email}\n\nPlease log in to the admin dashboard to review the ad creative."
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [settings.ADMIN_EMAIL],
+                fail_silently=False,
+            )
+            logger.info(f"Admin ad notification sent for {business_name}")
+        except Exception as e:
+            logger.error(f"Failed to send admin ad notification: {str(e)}")
+
+    @staticmethod
+    def send_ad_status_email(contact_email, business_name, is_approved, reason=None):
+        """
+        Sends an email to the business informing them of the ad approval/rejection.
+        """
+        subject = f'Your Ad Booking for {business_name} was Approved!' if is_approved else f'Action Required: Your Ad Booking for {business_name}'
+        
+        if is_approved:
+            message = f"Congratulations! Your ad for {business_name} has been approved.\n\nYou can now proceed to payment in your ad dashboard to go live.\n\nThank you for choosing FlexyRide."
+        else:
+            message = f"Your ad for {business_name} was not approved.\n\nReason: {reason if reason else 'Creative does not meet our guidelines.'}\n\nPlease update your creative in the dashboard and resubmit."
+
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [contact_email],
+                fail_silently=False,
+            )
+            logger.info(f"Ad status email sent to {contact_email} (Approved: {is_approved})")
+        except Exception as e:
+            logger.error(f"Failed to send ad status email to {contact_email}: {str(e)}")
+
+    @staticmethod
+    def send_ad_report_email(business_name, contact_email, stats_dict):
+        """
+        Sends a weekly performance report for an ad booking.
+        """
+        subject = f'Weekly Ad Performance Report: {business_name}'
+        
+        total_impressions = stats_dict.get('total_impressions', 0)
+        total_clicks = stats_dict.get('total_clicks', 0)
+        
+        message = f"Hello {business_name},\n\nHere is your ad performance report for the past week:\n\nTotal Views: {total_impressions}\nTotal Clicks: {total_clicks}\n\n"
+        
+        if stats_dict.get('has_variant_b'):
+            message += f"Variant A - Views: {stats_dict.get('impressions_a', 0)}, Clicks: {stats_dict.get('clicks_a', 0)}\n"
+            message += f"Variant B - Views: {stats_dict.get('impressions_b', 0)}, Clicks: {stats_dict.get('clicks_b', 0)}\n\n"
+            
+        message += "Thank you for advertising with FlexyRide. If you wish to extend your campaign, please log into your dashboard.\n\nBest regards,\nThe FlexyRide Team"
+
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [contact_email],
+                fail_silently=False,
+            )
+            logger.info(f"Ad report email sent to {contact_email}")
+        except Exception as e:
+            logger.error(f"Failed to send ad report email to {contact_email}: {str(e)}")

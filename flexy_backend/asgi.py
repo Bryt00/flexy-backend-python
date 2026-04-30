@@ -9,6 +9,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.security.websocket import AllowedHostsOriginValidator
 from django.core.asgi import get_asgi_application
 import rides.routing
+import courier.routing
 from .middleware import QueryAuthMiddleware
 
 django_asgi_app = get_asgi_application()
@@ -19,7 +20,8 @@ application = ProtocolTypeRouter({
         QueryAuthMiddleware(
             AuthMiddlewareStack(
                 URLRouter(
-                    rides.routing.websocket_urlpatterns
+                    rides.routing.websocket_urlpatterns +
+                    courier.routing.websocket_urlpatterns
                 )
             )
         )

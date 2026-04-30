@@ -18,5 +18,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Ensure migrations and runserver
-CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+# Use Daphne as the production ASGI server
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "flexy_backend.asgi:application"]

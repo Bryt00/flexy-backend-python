@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from .models import AdBooking, AdSlotCapacity, AdExtension
 from .forms import AdStep1Form, AdStep2Form, AdStep3Form
+from integrations.email_service import EmailService
 
 # We will need standard views for:
 # /advertise (AdLandingView)
@@ -174,6 +175,12 @@ class AdReviewView(View):
         except Exception as e:
             # We fail silently for now since SMTP might still be failing/diagnosing
             print(f"Failed to send ad submission email: {e}")
+
+        # Notify Admin
+        EmailService.send_admin_ad_notification_email(
+            business_name=ad.business_name,
+            contact_email=ad.contact_email
+        )
             
         return redirect('advertise_success')
 

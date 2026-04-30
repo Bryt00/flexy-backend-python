@@ -73,11 +73,16 @@ class RideConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'ride_update',
                 'event_type': event_type,
-                'data': data
+                'data': data,
+                'sender_id': self.user.id
             }
         )
 
     async def ride_update(self, event):
+        # Prevent echo: don't send back to the user who originated the message
+        if event.get('sender_id') == self.user.id:
+            return
+
         await self.send(text_data=json.dumps({
             'type': event['event_type'],
             'data': event['data']

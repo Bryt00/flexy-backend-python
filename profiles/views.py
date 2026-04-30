@@ -5,6 +5,7 @@ from .models import Profile, DriverVerification
 from .serializers import ProfileSerializer, DriverVerificationSerializer
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 from django.utils import timezone
+from integrations.email_service import EmailService
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
@@ -31,11 +32,27 @@ class ProfileViewSet(viewsets.ModelViewSet):
             except Profile.DoesNotExist:
                 return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        # For POST, PUT, PATCH: automatically handle creation/update
         profile, created = Profile.objects.get_or_create(user=request.user)
         serializer = self.get_serializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data)
+
+    @extend_schema(responses={200: ProfileSerializer})
+    @action(detail=False, methods=['patch'])
+    def preferences(self, request):
+        try:
+            profile = Profile.objects.get(user=request.user)
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        if 'notification_preferences' in request.data:
+            profile.notification_preferences = request.data['notification_preferences']
+        if 'is_2fa_enabled' in request.data:
+            profile.is_2fa_enabled = request.data['is_2fa_enabled']
+            
+        profile.save()
+        serializer = self.get_serializer(profile)
         return Response(serializer.data)
 
     @extend_schema(responses={200: DriverVerificationSerializer})
@@ -100,6 +117,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
         
         verification.status = 'SUBMITTED'
         verification.save()
+        
+        # Notify Admin
+        EmailService.send_admin_verification_notification_email(
+            driver_name=profile.full_name or request.user.email,
+            driver_email=request.user.email
+        )
         
         return Response({
             'status': 'Verification submitted', 

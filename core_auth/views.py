@@ -1,4 +1,5 @@
 from rest_framework import status, generics, permissions, views
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
@@ -9,9 +10,10 @@ from .serializers import (
     UserSerializer, RegisterSerializer, DeletionRequestSerializer,
     LoginRequestSerializer, TokenResponseSerializer, OTPRequestSerializer,
     OTPVerifySerializer, RefreshTokenRequestSerializer, RefreshTokenResponseSerializer,
-    PasswordResetSerializer
+    PasswordResetSerializer, SocialAuthSerializer
 )
 from .models import DeletionRequest, OTPCode
+from integrations.social_auth_service import SocialAuthService
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 User = get_user_model()
@@ -168,8 +170,11 @@ class OTPVerifyView(views.APIView):
         except (User.DoesNotExist, OTPCode.DoesNotExist):
             return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
         
-        otp_obj.is_used = True
-        otp_obj.save()
+        # Only mark as used if it's for email verification.
+        # For password reset, we keep it active so PasswordResetView can verify it again during the actual reset.
+        if otp_type != 'password_reset':
+            otp_obj.is_used = True
+            otp_obj.save()
         
         if otp_type == 'email_verification':
             user.is_email_verified = True
@@ -230,17 +235,76 @@ class PasswordResetView(views.APIView):
 
 class SocialAuthView(views.APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     @extend_schema(
-        parameters=[
-            OpenApiParameter("provider", OpenApiTypes.STR, OpenApiParameter.PATH, description="Social provider name (google, apple, etc.)"),
-        ],
-        responses={200: OpenApiTypes.OBJECT},
+        request=SocialAuthSerializer,
+        responses={200: TokenResponseSerializer},
         auth=[]
     )
-    def get(self, request, provider):
-        # Placeholder for social callback
-        return Response({"message": f"Social auth callback for {provider} received"})
+    def post(self, request):
+        serializer = SocialAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        provider = serializer.validated_data['provider']
+        token = serializer.validated_data['token']
+        role = serializer.validated_data.get('role', 'rider')
+
+        try:
+            if provider == 'google':
+                user_info = SocialAuthService.verify_google_token(token)
+                social_field = 'google_id'
+            elif provider == 'apple':
+                user_info = SocialAuthService.verify_apple_token(token)
+                social_field = 'apple_id'
+            else:
+                return Response({"error": "Unsupported provider"}, status=status.HTTP_400_BAD_REQUEST)
+
+            email = user_info.get('email')
+            social_id = user_info.get('social_id')
+
+            if not social_id:
+                return Response({"error": "Could not retrieve social ID from provider"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 1. Try finding user by social ID
+            user = User.objects.filter(**{social_field: social_id}).first()
+
+            if not user and email:
+                # 2. Try finding user by email
+                user = User.objects.filter(email=email).first()
+                if user:
+                    # Link account
+                    setattr(user, social_field, social_id)
+                    user.is_email_verified = True
+                    user.save()
+
+            if not user:
+                # 3. Create new user
+                if not email:
+                    return Response({"error": "Email is required to create a new account"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                user = User.objects.create_user(
+                    email=email,
+                    role=role,
+                    is_email_verified=True,
+                    **{social_field: social_id}
+                )
+                
+                # Send Welcome Email
+                from integrations.email_service import EmailService
+                EmailService.send_welcome_email(user)
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                "user": UserSerializer(user).data,
+                "token": str(refresh.access_token),
+                "refresh_token": str(refresh),
+            })
+
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+        except Exception as e:
+            return Response({"error": "An error occurred during social authentication"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserMeView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
@@ -250,9 +314,9 @@ class UserMeView(generics.RetrieveUpdateDestroyAPIView):
         return self.request.user
 
     def perform_destroy(self, instance):
-        # Hard delete the user record.
-        # This will cascade and delete Profile, DriverVerification, etc.
-        instance.delete()
+        # Soft delete the user record to preserve history and accounting.
+        instance.is_active = False
+        instance.save()
 class LogoutView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -270,3 +334,26 @@ class LogoutView(views.APIView):
         except Exception:
             # If blacklisting fails (e.g. token already expired), still return success as user wants to logout
             return Response({"message": "Successfully logged out", "status": "success"}, status=status.HTTP_200_OK)
+
+class ChangePasswordView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def post(self, request):
+        user = request.user
+        current_password = request.data.get("current_password")
+        new_password = request.data.get("new_password")
+
+        if not current_password or not new_password:
+            return Response({"error": "Both current_password and new_password are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(current_password):
+            return Response({"error": "Incorrect current password"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({"message": "Password updated successfully", "status": "success"}, status=status.HTTP_200_OK)

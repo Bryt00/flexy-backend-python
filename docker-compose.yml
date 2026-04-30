@@ -1,7 +1,4 @@
 services:
-  # Infrastructure Only (Redis and RabbitMQ)
-  # Database is now local (flexyride_db)
-  
   redis:
     image: redis:7-alpine
     ports:
@@ -12,12 +9,35 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  web:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      - DEBUG=True
+      - DATABASE_URL=postgres://postgres:ravendb@host.docker.internal:5432/flexyride_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      - redis
+      - rabbitmq
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-# Note: web, celery, and db have been moved to host-side execution for performance.
-# To run the app, use 'python manage.py runserver' and 'celery' locally.
-
-volumes:
-  postgres_data:
+  celery_worker:
+    build: .
+    command: celery -A flexy_backend worker -l info --pool=solo
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgres://postgres:ravendb@host.docker.internal:5432/flexyride_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      - redis
+      - rabbitmq
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

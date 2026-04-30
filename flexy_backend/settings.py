@@ -19,9 +19,22 @@ environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY', default='django-insecure--2igbe1w0zqjl_(8w2)irn!e-8_+a(rse0z9fe)uzbf1#20^ah')
 
-DEBUG = env('DEBUG', default=True)
+DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+
+# Security Settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000 # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'daphne',
@@ -113,7 +126,7 @@ WSGI_APPLICATION = 'flexy_backend.wsgi.application'
 ASGI_APPLICATION = 'flexy_backend.asgi.application'
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='postgres://postgres:ravendb@localhost:5432/flexyride_db')
+    'default': env.db('DATABASE_URL', default='')
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -183,12 +196,10 @@ SPECTACULAR_SETTINGS = {
     }
 }
 
-CORS_ALLOWED_ORIGINS = [
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     "http://localhost:4200",
     "http://127.0.0.1:4200",
-    "http://192.168.0.101:4200",
-    "http://192.168.0.101",
-]
+])
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
@@ -200,9 +211,11 @@ SWAGGER_UI_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1800),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=60),
     'AUTHORIZATION_HEADER_TYPE': ('Bearer',),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
 
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
@@ -348,6 +361,7 @@ EMAIL_USE_SSL = env.bool('EMAIL_USE_SSL', default=True)
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='FlexyRide <noreply@flexyridegh.com>')
+ADMIN_EMAIL = env('ADMIN_EMAIL', default='admin@flexyridegh.com')
 
 # Settings for django-ckeditor-5
 CKEDITOR_5_CONFIGS = {
@@ -389,7 +403,3 @@ CKEDITOR_5_CONFIGS = {
         }
     }
 }
-
-# Paystack Configuration
-PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='')
-PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')

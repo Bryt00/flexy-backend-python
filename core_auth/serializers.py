@@ -14,10 +14,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    referral_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'role')
+        fields = ('email', 'password', 'role', 'referral_code')
 
     def validate_role(self, value):
         # Normalize role: 'passenger' or 'Passenger' -> 'rider'
@@ -34,12 +35,26 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        referral_code = validated_data.pop('referral_code', None)
         user = User.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password'],
             role=validated_data.get('role', 'rider'),
             is_active=False # Deactivate until email is verified
         )
+        
+        # Create Profile immediately to handle referral logic
+        from profiles.models import Profile
+        profile = Profile.objects.create(user=user)
+        
+        if referral_code:
+            try:
+                referrer_profile = Profile.objects.get(referral_code=referral_code)
+                profile.referred_by = referrer_profile
+                profile.save()
+            except Profile.DoesNotExist:
+                pass # Invalid referral code, silently ignore
+
         return user
 
 class DeletionRequestSerializer(serializers.ModelSerializer):
@@ -77,3 +92,8 @@ class RefreshTokenRequestSerializer(serializers.Serializer):
 class RefreshTokenResponseSerializer(serializers.Serializer):
     token = serializers.CharField()
     refresh_token = serializers.CharField()
+
+class SocialAuthSerializer(serializers.Serializer):
+    provider = serializers.ChoiceField(choices=['google', 'apple'])
+    token = serializers.CharField()
+    role = serializers.CharField(required=False, default='rider')

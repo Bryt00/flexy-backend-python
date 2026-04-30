@@ -1,3 +1,5 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -20,7 +22,18 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         return Delivery.objects.filter(passenger=user)
 
     def perform_create(self, serializer):
-        serializer.save(passenger=self.request.user)
+        delivery = serializer.save(passenger=self.request.user)
+        
+        # Broadcast to available drivers (Discovery stream)
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'delivery_discovery',
+            {
+                'type': 'delivery_broadcast',
+                'message_type': 'new_delivery',
+                'data': DeliverySerializer(delivery).data
+            }
+        )
 
     @action(detail=False, methods=['get'])
     def estimate(self, request):
@@ -61,6 +74,18 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         if new_status in [choice[0] for choice in Delivery.STATUS_CHOICES]:
             delivery.status = new_status
             delivery.save()
+            
+            # Broadcast status update
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'delivery_{delivery.id}',
+                {
+                    'type': 'delivery_broadcast',
+                    'message_type': 'status_update',
+                    'data': DeliverySerializer(delivery).data
+                }
+            )
+            
             return Response(DeliverySerializer(delivery).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -76,6 +101,18 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         delivery.driver = request.user.profile
         delivery.status = 'ACCEPTED'
         delivery.save()
+
+        # Broadcast acceptance update
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'delivery_{delivery.id}',
+            {
+                'type': 'delivery_broadcast',
+                'message_type': 'status_update',
+                'data': DeliverySerializer(delivery).data
+            }
+        )
+
         return Response(DeliverySerializer(delivery).data)
 
     @action(detail=False, methods=['get'])

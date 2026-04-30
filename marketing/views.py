@@ -19,3 +19,18 @@ class PromoCodeViewSet(viewsets.ModelViewSet):
     queryset = PromoCode.objects.all()
     serializer_class = PromoCodeSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+from rest_framework.views import APIView
+
+class ReferralStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        if not hasattr(request.user, 'profile'):
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        profile = request.user.profile
+        return Response({
+            "referralCount": profile.total_referrals,
+            "totalEarned": profile.total_referral_earnings
+        })

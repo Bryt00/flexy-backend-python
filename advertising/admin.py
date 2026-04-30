@@ -1,6 +1,7 @@
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 from .models import AdSlotCapacity, AdBooking, AdExtension
+from integrations.email_service import EmailService
 # We will import the email tasks here later for approval/rejection
 
 @admin.register(AdSlotCapacity)
@@ -18,22 +19,43 @@ class AdBookingAdmin(admin.ModelAdmin):
     search_fields = ('business_name', 'contact_email', 'contact_phone')
     inlines = [AdExtensionInline]
     
-    actions = ['approve_bookings', 'reject_bookings']
+    actions = ['approve_bookings', 'reject_bookings', 'generate_ai_content']
     
+    def generate_ai_content(self, request, queryset):
+        # This is where the admin can trigger AI generation for the selected ads
+        # In a real scenario, this would call Gemini/GPT API
+        for ad in queryset:
+            ad.headline = f"✨ [AI] {ad.headline}"
+            ad.body_text = f"Optimized by AI: {ad.body_text}"
+            ad.save()
+        self.message_user(request, f"Generated AI content for {queryset.count()} ads.")
+    generate_ai_content.short_description = "✨ Generate AI Content (Admin Only)"
+
     def approve_bookings(self, request, queryset):
         # We will dispatch the approve email task here
         queryset.update(status='APPROVED')
         self.message_user(request, f"Approved {queryset.count()} bookings.")
         
-        # trigger celery task to send email
-        # from .tasks import send_ad_approved_email
-        # for booking in queryset:
-        #    send_ad_approved_email.delay(booking.id)
+        # Notify businesses
+        for booking in queryset:
+            EmailService.send_ad_status_email(
+                contact_email=booking.contact_email,
+                business_name=booking.business_name,
+                is_approved=True
+            )
     approve_bookings.short_description = "Approve selected bookings"
 
     def reject_bookings(self, request, queryset):
         queryset.update(status='REJECTED')
         self.message_user(request, f"Rejected {queryset.count()} bookings.")
+
+        # Notify businesses
+        for booking in queryset:
+            EmailService.send_ad_status_email(
+                contact_email=booking.contact_email,
+                business_name=booking.business_name,
+                is_approved=False
+            )
     reject_bookings.short_description = "Reject selected bookings"
 
 @admin.register(AdExtension)

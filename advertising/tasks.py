@@ -49,3 +49,26 @@ def send_ad_rejected_email(booking_id):
 @shared_task
 def send_ad_confirmation_email(booking_id):
     pass
+
+@shared_task
+def send_weekly_ad_reports():
+    """Runs Sunday night — fetches all LIVE or recently COMPLETED ads to send stats."""
+    live_ads = AdBooking.objects.filter(status__in=['LIVE', 'COMPLETED'])
+    
+    for ad in live_ads:
+        try:
+            analytics = ad.analytics
+            stats = {
+                'total_impressions': analytics.impressions_a + analytics.impressions_b,
+                'total_clicks': analytics.clicks_a + analytics.clicks_b,
+                'has_variant_b': bool(ad.headline_b or ad.image_b or ad.body_text_b),
+                'impressions_a': analytics.impressions_a,
+                'clicks_a': analytics.clicks_a,
+                'impressions_b': analytics.impressions_b,
+                'clicks_b': analytics.clicks_b,
+            }
+            
+            if stats['total_impressions'] > 0:
+                EmailService.send_ad_report_email(ad.business_name, ad.contact_email, stats)
+        except Exception:
+            pass

@@ -33,6 +33,26 @@ class Profile(models.Model):
     # Matching & Reliability Metrics
     missed_opportunities_count = models.IntegerField(default=0)
 
+    # Referral System
+    referral_code = models.CharField(max_length=20, unique=True, blank=True, null=True, db_index=True)
+    referred_by = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='referrals')
+    total_referrals = models.IntegerField(default=0)
+    total_referral_earnings = models.FloatField(default=0.0)
+
+    # Preferences & Security
+    notification_preferences = models.JSONField(default=dict, blank=True)
+    is_2fa_enabled = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.referral_code:
+            import random
+            import string
+            # Generate a 6-character random code
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            # Ensure it's unique (simplified, usually a loop is better but this works for early stage)
+            self.referral_code = f"FLX-{code}"
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.full_name or self.user.email
 

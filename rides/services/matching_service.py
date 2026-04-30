@@ -26,11 +26,11 @@ class MatchingService:
             target_categories = [requested_category]
             
             if requested_category == 'go':
-                target_categories.extend(['standard', 'comfort', 'xl', 'exec'])
-            elif requested_category == 'standard':
                 target_categories.extend(['comfort', 'xl', 'exec'])
             elif requested_category == 'comfort':
                 target_categories.extend(['xl', 'exec'])
+            elif requested_category == 'xl':
+                target_categories.extend(['exec'])
                 
             # 2. Redis Geospatial Filter with Distance
             nearby_data = redis_geo.geo_radius_drivers_with_dist(ride.pickup_lat, ride.pickup_lng, radius_km)
@@ -50,7 +50,8 @@ class MatchingService:
                 return [], {}
                 
             # 3. DB Filter for Eligibility
-            stale_threshold = timezone.now() - timezone.timedelta(minutes=30)
+            # Increase stale threshold to 4 hours (240 mins) to avoid filtering drivers waiting in one spot
+            stale_threshold = timezone.now() - timezone.timedelta(hours=4)
             available_drivers = Profile.objects.filter(
                 pk__in=nearby_driver_ids,
                 user__role='driver',
@@ -61,6 +62,15 @@ class MatchingService:
                 vehicles__is_active=True,
                 vehicles__is_verified=True
             ).distinct()
+            
+            if not available_drivers.exists():
+                logger.info(f"Matching debug: {len(nearby_driver_ids)} drivers nearby in Redis, but none eligible in DB. Radius: {radius_km}km. Categories: {target_categories}")
+                # Log one sample driver's state if any nearby
+                if nearby_driver_ids:
+                    sample = Profile.objects.filter(pk=nearby_driver_ids[0]).first()
+                    if sample:
+                        is_stale = sample.last_location_update < stale_threshold if sample.last_location_update else True
+                        logger.info(f"Sample driver {sample.pk} state: Online={sample.is_online}, Verified={getattr(sample.verification, 'is_verified', 'N/A')}, Stale={is_stale} (Last: {sample.last_location_update}), Categories={[v.type for v in sample.vehicles.all()]}")
             
             # 4. Sort by distance
             drivers_list = list(available_drivers)
@@ -82,26 +92,24 @@ class MatchingService:
         """
         from rides.serializers import RideSerializer
         
-        drivers = cls.find_nearby_drivers(ride_id)
-        
-        if not drivers:
-            logger.info(f"Matching: No eligible drivers found within radius for ride {ride_id}.")
-            return 0
-
         try:
             ride = Ride.objects.get(id=ride_id)
             if ride.status not in ['pending', 'requested']:
                 return 0
 
             # 1. Get Sorted Pool with Distance Data
-            drivers, current_distances = cls.find_nearby_drivers(ride_id)
+            # Adaptive Radius: Increase radius by 1.5km on each retry (max 15km)
+            metadata = ride.dispatch_metadata or {}
+            polled_ids = metadata.get('polled_driver_ids', [])
+            radius = min(3.0 + (len(polled_ids) * 1.5), 15.0)
+            
+            drivers, current_distances = cls.find_nearby_drivers(ride_id, radius_km=radius)
+            
             if not drivers:
-                logger.info(f"Matching: No eligible drivers found within radius for ride {ride_id}.")
+                logger.info(f"Matching: No eligible drivers found within {radius}km for ride {ride_id}.")
                 return 0
 
             # 2. Load Dispatch Metadata
-            metadata = ride.dispatch_metadata or {}
-            polled_ids = metadata.get('polled_driver_ids', [])
             rejected_ids = metadata.get('rejected_driver_ids', [])
             distance_history = metadata.get('distance_history', {}) # driver_id -> last_dist
             
@@ -117,14 +125,22 @@ class MatchingService:
                         # Track missed opportunity for moving away
                         Profile.objects.filter(pk=last_id).update(missed_opportunities_count=F('missed_opportunities_count') + 1)
 
-            # Point 4: Adaptive Batching
-            batch_size = 2 if len(drivers) > 5 else 1
+            # Point 4: Adaptive Batching (Aggressive for new apps)
+            batch_size = 3 if len(drivers) > 5 else 2
             
             # 3. Find Next Target Driver(s)
             target_drivers = []
+            poll_history = metadata.get('poll_history', {}) # driver_id -> last_poll_timestamp
+            now_ts = timezone.now().timestamp()
+            
             for d in drivers:
                 d_id = str(d.pk)
-                if d_id not in polled_ids and d_id not in rejected_ids:
+                if d_id in rejected_ids:
+                    continue
+                
+                last_poll = poll_history.get(d_id, 0)
+                # Allow re-polling if never polled OR polled more than 45s ago
+                if d_id not in polled_ids or (now_ts - last_poll > 45):
                     target_drivers.append(d)
                     if len(target_drivers) >= batch_size:
                         break
@@ -135,7 +151,7 @@ class MatchingService:
                     last_id = polled_ids[-1]
                     if last_id not in rejected_ids:
                         Profile.objects.filter(pk=last_id).update(missed_opportunities_count=F('missed_opportunities_count') + 1)
-                logger.info(f"Matching: All available drivers for ride {ride_id} have already been polled.")
+                logger.info(f"Matching: All available drivers for ride {ride_id} have already been polled and are in timeout.")
                 return 0
 
             # 4. Dispatch Targeted WebSocket Messages
@@ -156,11 +172,13 @@ class MatchingService:
                 
                 # 5. Update Metadata & Set Redis Lock (Point 5)
                 polled_ids.append(d_id)
+                poll_history[d_id] = now_ts
                 distance_history[d_id] = current_distances.get(d_id)
-                redis_geo.set_driver_lock(d_id, 15) # Lock for 15s dispatch window
+                redis_geo.set_driver_lock(d_id, 20) # Lock for 20s dispatch window
             
             metadata['polled_driver_ids'] = polled_ids
             metadata['rejected_driver_ids'] = rejected_ids
+            metadata['poll_history'] = poll_history
             metadata['distance_history'] = distance_history
             metadata['last_dispatch_at'] = timezone.now().isoformat()
             ride.dispatch_metadata = metadata

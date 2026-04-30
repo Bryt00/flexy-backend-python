@@ -60,9 +60,9 @@ def process_ride_matching(self, ride_id):
 
         MatchingService.dispatch_ride_request(ride_id)
         
-        # Always retry every 15s until status changes (accepted/cancelled)
-        # 15 retries * 15s = 225 seconds
-        self.retry(countdown=15)
+        # Always retry every 20s until status changes (accepted/cancelled)
+        # 12 retries * 20s = 240 seconds
+        self.retry(countdown=20)
             
     except Ride.DoesNotExist:
         pass

@@ -17,7 +17,21 @@ class RideViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        ride = serializer.save(rider=self.request.user)
+        promo_code_str = self.request.data.get('promo_code_string')
+        promo_code_obj = None
+        if promo_code_str:
+            from .models import PromoCode
+            from rest_framework.exceptions import ValidationError
+            try:
+                promo_code_obj = PromoCode.objects.get(code=promo_code_str, active=True)
+                if promo_code_obj.user and promo_code_obj.user != self.request.user:
+                    raise ValidationError("Invalid promo code for this user.")
+                if promo_code_obj.usage_limit > 0 and promo_code_obj.usage_count >= promo_code_obj.usage_limit:
+                    raise ValidationError("Promo code usage limit reached.")
+            except PromoCode.DoesNotExist:
+                raise ValidationError("Invalid promo code.")
+
+        ride = serializer.save(rider=self.request.user, promo_code=promo_code_obj)
         # Push the unfulfilled request to the Redis Geospatial Index for surge mapping
         try:
             from flexy_backend.redis_client import redis_geo
@@ -58,10 +72,12 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def active(self, request):
+        five_mins_ago = timezone.now() - timezone.timedelta(minutes=5)
         ride = Ride.objects.filter(
             (Q(rider=request.user) | Q(driver=request.user)),
-            status__in=['pending', 'accepted', 'arrived', 'in_progress']
-        ).first()
+            Q(status__in=['pending', 'accepted', 'arrived', 'in_progress']) |
+            Q(status='completed', updated_at__gte=five_mins_ago)
+        ).order_by('-updated_at').first()
         if ride:
             return Response(self.get_serializer(ride).data)
         # Return 200 with null to avoid Dio errors in frontend when no trip exists
@@ -230,14 +246,23 @@ class RideViewSet(viewsets.ModelViewSet):
                     payment_method=ride.payment_method or 'cash'
                 )
                 
+                # Apply PromoCode Discount if applicable
+                discount_to_apply = 0.0
+                if ride.promo_code:
+                    discount_to_apply = min(ride.promo_code.value, ledger['total_fare'])
+                    ride.promo_code.usage_count += 1
+                    ride.promo_code.save()
+                    
+                ride.discount_amount = discount_to_apply
+                
                 # Store ledger breakdown
                 ride.base_fare_ledger = ledger['base_fare']
                 ride.distance_fare_ledger = ledger['distance_fare']
                 ride.waiting_fare_ledger = ledger['waiting_fee']
                 ride.surge_multiplier_applied = ledger['surge_multiplier']
-                ride.total_calculated_fare = ledger['total_fare']
+                ride.total_calculated_fare = ledger['total_fare'] - discount_to_apply
                 ride.driver_payout_amount = ledger['driver_payout']
-                ride.fare = ledger['total_fare'] # User facing fare
+                ride.fare = ledger['total_fare'] - discount_to_apply # User facing fare
                 
                 # Trigger earnings processing
                 if ride.driver:
@@ -246,6 +271,56 @@ class RideViewSet(viewsets.ModelViewSet):
                         ride.driver_payout_amount,
                         ride.id
                     )
+
+                # --- REFERRAL REWARD LOGIC ---
+                if hasattr(ride.rider, 'profile'):
+                    profile = ride.rider.profile
+                    # Check if this is the rider's first completed ride
+                    is_first_ride = Ride.objects.filter(rider=ride.rider, status='completed').count() == 0
+                    if is_first_ride and profile.referred_by:
+                        import string
+                        import random
+                        from .models import PromoCode
+                        from notification.utils import send_notification
+                        
+                        # Generate code for Rider
+                        rider_code_str = f"REF-{profile.referred_by.referral_code}-{random.randint(100,999)}"
+                        PromoCode.objects.create(
+                            user=ride.rider,
+                            code=rider_code_str,
+                            type='fixed',
+                            value=5.0,
+                            usage_limit=1
+                        )
+                        send_notification(
+                            ride.rider,
+                            title="Referral Bonus! 🎉",
+                            body=f"Enjoy GH₵ 5.00 off your next ride with promo code {rider_code_str}.",
+                            type='PUSH'
+                        )
+                        
+                        # Generate code for Referrer
+                        referrer_code_str = f"REF-{profile.referral_code}-{random.randint(100,999)}"
+                        referrer = profile.referred_by
+                        PromoCode.objects.create(
+                            user=referrer.user,
+                            code=referrer_code_str,
+                            type='fixed',
+                            value=5.0,
+                            usage_limit=1
+                        )
+                        send_notification(
+                            referrer.user,
+                            title="Referral Reward! 🎁",
+                            body=f"Your friend took their first ride! Here is GH₵ 5.00 off: {referrer_code_str}.",
+                            type='PUSH'
+                        )
+                        
+                        # Update stats
+                        referrer.total_referrals += 1
+                        referrer.total_referral_earnings += 5.0
+                        referrer.save()
+                # -----------------------------
 
                 # Generate or Update RideReceipt (Screenshot 6, Automated Receipts)
                 from .models import RideReceipt
@@ -267,6 +342,24 @@ class RideViewSet(viewsets.ModelViewSet):
                 EmailService.send_ride_receipt_email(ride, receipt)
             
             ride.save()
+            
+            # Broadcast the status update via WebSocket room (Screenshot 6)
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f'ride_{ride.id}',
+                    {
+                        'type': 'ride_update',
+                        'event_type': 'status_updated',
+                        'data': self.get_serializer(ride).data,
+                        'sender_id': None # System broadcast
+                    }
+                )
+            except Exception as e:
+                print(f"Error broadcasting status update: {e}")
+
             return Response(self.get_serializer(ride).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -328,7 +421,26 @@ class RideViewSet(viewsets.ModelViewSet):
                 from flexy_backend.redis_client import redis_geo
                 redis_geo.geo_add_driver(str(ride.driver.profile.id), lat, lng)
             
-            # (Optional) Here you would broadcast via WebSocket/Firebase
+            # Broadcast the metrics update via WebSocket room (Screenshot 6)
+            try:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f'ride_{ride.id}',
+                    {
+                        'type': 'ride_update',
+                        'event_type': 'metrics_updated',
+                        'data': {
+                            'distance_remaining': ride.distance_remaining,
+                            'duration_remaining': ride.duration_remaining,
+                            'estimated_eta': ride.estimated_eta,
+                        },
+                        'sender_id': None # System broadcast
+                    }
+                )
+            except Exception as e:
+                print(f"Error broadcasting metrics update: {e}")
         
         return Response({
             "status": ride.status,
@@ -465,10 +577,17 @@ class SystemSettingsView(APIView):
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, auth=[])
     def get(self, request):
+        from core_settings.models import SiteSetting
+        
         privacy = LegalDocument.objects.filter(title__icontains='privacy', is_active=True).order_by('-created_at').first()
         terms = LegalDocument.objects.filter(title__icontains='terms', is_active=True).order_by('-created_at').first()
         
+        support_email = SiteSetting.objects.filter(key='support_email').first()
+        support_phone = SiteSetting.objects.filter(key='support_phone').first()
+        
         return Response({
             'privacy_policy': privacy.content if privacy else "Privacy policy coming soon.",
-            'terms_conditions': terms.content if terms else "Terms and conditions coming soon."
+            'terms_conditions': terms.content if terms else "Terms and conditions coming soon.",
+            'support_email': support_email.value if support_email else "support@flexyride.com",
+            'support_phone': support_phone.value if support_phone else "+1234567890"
         })

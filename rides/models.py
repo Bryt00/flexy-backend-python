@@ -36,7 +36,7 @@ class Ride(models.Model):
     is_scheduled = models.BooleanField(default=False, null=True)
     scheduled_for = models.DateTimeField(blank=True, null=True)
     payment_method = models.CharField(max_length=50, default='cash', null=True)
-    preferred_vehicle_type = models.CharField(max_length=50, default='standard', null=True)
+    preferred_vehicle_type = models.CharField(max_length=50, default='go', null=True)
     item_category = models.CharField(max_length=50, blank=True, null=True)
     total_duration = models.IntegerField(blank=True, null=True) 
     
@@ -163,6 +163,7 @@ class Rating(models.Model):
         return f"Rating {self.stars}* for {self.ratee.email} by {self.rater.email}"
 class PromoCode(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True, related_name='promo_codes')
     code = models.CharField(max_length=50, unique=True, db_index=True)
     type = models.CharField(max_length=20) # percentage, fixed
     value = models.FloatField()

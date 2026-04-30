@@ -10,9 +10,10 @@ class AdStep1Form(forms.ModelForm):
 class AdStep2Form(forms.ModelForm):
     class Meta:
         model = AdBooking
-        fields = ['headline', 'body_text', 'image', 'target_url']
+        fields = ['target_audience', 'headline', 'body_text', 'image', 'target_url', 'headline_b', 'body_text_b', 'image_b']
         widgets = {
             'body_text': forms.Textarea(attrs={'rows': 4}),
+            'body_text_b': forms.Textarea(attrs={'rows': 4}),
         }
 
 class AdStep3Form(forms.ModelForm):

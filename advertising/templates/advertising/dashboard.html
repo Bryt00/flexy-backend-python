@@ -70,6 +70,33 @@
                             Live Preview
                         </a>
                     </div>
+                    
+                    {% if booking.analytics %}
+                    <div class="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 flex flex-wrap items-center gap-6">
+                        {% with total_views=booking.analytics.impressions_a|add:booking.analytics.impressions_b total_clicks=booking.analytics.clicks_a|add:booking.analytics.clicks_b %}
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Views</p>
+                            <p class="text-xl font-black">{{ total_views }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Clicks</p>
+                            <p class="text-xl font-black text-brand">{{ total_clicks }}</p>
+                        </div>
+                        {% if booking.headline_b or booking.image_b or booking.body_text_b %}
+                        <div class="border-l border-white/10 pl-6 ml-auto flex gap-6">
+                            <div>
+                                <p class="text-xs text-brand uppercase tracking-wider font-bold mb-1">Var A Clicks</p>
+                                <p class="text-lg font-bold">{{ booking.analytics.clicks_a }} <span class="text-xs text-gray-500 font-normal">/ {{ booking.analytics.impressions_a }} views</span></p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-400 uppercase tracking-wider font-bold mb-1">Var B Clicks</p>
+                                <p class="text-lg font-bold">{{ booking.analytics.clicks_b }} <span class="text-xs text-gray-500 font-normal">/ {{ booking.analytics.impressions_b }} views</span></p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    {% endif %}
 
                 </div>
                 

@@ -28,6 +28,11 @@ class AdBooking(models.Model):
         ('PENDING', 'Pending'),
         ('PAID', 'Paid'),
     ]
+    AUDIENCE_CHOICES = [
+        ('ALL', 'All Users'),
+        ('DRIVER', 'Drivers Only'),
+        ('PASSENGER', 'Passengers Only'),
+    ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_name = models.CharField(max_length=255)
@@ -38,6 +43,12 @@ class AdBooking(models.Model):
     body_text = models.TextField(max_length=500)
     image = models.ImageField(upload_to='ads/', blank=True, null=True)
     target_url = models.URLField(blank=True, null=True)
+    
+    target_audience = models.CharField(choices=AUDIENCE_CHOICES, default='ALL', max_length=20)
+    
+    headline_b = models.CharField(max_length=80, blank=True, null=True)
+    body_text_b = models.TextField(max_length=500, blank=True, null=True)
+    image_b = models.ImageField(upload_to='ads/', blank=True, null=True)
     
     week_start_date = models.DateField() # Should always be a Monday
     
@@ -52,6 +63,43 @@ class AdBooking(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.image:
+            self._process_image(self.image.path)
+        if self.image_b:
+            self._process_image(self.image_b.path)
+
+    def _process_image(self, image_path):
+        from PIL import Image
+        import os
+
+        try:
+            img = Image.open(image_path)
+            # Target ratio 2:1 (e.g. 800x400)
+            target_width = 800
+            target_height = 400
+            
+            width, height = img.size
+            img_ratio = width / height
+            target_ratio = target_width / target_height
+
+            if img_ratio > target_ratio:
+                # Image is too wide, crop sides
+                new_width = int(target_ratio * height)
+                left = (width - new_width) / 2
+                img = img.crop((left, 0, left + new_width, height))
+            else:
+                # Image is too tall, crop top/bottom
+                new_height = int(width / target_ratio)
+                top = (height - new_height) / 2
+                img = img.crop((0, top, width, top + new_height))
+
+            img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            img.save(image_path, quality=90, optimize=True)
+        except Exception as e:
+            print(f"Error processing image: {e}")
 
     @classmethod
     def slots_available_for_week(cls, week_start):
@@ -102,3 +150,22 @@ class AdExtension(models.Model):
 
     def __str__(self):
         return f"Extension for {self.original_booking.business_name} to {self.extended_week_start}"
+
+class AdAnalytics(models.Model):
+    ad_booking = models.OneToOneField(AdBooking, on_delete=models.CASCADE, related_name='analytics')
+    impressions_a = models.PositiveIntegerField(default=0)
+    clicks_a = models.PositiveIntegerField(default=0)
+    impressions_b = models.PositiveIntegerField(default=0)
+    clicks_b = models.PositiveIntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Analytics for {self.ad_booking.business_name}"
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=AdBooking)
+def create_ad_analytics(sender, instance, created, **kwargs):
+    if created:
+        AdAnalytics.objects.create(ad_booking=instance)

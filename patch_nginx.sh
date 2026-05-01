@@ -37,11 +37,15 @@ v1_block = """
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
-        proxy_connect_timeout 60s;
-        proxy_read_timeout 60s;
+
+        # Support large uploads (videos) and long-running requests
+        client_max_body_size 200M;
+        proxy_connect_timeout 300s;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+
         proxy_redirect off;
     }
-
 """
 
 # Insert before the first occurrence of "location /callbacks/"

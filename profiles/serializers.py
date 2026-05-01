@@ -3,6 +3,8 @@ from .models import Profile, DriverVerification
 
 
 class DriverVerificationSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='driver_id')
+
     class Meta:
         model = DriverVerification
         fields = '__all__'

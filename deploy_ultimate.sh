@@ -82,6 +82,7 @@ apt-get install -y \
     postgresql-18 \
     postgresql-contrib-18 \
     redis-server \
+    rabbitmq-server \
     nginx \
     supervisor \
     git \

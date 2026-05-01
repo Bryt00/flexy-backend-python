@@ -591,6 +591,7 @@ server {
         proxy_connect_timeout 300s;
         proxy_read_timeout 300s;
         proxy_send_timeout 300s;
+        proxy_request_buffering off;
         proxy_redirect off;
     }
 
@@ -706,6 +707,11 @@ echo "========================================="
 echo ""
 
 echo -e "${YELLOW}Step 12: Setting permissions...${NC}"
+# Create directories if they don't exist
+mkdir -p $APP_DIR/media/uploads
+mkdir -p $APP_DIR/staticfiles
+mkdir -p $APP_DIR/logs
+
 # Set general ownership
 chown -R $USER:$GROUP $APP_DIR
 

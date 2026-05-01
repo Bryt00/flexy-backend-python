@@ -543,6 +543,7 @@ server {
 
     location /api/ {
         proxy_pass http://flexyride_backend_cluster;
+        proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -551,21 +552,39 @@ server {
         proxy_set_header X-Forwarded-Port \$server_port;
         proxy_connect_timeout 60s;
         proxy_read_timeout 60s;
+        proxy_redirect off;
     }
 
     location /api {
         return 301 https://api.$DOMAIN/api/;
     }
 
-    location /callbacks/ {
+    # Versioned API routes (mobile app traffic)
+    location /v1/ {
         proxy_pass http://flexyride_backend_cluster;
+        proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_redirect off;
     }
 
-    # Redirect everything else on the API subdomain to the main site
+    location /callbacks/ {
+        proxy_pass http://flexyride_backend_cluster;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_redirect off;
+    }
+
+    # Redirect non-API paths on the API subdomain to the main site
     location / {
         return 301 https://$DOMAIN\$request_uri;
     }

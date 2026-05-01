@@ -65,17 +65,13 @@ h1, h2, h3, .unfold-site-title {
 }
 
 /* ─── Auth Pages (Login/Logout) ────────────────────── */
-body.login, body {
+/* ─── Login Background ────────────────────────────── */
+body.login {
   background-color: var(--color-bg) !important;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(0, 180, 255, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(163, 230, 53, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(0, 86, 145, 0.15) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(101, 163, 13, 0.05) 0px, transparent 50%) !important;
-  background-attachment: fixed !important;
 }
 
-#content {
+/* ─── Auth Pages (Login/Logout) Scoped ────────────── */
+.login #content {
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -85,14 +81,14 @@ body.login, body {
   padding: 2rem !important;
 }
 
-#content h1 {
+.login #content h1 {
   font-size: 2.5rem !important;
   color: white !important;
   margin-bottom: 1.5rem !important;
   font-weight: 700 !important;
 }
 
-#content p {
+.login #content p {
   color: rgba(255, 255, 255, 0.7) !important;
   font-size: 1.1rem !important;
   max-width: 500px !important;

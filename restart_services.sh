@@ -34,7 +34,11 @@ for service in $(systemctl list-units --type=service --state=active | grep -oE "
 done
 echo -e "${GREEN}✓ Redis services restarted${NC}"
 
-echo -e "${YELLOW}2. Restarting Application Replicas (Supervisor)...${NC}"
+echo -e "${YELLOW}2. Restarting RabbitMQ Broker...${NC}"
+systemctl restart rabbitmq-server || echo "RabbitMQ not found"
+echo -e "${GREEN}✓ RabbitMQ restarted${NC}"
+
+echo -e "${YELLOW}3. Restarting Application Replicas (Supervisor)...${NC}"
 supervisorctl restart ${APP_NAME}_replicas:*
 echo -e "${GREEN}✓ Application replicas restarted${NC}"
 

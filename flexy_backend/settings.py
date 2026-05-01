@@ -112,7 +112,7 @@ WSGI_APPLICATION = 'flexy_backend.wsgi.application'
 ASGI_APPLICATION = 'flexy_backend.asgi.application'
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='')
+    'default': env.db('DATABASE_URL', default='')   
 }
 
 AUTH_PASSWORD_VALIDATORS = [

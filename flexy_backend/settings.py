@@ -331,6 +331,10 @@ UNFOLD = {
             },
         ],
     },
+    "TABS": [], # Ensures layout consistency
+    "CONTAINER": {
+        "max_width": "full", # Fixes the "centered content" issue
+    },
 }
 
 GOOGLE_MAPS_API_KEY = env('GOOGLE_MAPS_API_KEY', default='')

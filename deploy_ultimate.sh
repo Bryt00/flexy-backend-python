@@ -81,6 +81,12 @@ apt-get install -y \
     python3-venv \
     postgresql-18 \
     postgresql-contrib-18 \
+    postgresql-18-postgis-3 \
+    libpq-dev \
+    binutils \
+    libproj-dev \
+    gdal-bin \
+    libgdal-dev \
     redis-server \
     rabbitmq-server \
     nginx \
@@ -126,6 +132,8 @@ sudo -u postgres /usr/lib/postgresql/18/bin/psql -c "CREATE USER $USER WITH PASS
 sudo -u postgres /usr/lib/postgresql/18/bin/psql -c "GRANT ALL PRIVILEGES ON DATABASE flexyride_db TO $USER;"
 # Fix for PostgreSQL 15+: Grant creation rights on public schema
 sudo -u postgres /usr/lib/postgresql/18/bin/psql -d flexyride_db -c "ALTER SCHEMA public OWNER TO $USER;"
+sudo -u postgres /usr/lib/postgresql/18/bin/psql -d flexyride_db -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+sudo -u postgres /usr/lib/postgresql/18/bin/psql -d flexyride_db -c "CREATE EXTENSION IF NOT EXISTS postgis_topology;"
 
 echo -e "${GREEN}✓ Primary database configured${NC}"
 

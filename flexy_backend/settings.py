@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sitemaps',
     
     # Needs GDAL/GEOS installed on OS level
-    # 'django.contrib.gis',
+    'django.contrib.gis',
     
     'rest_framework',
     'rest_framework_simplejwt',

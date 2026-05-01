@@ -58,11 +58,30 @@ class LoginView(views.APIView):
     def post(self, request):
         email = request.data.get("email")
         password = request.data.get("password")
-        
-        user = authenticate(username=email, password=password)
-        if user:
+        user = User.objects.filter(email=email).first()
+        if user and user.check_password(password):
             if not user.is_email_verified:
-                return Response({"error": "Email not verified. Please verify your email to login."}, status=status.HTTP_403_FORBIDDEN)
+                # Automatically send a new OTP
+                from .models import OTPCode
+                from integrations.email_service import EmailService
+                
+                # Rate limit check (optional but good practice)
+                last_otp = OTPCode.objects.filter(user=user, type='email_verification').order_by('-created_at').first()
+                if not last_otp or timezone.now() - last_otp.created_at >= timedelta(minutes=1):
+                    OTPCode.objects.filter(user=user, type='email_verification', is_used=False).update(is_used=True)
+                    otp_code = str(random.randint(1000, 9999))
+                    OTPCode.objects.create(
+                        user=user,
+                        code=otp_code,
+                        type='email_verification',
+                        expires_at=timezone.now() + timedelta(minutes=10)
+                    )
+                    EmailService.send_otp_email(user.email, otp_code)
+                
+                return Response({
+                    "error": "unverified_email",
+                    "message": "Email not verified. A new OTP has been sent."
+                }, status=status.HTTP_403_FORBIDDEN)
             
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -71,7 +90,7 @@ class LoginView(views.APIView):
                 "refresh_token": str(refresh),
             })
         
-        if not User.objects.filter(email=email).exists():
+        if not user:
             return Response({"error": "Account with this email was not found."}, status=status.HTTP_401_UNAUTHORIZED)
             
         return Response({"error": "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED)

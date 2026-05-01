@@ -559,10 +559,12 @@ server {
         return 301 https://api.$DOMAIN/api/;
     }
 
-    # Versioned API routes (mobile app traffic)
+    # Versioned API routes (mobile app traffic + websockets)
     location /v1/ {
         proxy_pass http://flexyride_backend_cluster;
         proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;

@@ -200,6 +200,9 @@ class RideViewSet(viewsets.ModelViewSet):
                 }
 
             # If no drivers nearby, we still return the list but informed about unavailability
+            if not final_estimates:
+                return Response({"error": "No vehicle categories available at this time."}, status=status.HTTP_404_NOT_FOUND)
+
             # Standard data for the summary view
             standard_data = final_estimates.get('standard') or final_estimates.get('go') or list(final_estimates.values())[0]
             

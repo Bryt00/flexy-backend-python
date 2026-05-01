@@ -35,13 +35,25 @@ conf_path = "/etc/nginx/sites-available/flexyride_backend"
 with open(conf_path, "r") as f:
     content = f.read()
 
+# 1. Ensure map block exists for WebSocket upgrades
+map_block = """
+# WebSocket Upgrade Map
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+"""
+if "map $http_upgrade $connection_upgrade" not in content:
+    content = map_block + "\n" + content
+
+# 2. Ensure /v1/ location block exists
 v1_block = """
     # Versioned API routes (mobile app traffic + websockets)
     location /v1/ {
         proxy_pass http://flexyride_backend_cluster;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection $connection_upgrade;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -55,14 +67,16 @@ v1_block = """
         proxy_redirect off;
     }
 """
-if "location /callbacks/" in content:
-    content = content.replace("    location /callbacks/", v1_block + "    location /callbacks/", 1)
-else:
-    content = content.replace(
-        "    # Redirect everything else on the API subdomain to the main site\n    location / {",
-        v1_block + "    # Redirect non-API paths on the API subdomain to the main site\n    location / {",
-        1
-    )
+if "location /v1/" not in content:
+    if "location /callbacks/" in content:
+        content = content.replace("    location /callbacks/", v1_block + "    location /callbacks/", 1)
+    else:
+        content = content.replace(
+            "    # Redirect everything else on the API subdomain to the main site\n    location / {",
+            v1_block + "    # Redirect non-API paths on the API subdomain to the main site\n    location / {",
+            1
+        )
+
 with open(conf_path, "w") as f:
     f.write(content)
 PYTHON

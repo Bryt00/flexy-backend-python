@@ -8,15 +8,10 @@ from rest_framework_simplejwt.views import (
 )
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-from .tests_monitoring import debug_sentry
-
-from django.views.generic import RedirectView
-
 urlpatterns = [
     path('', include('website.urls')),
     path('advertise/', include('advertising.website_urls')),
     path('admin/', admin.site.urls),
-    path('v1/debug-sentry/', debug_sentry, name='debug_sentry'),
     
     # API Documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

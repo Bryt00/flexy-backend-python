@@ -23,9 +23,7 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${YELLOW}0. Updating Code & Static Files...${NC}"
-# Pull latest changes
-git pull origin main || echo "Git pull failed, proceeding with current code..."
+echo -e "${YELLOW}0. Updating Static Assets...${NC}"
 
 # Collect static files (UI changes)
 if [ -f "manage.py" ]; then

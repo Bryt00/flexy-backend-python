@@ -26,6 +26,8 @@ class MatchingService:
             target_categories = [requested_category]
             
             if requested_category == 'go':
+                target_categories.extend(['standard', 'comfort', 'xl', 'exec'])
+            elif requested_category == 'standard':
                 target_categories.extend(['comfort', 'xl', 'exec'])
             elif requested_category == 'comfort':
                 target_categories.extend(['xl', 'exec'])

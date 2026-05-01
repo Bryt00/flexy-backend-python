@@ -12,7 +12,6 @@ from rest_framework.permissions import AllowAny
 
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [AllowAny]
 
     @extend_schema(
         operation_id="upload_file",

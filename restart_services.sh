@@ -67,8 +67,9 @@ with open(conf_path, "w") as f:
     f.write(content)
 PYTHON
         echo "   Patch applied. Nginx will be reloaded later."
-    else:
+    else
         echo "   ✓ Nginx already configured for /v1/"
+    fi
 fi
 
 echo -e "${YELLOW}0.1 Updating Static Assets...${NC}"

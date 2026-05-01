@@ -3,8 +3,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        if self.scope['user'].is_anonymous:
-            print("NotificationConsumer: Connection rejected. User is anonymous.")
+        user = self.scope.get('user')
+        if not user or user.is_anonymous:
+            print(f"NotificationConsumer: REJECTED - Anonymous user. Scope keys: {self.scope.keys()}")
             await self.close()
         else:
             self.user_id = self.scope['user'].id

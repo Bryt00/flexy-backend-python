@@ -395,7 +395,6 @@ stdout_logfile=$APP_DIR/logs/daphne-replica-${i}.log
 environment=PATH="$VENV_DIR/bin"
 
 EOF
-EOF
 done
 
 # Add Group for easier management

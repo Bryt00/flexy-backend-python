@@ -23,6 +23,23 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+echo -e "${YELLOW}0. Updating Code & Static Files...${NC}"
+# Pull latest changes
+git pull origin main || echo "Git pull failed, proceeding with current code..."
+
+# Collect static files (UI changes)
+if [ -f "manage.py" ]; then
+    echo "   Collecting static files..."
+    # Attempt to find venv
+    if [ -d "venv" ]; then
+        source venv/bin/activate
+    fi
+    python manage.py collectstatic --noinput
+else
+    echo "   Warning: manage.py not found, skipping static collection"
+fi
+echo -e "${GREEN}✓ Code and UI assets updated${NC}"
+
 echo -e "${YELLOW}1. Restarting Redis Instances...${NC}"
 # Primary Redis
 systemctl restart redis-server || echo "Primary Redis not found"

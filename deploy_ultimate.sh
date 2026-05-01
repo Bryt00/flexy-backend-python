@@ -395,7 +395,15 @@ stdout_logfile=$APP_DIR/logs/daphne-replica-${i}.log
 environment=PATH="$VENV_DIR/bin"
 
 EOF
+EOF
 done
+
+# Add Group for easier management
+cat >> /etc/supervisor/conf.d/$APP_NAME.conf << EOF
+[group:${APP_NAME}_replicas]
+programs=$REPLICA_PROGRAMS
+
+EOF
 
 # Add Celery workers
 cat >> /etc/supervisor/conf.d/$APP_NAME.conf << EOF

@@ -24,6 +24,15 @@ class Profile(models.Model):
     # Real-time Location Tracking for matching
     last_lat = models.FloatField(blank=True, null=True)
     last_lng = models.FloatField(blank=True, null=True)
+    
+    # GeoDjango Point for high-performance spatial queries
+    # Sync with last_lat/last_lng in save()
+    last_location_point = models.TextField(null=True, blank=True) # Fallback
+
+    if settings.USE_GIS:
+        from django.contrib.gis.db import models as gis_models
+        last_location_point = gis_models.PointField(null=True, blank=True, srid=4326)
+
     last_location_update = models.DateTimeField(blank=True, null=True)
     is_online = models.BooleanField(default=False)
 
@@ -49,8 +58,14 @@ class Profile(models.Model):
             import string
             # Generate a 6-character random code
             code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-            # Ensure it's unique (simplified, usually a loop is better but this works for early stage)
+            # Ensure it's unique
             self.referral_code = f"FLX-{code}"
+        
+        # Automatically sync PointField if GIS is enabled
+        if settings.USE_GIS and self.last_lat and self.last_lng:
+            from django.contrib.gis.geos import Point
+            self.last_location_point = Point(self.last_lng, self.last_lat)
+            
         super().save(*args, **kwargs)
 
     def __str__(self):

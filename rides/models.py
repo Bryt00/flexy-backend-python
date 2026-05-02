@@ -30,13 +30,13 @@ class Ride(models.Model):
 
     # Spatial Points (GeoDjango)
     # These will be automatically synced from the lat/lng fields in save()
-    pickup_point = models.TextField(null=True, blank=True) # Fallback type for Lite mode
-    dropoff_point = models.TextField(null=True, blank=True) # Fallback type for Lite mode
-
     if settings.USE_GIS:
         from django.contrib.gis.db import models as gis_models
         pickup_point = gis_models.PointField(null=True, blank=True, srid=4326)
         dropoff_point = gis_models.PointField(null=True, blank=True, srid=4326)
+    else:
+        pickup_point = models.TextField(null=True, blank=True)
+        dropoff_point = models.TextField(null=True, blank=True)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
     fare = models.FloatField(blank=True, null=True)

@@ -5,12 +5,20 @@ from .models import DeletionRequest
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
-    phone = serializers.ReadOnlyField(source='profile.phone_number')
+    phone = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = ('id', 'email', 'role', 'phone', 'is_email_verified', 'google_id', 'apple_id', 'created_at')
         read_only_fields = ('id', 'created_at', 'phone', 'is_email_verified')
+
+    def get_phone(self, obj):
+        try:
+            return obj.profile.phone_number
+        except AttributeError:
+            return None
+        except Exception:
+            return None
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

@@ -27,11 +27,11 @@ class Profile(models.Model):
     
     # GeoDjango Point for high-performance spatial queries
     # Sync with last_lat/last_lng in save()
-    last_location_point = models.TextField(null=True, blank=True) # Fallback
-
     if settings.USE_GIS:
         from django.contrib.gis.db import models as gis_models
         last_location_point = gis_models.PointField(null=True, blank=True, srid=4326)
+    else:
+        last_location_point = models.TextField(null=True, blank=True)
 
     last_location_update = models.DateTimeField(blank=True, null=True)
     is_online = models.BooleanField(default=False)

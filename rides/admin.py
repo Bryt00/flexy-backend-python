@@ -55,7 +55,8 @@ class RideAdmin(ModelAdmin):
 
     def fare_display(self, obj):
         if obj.fare:
-            return format_html('<strong style="color:#22c55e;">GHS {:.2f}</strong>', float(obj.fare))
+            formatted_fare = f"{float(obj.fare):.2f}"
+            return format_html('<strong style="color:#22c55e;">GHS {}</strong>', formatted_fare)
         return '—'
     fare_display.short_description = 'Fare'
 

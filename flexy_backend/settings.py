@@ -36,6 +36,25 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Determine if we should use GIS (GeoDjango)
+# We disable it locally if GDAL is not installed to allow development on Windows without binary hell.
+USE_GIS = True
+if env('DJANGO_ENV', default='production') == 'local':
+    # Try to auto-locate GDAL on Linux (Docker) to avoid ImproperlyConfigured
+    import platform
+    if platform.system() == 'Linux':
+        import glob
+        gdal_libs = glob.glob('/usr/lib/libgdal.so*') + glob.glob('/usr/lib/x86_64-linux-gnu/libgdal.so*')
+        if gdal_libs:
+            os.environ['GDAL_LIBRARY_PATH'] = gdal_libs[0]
+
+    try:
+        from django.contrib.gis import gdal
+        if not hasattr(gdal, 'HAS_GDAL') or not gdal.HAS_GDAL:
+            USE_GIS = False
+    except Exception:
+        USE_GIS = False
+
 INSTALLED_APPS = [
     'daphne',
     'unfold',
@@ -46,10 +65,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
-    
-    # Needs GDAL/GEOS installed on OS level
-    'django.contrib.gis',
-    
+]
+
+if USE_GIS:
+    INSTALLED_APPS.append('django.contrib.gis')
+
+INSTALLED_APPS += [
     'rest_framework',
     'rest_framework_simplejwt',
     'channels',
@@ -114,6 +135,10 @@ ASGI_APPLICATION = 'flexy_backend.asgi.application'
 DATABASES = {
     'default': env.db('DATABASE_URL', default='')   
 }
+
+# If GIS is enabled, we MUST use the postgis engine for Postgres
+if USE_GIS and DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -271,7 +296,7 @@ UNFOLD = {
         },
     },
     "SIDEBAR": {
-        "show_search": False,
+        "show_search": True,
         "show_all_applications": False,
         "navigation": [
             {
@@ -288,9 +313,39 @@ UNFOLD = {
                         "link": "/admin/rides/ride/",
                     },
                     {
+                        "title": "Delivery Hub",
+                        "icon": "local_shipping",
+                        "link": "/admin/courier/delivery/",
+                    },
+                    {
                         "title": "Vehicle Fleet",
                         "icon": "directions_car",
                         "link": "/admin/vehicles/vehicle/",
+                    },
+                    {
+                        "title": "Wallets & Payments",
+                        "icon": "account_balance_wallet",
+                        "link": "/admin/payments/transaction/",
+                    },
+                ],
+            },
+            {
+                "title": "Growth & Marketing",
+                "items": [
+                    {
+                        "title": "Subscription Plans",
+                        "icon": "card_membership",
+                        "link": "/admin/subscriptions/subscriptionplan/",
+                    },
+                    {
+                        "title": "Promos & Coupons",
+                        "icon": "confirmation_number",
+                        "link": "/admin/marketing/promocode/",
+                    },
+                    {
+                        "title": "Ad Management",
+                        "icon": "ads_click",
+                        "link": "/admin/advertising/adbooking/",
                     },
                 ],
             },
@@ -308,14 +363,24 @@ UNFOLD = {
                         "link": "/admin/audit/fraudflag/",
                     },
                     {
+                        "title": "User Directory",
+                        "icon": "group",
+                        "link": "/admin/core_auth/user/",
+                    },
+                    {
+                        "title": "Driver Verifications",
+                        "icon": "verified_user",
+                        "link": "/admin/profiles/driververification/",
+                    },
+                    {
                         "title": "API Keys / Integrations",
-                        "icon": "vcl",
+                        "icon": "api",
                         "link": "/admin/integrations/apikey/",
                     },
                 ],
             },
             {
-                "title": "System Settings",
+                "title": "Content & System",
                 "items": [
                     {
                         "title": "Pricing & Surge",
@@ -323,9 +388,24 @@ UNFOLD = {
                         "link": "/admin/core_settings/pricingrule/",
                     },
                     {
+                        "title": "Website Editor",
+                        "icon": "web",
+                        "link": "/admin/website/blogpost/",
+                    },
+                    {
                         "title": "Global Settings",
                         "icon": "settings",
                         "link": "/admin/core_settings/sitesetting/",
+                    },
+                    {
+                        "title": "System Audit Logs",
+                        "icon": "history",
+                        "link": "/admin/audit/auditlog/",
+                    },
+                    {
+                        "title": "File Cloud",
+                        "icon": "cloud",
+                        "link": "/admin/file_manager/filemetadata/",
                     },
                 ],
             },

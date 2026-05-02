@@ -27,6 +27,16 @@ class Ride(models.Model):
     
     dropoff_lat = models.FloatField(blank=True, null=True)
     dropoff_lng = models.FloatField(blank=True, null=True)
+
+    # Spatial Points (GeoDjango)
+    # These will be automatically synced from the lat/lng fields in save()
+    pickup_point = models.TextField(null=True, blank=True) # Fallback type for Lite mode
+    dropoff_point = models.TextField(null=True, blank=True) # Fallback type for Lite mode
+
+    if settings.USE_GIS:
+        from django.contrib.gis.db import models as gis_models
+        pickup_point = gis_models.PointField(null=True, blank=True, srid=4326)
+        dropoff_point = gis_models.PointField(null=True, blank=True, srid=4326)
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
     fare = models.FloatField(blank=True, null=True)
@@ -80,6 +90,21 @@ class Ride(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Automatically sync PointFields if GIS is enabled
+        if settings.USE_GIS and self.pickup_lat and self.pickup_lng:
+            from django.contrib.gis.geos import Point
+            self.pickup_point = Point(self.pickup_lng, self.pickup_lat)
+        
+        if settings.USE_GIS and self.dropoff_lat and self.dropoff_lng:
+            from django.contrib.gis.geos import Point
+            self.dropoff_point = Point(self.dropoff_lng, self.dropoff_lat)
+            
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Ride {self.id} - {self.status}"
+
 class RideReceipt(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     ride = models.OneToOneField(Ride, on_delete=models.CASCADE, related_name='receipt')
@@ -96,9 +121,6 @@ class RideReceipt(models.Model):
 
     def __str__(self):
         return f"Receipt {self.receipt_no} for Ride {self.ride.id}"
-
-    def __str__(self):
-        return f"Ride {self.id} - {self.status}"
 
 class FavoriteLocation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

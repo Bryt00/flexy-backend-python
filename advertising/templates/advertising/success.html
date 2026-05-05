@@ -6,21 +6,24 @@
 {% block content %}
 <section class="container animate-fade-in text-center max-w-2xl py-12 md:py-32">
     <div class="mb-12 relative inline-block">
-        <div class="w-24 h-24 bg-brand/10 rounded-full flex items-center justify-center text-brand text-5xl relative z-10 shadow-[0_0_30px_rgba(0,200,150,0.3)] border border-brand/20">
-            ✓
+        <div class="w-24 h-24 bg-brand/10 rounded-full flex items-center justify-center text-brand relative z-10 border border-brand/20">
+            <i data-lucide="check-circle-2" class="w-12 h-12"></i>
         </div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-brand/5 rounded-full blur-3xl"></div>
     </div>
     
-    <h1 class="text-4xl md:text-5xl font-bold mb-6">Ad Request Submitted!</h1>
-    <p class="text-gray-400 text-lg leading-relaxed mb-12 max-w-lg mx-auto">
+    <h1 class="text-4xl md:text-6xl font-extrabold mb-8">Request Received!</h1>
+    <p class="text-gray-400 text-xl leading-relaxed mb-12 max-w-lg mx-auto">
         Thank you for choosing FlexyRide. Our team will review your creative shortly. 
         Once approved, you'll receive an email with a secure link to complete your payment and activate your campaign.
     </p>
     
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="{% url 'home' %}" class="btn btn-primary px-10">Return to Home</a>
-        <a href="{% url 'advertise_landing' %}" class="btn btn-outline px-10">Back to Advertising</a>
+        <a href="{% url 'home' %}" class="btn btn-primary px-12 py-5 flex items-center justify-center gap-2">
+            Return to Home <i data-lucide="home" class="w-5 h-5"></i>
+        </a>
+        <a href="{% url 'advertise_landing' %}" class="btn btn-outline border-white/10 px-12 py-5 hover:bg-white/5 flex items-center justify-center gap-2">
+            Back to Advertising <i data-lucide="megaphone" class="w-5 h-5"></i>
+        </a>
     </div>
 </section>
 {% endblock %}

@@ -1,4 +1,4 @@
-{% extends 'website/base.html' %}
+﻿{% extends 'website/base.html' %}
 {% load static %}
 
 {% block title %}Press & Media | FlexyRide{% endblock %}
@@ -14,16 +14,16 @@
 
 <section class="container animate-fade-in">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
-        <div class="glass-card p-8 text-center"><p class="text-4xl font-bold text-white mb-1">2024</p><p class="text-xs text-gray-500 uppercase tracking-widest">Founded</p></div>
-        <div class="glass-card p-8 text-center"><p class="text-4xl font-bold text-brand mb-1">500k+</p><p class="text-xs text-gray-500 uppercase tracking-widest">Riders</p></div>
-        <div class="glass-card p-8 text-center"><p class="text-4xl font-bold text-white mb-1">10k+</p><p class="text-xs text-gray-500 uppercase tracking-widest">Drivers</p></div>
-        <div class="glass-card p-8 text-center"><p class="text-4xl font-bold text-brand mb-1">Ghana</p><p class="text-xs text-gray-500 uppercase tracking-widest">HQ</p></div>
+        <div class="ui-card p-8 text-center"><p class="text-4xl font-bold text-white mb-1">2024</p><p class="text-xs text-gray-500 uppercase tracking-widest">Founded</p></div>
+        <div class="ui-card p-8 text-center"><p class="text-4xl font-bold text-brand mb-1">500k+</p><p class="text-xs text-gray-500 uppercase tracking-widest">Riders</p></div>
+        <div class="ui-card p-8 text-center"><p class="text-4xl font-bold text-white mb-1">10k+</p><p class="text-xs text-gray-500 uppercase tracking-widest">Drivers</p></div>
+        <div class="ui-card p-8 text-center"><p class="text-4xl font-bold text-brand mb-1">Ghana</p><p class="text-xs text-gray-500 uppercase tracking-widest">HQ</p></div>
     </div>
 </section>
 
 <section class="container animate-fade-in">
-    <div class="glass-card p-12 flex flex-col md:flex-row items-center gap-12 border-brand/10">
-        <div class="text-7xl flex-shrink-0">📦</div>
+    <div class="ui-card p-12 flex flex-col md:flex-row items-center gap-12 border-brand/10">
+        <div class="text-7xl flex-shrink-0">ðŸ“¦</div>
         <div class="flex-1">
             <h2 class="text-3xl font-bold mb-4">Download the Media Kit</h2>
             <p class="text-gray-400 leading-relaxed mb-6">Our press kit includes logos, brand guidelines, executive headshots, product screenshots, and company fact sheet.</p>
@@ -34,17 +34,17 @@
 
 <section class="container animate-fade-in">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div class="glass-card p-10">
-            <div class="text-4xl mb-6">📧</div>
+        <div class="ui-card p-10">
+            <div class="text-4xl mb-6">ðŸ“§</div>
             <h3 class="text-2xl font-bold mb-3">Press Enquiries</h3>
             <p class="text-gray-400 mb-4">For interviews, data requests, and media coverage, reach our communications team directly.</p>
             <a href="mailto:press@flexyridegh.com" class="text-brand font-bold hover:underline">press@flexyridegh.com</a>
         </div>
-        <div class="glass-card p-10">
-            <div class="text-4xl mb-6">⚡</div>
+        <div class="ui-card p-10">
+            <div class="text-4xl mb-6">âš¡</div>
             <h3 class="text-2xl font-bold mb-3">Response Time</h3>
             <p class="text-gray-400 mb-4">We aim to respond to all press enquiries within 24 hours on business days.</p>
-            <span class="text-brand font-semibold">Mon – Fri, 8am – 6pm GMT</span>
+            <span class="text-brand font-semibold">Mon â€“ Fri, 8am â€“ 6pm GMT</span>
         </div>
     </div>
 </section>
@@ -55,7 +55,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         {% for post in press_posts %}
         <a href="{% url 'blog_detail' post.slug %}" class="group">
-            <div class="glass-card p-0 overflow-hidden flex flex-col transition-transform duration-300 group-hover:-translate-y-2">
+            <div class="ui-card p-0 overflow-hidden flex flex-col transition-transform duration-300 group-hover:-translate-y-2">
                 {% if post.cover_image or post.cover_image_url %}
                 <div class="h-48 overflow-hidden">
                     <img src="{% if post.cover_image %}{{ post.cover_image.url }}{% else %}{{ post.cover_image_url }}{% endif %}" alt="{{ post.title }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
@@ -64,7 +64,7 @@
                 <div class="p-8">
                     <p class="text-brand text-xs font-bold uppercase tracking-widest mb-3">{{ post.published_at|date:"M d, Y" }}</p>
                     <h3 class="text-xl font-bold mb-3 group-hover:text-brand transition-colors line-clamp-2">{{ post.title }}</h3>
-                    <div class="mt-4 text-brand font-bold text-sm flex items-center gap-2">READ MORE <span class="group-hover:translate-x-2 transition-transform duration-300">→</span></div>
+                    <div class="mt-4 text-brand font-bold text-sm flex items-center gap-2">READ MORE <span class="group-hover:translate-x-2 transition-transform duration-300">â†’</span></div>
                 </div>
             </div>
         </a>

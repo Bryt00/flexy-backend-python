@@ -1,4 +1,4 @@
-{% extends 'website/base.html' %}
+﻿{% extends 'website/base.html' %}
 {% load static %}
 
 {% block title %}Blog | FlexyRide{% endblock %}
@@ -20,7 +20,7 @@
             {% endfor %}
         </div>
         <div class="relative w-full md:w-72">
-            <input type="text" name="q" value="{{ q }}" placeholder="Search articles…" id="blog-search"
+            <input type="text" name="q" value="{{ q }}" placeholder="Search articlesâ€¦" id="blog-search"
                 class="w-full px-5 py-3 pl-11 bg-dark-800 border border-white/10 rounded-full text-white text-sm placeholder-gray-600 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all">
             <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
@@ -28,7 +28,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
         {% for post in posts %}
-        <div class="glass-card p-0 overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,200,150,0.15)] hover:-translate-y-2">
+        <div class="ui-card p-0 overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,200,150,0.15)] hover:-translate-y-2">
             {% if post.cover_image or post.cover_image_url %}
             <div class="h-56 relative overflow-hidden bg-dark-800">
                 <img src="{% if post.cover_image %}{{ post.cover_image.url }}{% else %}{{ post.cover_image_url }}{% endif %}" alt="{{ post.title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
@@ -37,20 +37,20 @@
             </div>
             {% endif %}
             <div class="p-8 flex flex-col flex-1">
-                <p class="text-brand text-xs font-bold uppercase tracking-widest mb-4">By {{ post.author_name }} • {{ post.published_at|date:"M d, Y" }}</p>
+                <p class="text-brand text-xs font-bold uppercase tracking-widest mb-4">By {{ post.author_name }} â€¢ {{ post.published_at|date:"M d, Y" }}</p>
                 <h3 class="text-xl font-bold mb-4 group-hover:text-brand transition-colors line-clamp-2">
                     <a href="{% url 'blog_detail' post.slug %}">{{ post.title }}</a>
                 </h3>
                 <p class="text-gray-400 mb-8 flex-1 leading-relaxed line-clamp-3">{{ post.excerpt }}</p>
                 <a href="{% url 'blog_detail' post.slug %}" class="text-brand font-bold flex items-center gap-2 group/link">
                     Read Full Story 
-                    <span class="transition-transform duration-300 group-hover/link:translate-x-2">→</span>
+                    <span class="transition-transform duration-300 group-hover/link:translate-x-2">â†’</span>
                 </a>
             </div>
         </div>
         {% empty %}
         <div class="col-span-full py-20 text-center">
-            <div class="text-6xl mb-6 opacity-30">✍️</div>
+            <div class="text-6xl mb-6 opacity-30">âœï¸</div>
             <p class="text-gray-500 text-lg">
                 {% if q %}No results for "{{ q }}". Try a different search.{% else %}No blog posts have been published yet.{% endif %}
             </p>
@@ -64,11 +64,11 @@
     {% if is_paginated %}
     <div class="flex justify-center items-center gap-4 mt-20">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if active_category %}&category={{ active_category }}{% endif %}" class="btn btn-outline px-8">← Previous</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if active_category %}&category={{ active_category }}{% endif %}" class="btn btn-outline px-8">â† Previous</a>
         {% endif %}
         <span class="text-gray-500 text-sm">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if active_category %}&category={{ active_category }}{% endif %}" class="btn btn-outline px-8">Next →</a>
+        <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if active_category %}&category={{ active_category }}{% endif %}" class="btn btn-outline px-8">Next â†’</a>
         {% endif %}
     </div>
     {% endif %}

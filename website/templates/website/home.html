@@ -8,13 +8,18 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="animate-fade-in relative min-h-[80vh] flex items-center overflow-hidden" style="background: linear-gradient(rgba(13,13,13,0.7), rgba(13,13,13,0.7)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+<section class="animate-fade-in relative min-h-[80vh] flex items-center overflow-hidden" 
+         style="background: linear-gradient(rgba(13,13,13,0.7), rgba(13,13,13,0.7)), url('{% if hero.background_image %}{{ hero.background_image.url }}{% elif hero.background_image_url %}{{ hero.background_image_url }}{% else %}{% static "img/hero_main.png" %}{% endif %}'); background-size: cover; background-position: center;">
     <div class="container relative z-10 text-center">
-        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Your City, Your Ride</h1>
-        <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10">Experience the safest, most reliable, and affordable rides across Ghana. FlexyRide connects you with top-rated drivers in minutes.</p>
+        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">{{ hero.title|default:"Your City, Your Ride" }}</h1>
+        <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto mb-10">{{ hero.subtitle|default:"Experience the safest, most reliable, and affordable rides across Ghana. FlexyRide connects you with top-rated drivers in minutes." }}</p>
         <div class="flex flex-col sm:flex-row justify-center gap-6 max-w-xl mx-auto">
+            {% if hero.cta_text %}
+            <a href="{{ hero.cta_url|default:'#' }}" class="btn btn-primary w-full sm:w-64">{{ hero.cta_text }}</a>
+            {% else %}
             <a href="{% url 'download' %}" class="btn btn-primary w-full sm:w-64">Download Passenger App</a>
             <a href="{% url 'drive_with_us' %}" class="btn btn-outline w-full sm:w-64">Become a Driver</a>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -22,21 +27,34 @@
 <!-- Features Grid -->
 <section class="container animate-fade-in opacity-0" style="animation-delay: 0.2s;">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="glass-card flex flex-col items-center text-center p-12">
-            <div class="text-6xl text-brand mb-6">🛡️</div>
-            <h3 class="text-2xl font-bold mb-4">Safety First</h3>
-            <p class="text-gray-400 leading-relaxed">Every driver is verified, and every ride is tracked in real-time. Share your trip status with loved ones.</p>
-        </div>
-        <div class="glass-card flex flex-col items-center text-center p-12">
-            <div class="text-6xl text-brand mb-6">💰</div>
-            <h3 class="text-2xl font-bold mb-4">Affordable Fares</h3>
-            <p class="text-gray-400 leading-relaxed">Get upfront pricing before you ride. No hidden fees, just fair prices that respect your wallet.</p>
-        </div>
-        <div class="glass-card flex flex-col items-center text-center p-12">
-            <div class="text-6xl text-brand mb-6">⚡</div>
-            <h3 class="text-2xl font-bold mb-4">Fast & Reliable</h3>
-            <p class="text-gray-400 leading-relaxed">Our advanced matching algorithm finds the closest available driver, minimizing your wait time.</p>
-        </div>
+        {% if features %}
+            {% for feature in features %}
+            <div class="ui-card flex flex-col items-center text-center p-12">
+                <div class="text-brand mb-6">
+                    <i data-lucide="{{ feature.icon_name|default:'star' }}" class="w-16 h-16"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-4">{{ feature.title }}</h3>
+                <p class="text-gray-400 leading-relaxed">{{ feature.description }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Placeholder if empty -->
+            <div class="ui-card flex flex-col items-center text-center p-12">
+                <div class="text-brand mb-6"><i data-lucide="shield-check" class="w-16 h-16"></i></div>
+                <h3 class="text-2xl font-bold mb-4">Safety First</h3>
+                <p class="text-gray-400 leading-relaxed">Every driver is verified, and every ride is tracked in real-time. Share your trip status with loved ones.</p>
+            </div>
+            <div class="ui-card flex flex-col items-center text-center p-12">
+                <div class="text-brand mb-6"><i data-lucide="wallet" class="w-16 h-16"></i></div>
+                <h3 class="text-2xl font-bold mb-4">Affordable Fares</h3>
+                <p class="text-gray-400 leading-relaxed">Get upfront pricing before you ride. No hidden fees, just fair prices that respect your wallet.</p>
+            </div>
+            <div class="ui-card flex flex-col items-center text-center p-12">
+                <div class="text-brand mb-6"><i data-lucide="zap" class="w-16 h-16"></i></div>
+                <h3 class="text-2xl font-bold mb-4">Fast & Reliable</h3>
+                <p class="text-gray-400 leading-relaxed">Our advanced matching algorithm finds the closest available driver, minimizing your wait time.</p>
+            </div>
+        {% endif %}
     </div>
 </section>
 
@@ -45,11 +63,11 @@
     <h2 class="text-4xl font-bold mb-16">Our Numbers Speak For Themselves</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 gap-12">
         <div class="flex flex-col items-center">
-            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">10k+</div>
+            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">{{ site_settings.total_drivers_count }}</div>
             <p class="text-gray-400 text-lg uppercase tracking-wider font-semibold">Active Drivers</p>
         </div>
         <div class="flex flex-col items-center">
-            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">500k+</div>
+            <div class="text-5xl md:text-6xl font-bold text-brand mb-2">{{ site_settings.total_riders_count }}</div>
             <p class="text-gray-400 text-lg uppercase tracking-wider font-semibold">Happy Passengers</p>
         </div>
         <div class="flex flex-col items-center col-span-2 md:col-span-1">
@@ -61,7 +79,7 @@
 
 <!-- Availability Map -->
 <section class="container animate-fade-in opacity-0" style="animation-delay: 0.6s;">
-    <div class="glass-card p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
+    <div class="ui-card p-12 relative overflow-hidden flex flex-col md:flex-row items-center gap-12">
         <div class="flex-1 z-10">
             <h2 class="text-4xl font-bold mb-6">We're Growing Fast</h2>
             <p class="text-gray-400 text-lg mb-8 leading-relaxed">FlexyRide is rapidly expanding across Ghana. Check our live availability map to see where we're operating right now.</p>
@@ -105,13 +123,15 @@
     <h2 class="text-4xl font-bold text-center mb-16">What Our Community Says</h2>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         {% for testimonial in testimonials %}
-        <div class="glass-card flex flex-col items-center text-center">
+        <div class="ui-card flex flex-col items-center text-center">
             <img src="{{ testimonial.photo_url }}" alt="{{ testimonial.name }}" class="w-24 h-24 rounded-full border-4 border-brand object-cover mb-6">
             <p class="text-gray-300 italic mb-6 leading-relaxed">"{{ testimonial.quote }}"</p>
             <h4 class="text-xl font-bold mb-1">{{ testimonial.name }}</h4>
             <span class="text-xs text-gray-500 uppercase tracking-widest">{{ testimonial.role }}</span>
-            <div class="flex gap-1 text-yellow-500 mt-4 text-xl">
-                {% for i in "12345"|make_list %}{% if forloop.counter <= testimonial.rating %}★{% endif %}{% endfor %}
+            <div class="flex gap-1 text-yellow-500 mt-4">
+                {% for i in "12345"|make_list %}
+                    <i data-lucide="star" class="w-5 h-5 {% if forloop.counter <= testimonial.rating %}fill-current{% else %}opacity-20{% endif %}"></i>
+                {% endfor %}
             </div>
         </div>
         {% endfor %}
@@ -131,7 +151,7 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         {% for post in latest_posts %}
         <a href="{% url 'blog_detail' post.slug %}" class="group">
-            <div class="glass-card p-0 overflow-hidden h-full flex flex-col transition-transform duration-300 group-hover:-translate-y-2">
+            <div class="ui-card p-0 overflow-hidden h-full flex flex-col transition-transform duration-300 group-hover:-translate-y-2">
                 <div class="h-56 relative overflow-hidden">
                     <img src="{% if post.cover_image %}{{ post.cover_image.url }}{% else %}{{ post.cover_image_url }}{% endif %}" alt="{{ post.title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                     <div class="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -140,7 +160,7 @@
                     <h3 class="text-xl font-bold mb-4 line-clamp-2 transition-colors group-hover:text-brand">{{ post.title }}</h3>
                     <p class="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">{{ post.excerpt|truncatewords:15 }}</p>
                     <div class="mt-auto flex items-center text-brand font-bold text-sm tracking-wide">
-                        READ MORE <span class="ml-2 transition-transform duration-300 group-hover:translate-x-2">→</span>
+                        READ MORE <i data-lucide="arrow-right" class="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-2"></i>
                     </div>
                 </div>
             </div>

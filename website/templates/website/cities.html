@@ -1,4 +1,4 @@
-{% extends 'website/base.html' %}
+﻿{% extends 'website/base.html' %}
 {% load static %}
 
 {% block title %}Covered Cities | FlexyRide{% endblock %}
@@ -12,7 +12,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {% for city in cities %}
-        <div class="glass-card p-0 overflow-hidden group transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,200,150,0.2)]">
+        <div class="ui-card p-0 overflow-hidden group transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,200,150,0.2)]">
             <div class="h-48 relative overflow-hidden">
                 <img src="{% if city.cover_image %}{{ city.cover_image.url }}{% else %}{{ city.cover_image_url }}{% endif %}" alt="{{ city.name }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                 <div class="absolute inset-0 bg-gradient-to-t from-dark-900/90 via-dark-900/40 to-transparent flex items-end p-6">
@@ -31,7 +31,7 @@
         </div>
         {% empty %}
         <div class="col-span-full py-20 text-center">
-            <div class="text-6xl mb-6 opacity-30">📍</div>
+            <div class="text-6xl mb-6 text-gray-700 flex justify-center"><i data-lucide="map" class="w-20 h-20"></i></div>
             <p class="text-gray-500 text-lg">No city data available yet. We're expanding fast!</p>
         </div>
         {% endfor %}
@@ -52,3 +52,4 @@
     </div>
 </section>
 {% endblock %}
+

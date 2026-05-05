@@ -26,18 +26,18 @@
 <!-- Culture Section -->
 <section class="container animate-fade-in">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-0">
-        <div class="glass-card p-10 text-center group hover:border-brand/30 transition-colors">
-            <div class="text-5xl mb-6">🚀</div>
+        <div class="ui-card p-10 text-center group hover:border-brand/30 transition-colors">
+            <div class="text-brand mb-6 flex justify-center"><i data-lucide="rocket" class="w-12 h-12"></i></div>
             <h3 class="text-xl font-bold mb-3">Move Fast</h3>
             <p class="text-gray-400">We build, ship, and iterate quickly. Every week you will see your work impact real people across Ghana.</p>
         </div>
-        <div class="glass-card p-10 text-center group hover:border-brand/30 transition-colors">
-            <div class="text-5xl mb-6">🌍</div>
+        <div class="ui-card p-10 text-center group hover:border-brand/30 transition-colors">
+            <div class="text-brand mb-6 flex justify-center"><i data-lucide="globe" class="w-12 h-12"></i></div>
             <h3 class="text-xl font-bold mb-3">Real Impact</h3>
             <p class="text-gray-400">Your work improves how hundreds of thousands of Ghanaians commute every single day.</p>
         </div>
-        <div class="glass-card p-10 text-center group hover:border-brand/30 transition-colors">
-            <div class="text-5xl mb-6">💚</div>
+        <div class="ui-card p-10 text-center group hover:border-brand/30 transition-colors">
+            <div class="text-brand mb-6 flex justify-center"><i data-lucide="heart" class="w-12 h-12"></i></div>
             <h3 class="text-xl font-bold mb-3">People First</h3>
             <p class="text-gray-400">Competitive pay, flexible hours, and a team that genuinely cares about each other.</p>
         </div>
@@ -54,11 +54,11 @@
             <h3 class="text-xl font-bold text-brand uppercase tracking-widest mb-6 border-b border-brand/20 pb-3">{{ department }}</h3>
             <div class="space-y-4">
                 {% for job in jobs %}
-                <div class="glass-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-8 hover:border-brand/30 transition-colors group">
+                <div class="ui-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-8 hover:border-brand/30 transition-colors group">
                     <div class="flex-1">
                         <h4 class="text-xl font-bold mb-2 group-hover:text-brand transition-colors">{{ job.title }}</h4>
                         <div class="flex flex-wrap gap-3 text-sm">
-                            <span class="flex items-center gap-1 text-gray-400"><span>📍</span> {{ job.location }}</span>
+                            <span class="flex items-center gap-1 text-gray-400"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> {{ job.location }}</span>
                             <span class="px-3 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/20 font-semibold">{{ job.get_job_type_display }}</span>
                         </div>
                     </div>
@@ -73,8 +73,8 @@
         </div>
         {% endfor %}
     {% else %}
-        <div class="glass-card text-center py-20 border-white/5">
-            <div class="text-6xl mb-6 opacity-30">👀</div>
+        <div class="ui-card text-center py-20 border-white/5">
+            <div class="mb-6 opacity-30 flex justify-center text-white"><i data-lucide="search" class="w-16 h-16"></i></div>
             <p class="text-gray-500 text-lg mb-2">No open positions right now.</p>
             <p class="text-gray-600">Send us your CV anyway — we are always looking for exceptional talent.</p>
             <a href="{% url 'contact' %}" class="btn btn-primary mt-8 px-10">Get in Touch</a>
@@ -93,3 +93,4 @@
     </div>
 </section>
 {% endblock %}
+

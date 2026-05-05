@@ -140,3 +140,105 @@ class JobOpening(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.department})"
+
+
+class WebsiteSettings(models.Model):
+    total_riders_count = models.CharField(max_length=50, default="500k+", help_text="e.g. 500k+")
+    total_drivers_count = models.CharField(max_length=50, default="10k+", help_text="e.g. 10k+")
+    foundation_year = models.IntegerField(default=2024)
+    mission_statement = models.TextField(blank=True)
+    vision_statement = models.TextField(blank=True)
+    contact_email = models.EmailField(blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    facebook_url = models.URLField(blank=True)
+    twitter_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
+    whatsapp_url = models.URLField(blank=True)
+
+    class Meta:
+        verbose_name = "Website Settings"
+        verbose_name_plural = "Website Settings"
+
+    def __str__(self):
+        return "Global Website Settings"
+
+
+class BrandFeature(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    icon_name = models.CharField(max_length=50, help_text="Lucide icon name (e.g. shield, zap)", default="star")
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+
+class ServiceCategory(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    image = models.ImageField(upload_to='services/', blank=True, null=True)
+    image_url = models.URLField(max_length=500, blank=True, null=True, help_text="Alternative to image for external URLs")
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order']
+        verbose_name_plural = "Service Categories"
+
+    def __str__(self):
+        return self.name
+
+
+class SafetyFeature(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    icon_name = models.CharField(max_length=50, blank=True, help_text="Lucide icon name (e.g. shield, alert-triangle)")
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.title
+
+
+class LegalDocument(models.Model):
+    DOCUMENT_TYPES = [
+        ('terms', 'Terms of Service'),
+        ('privacy', 'Privacy Policy'),
+        ('cookies', 'Cookie Policy'),
+    ]
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES)
+    content = CKEditor5Field('Content', config_name='extends')
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class HeroBanner(models.Model):
+    PAGE_CHOICES = [
+        ('home', 'Home'),
+        ('about', 'About'),
+        ('services', 'Services'),
+        ('safety', 'Safety'),
+        ('careers', 'Careers'),
+        ('contact', 'Contact'),
+    ]
+    page_name = models.CharField(max_length=50, choices=PAGE_CHOICES, unique=True)
+    title = models.CharField(max_length=255)
+    subtitle = models.TextField(blank=True)
+    background_image = models.ImageField(upload_to='heroes/', blank=True, null=True)
+    background_image_url = models.URLField(max_length=500, blank=True, null=True, help_text="Alternative to background_image")
+    cta_text = models.CharField(max_length=50, blank=True)
+    cta_url = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"Hero: {self.get_page_name_display()}"

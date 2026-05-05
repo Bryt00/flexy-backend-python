@@ -16,6 +16,23 @@ class RideViewSet(viewsets.ModelViewSet):
     serializer_class = RideSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def _broadcast_ride_update(self, ride, event_type, data=None):
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'ride_{ride.id}',
+                {
+                    'type': 'ride_update',
+                    'event_type': event_type,
+                    'data': data or self.get_serializer(ride).data,
+                    'sender_id': None # System broadcast
+                }
+            )
+        except Exception as e:
+            print(f"Error broadcasting {event_type} update: {e}")
+
     def perform_create(self, serializer):
         promo_code_str = self.request.data.get('promo_code_string')
         promo_code_obj = None
@@ -86,6 +103,18 @@ class RideViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def scheduled(self, request):
         rides = Ride.objects.filter(rider=request.user, is_scheduled=True).order_by('scheduled_for')
+        return Response(self.get_serializer(rides, many=True).data)
+
+    @action(detail=False, methods=['get'])
+    def opportunities(self, request):
+        """
+        Returns scheduled rides that are in 'pending' status for drivers to accept.
+        """
+        rides = Ride.objects.filter(
+            is_scheduled=True, 
+            status='pending',
+            scheduled_for__gt=timezone.now()
+        ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
     @action(detail=False, methods=['post'])
@@ -347,21 +376,7 @@ class RideViewSet(viewsets.ModelViewSet):
             ride.save()
             
             # Broadcast the status update via WebSocket room (Screenshot 6)
-            try:
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f'ride_{ride.id}',
-                    {
-                        'type': 'ride_update',
-                        'event_type': 'status_updated',
-                        'data': self.get_serializer(ride).data,
-                        'sender_id': None # System broadcast
-                    }
-                )
-            except Exception as e:
-                print(f"Error broadcasting status update: {e}")
+            self._broadcast_ride_update(ride, 'status_updated')
 
             return Response(self.get_serializer(ride).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
@@ -425,25 +440,11 @@ class RideViewSet(viewsets.ModelViewSet):
                 redis_geo.geo_add_driver(str(ride.driver.profile.id), lat, lng)
             
             # Broadcast the metrics update via WebSocket room (Screenshot 6)
-            try:
-                from channels.layers import get_channel_layer
-                from asgiref.sync import async_to_sync
-                channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send)(
-                    f'ride_{ride.id}',
-                    {
-                        'type': 'ride_update',
-                        'event_type': 'metrics_updated',
-                        'data': {
-                            'distance_remaining': ride.distance_remaining,
-                            'duration_remaining': ride.duration_remaining,
-                            'estimated_eta': ride.estimated_eta,
-                        },
-                        'sender_id': None # System broadcast
-                    }
-                )
-            except Exception as e:
-                print(f"Error broadcasting metrics update: {e}")
+            self._broadcast_ride_update(ride, 'metrics_updated', data={
+                'distance_remaining': ride.distance_remaining,
+                'duration_remaining': ride.duration_remaining,
+                'estimated_eta': ride.estimated_eta,
+            })
         
         return Response({
             "status": ride.status,
@@ -467,6 +468,9 @@ class RideViewSet(viewsets.ModelViewSet):
             )
         ride.status = 'cancelled'
         ride.save()
+        
+        self._broadcast_ride_update(ride, 'status_updated')
+        
         return Response(self.get_serializer(ride).data)
 
     @action(detail=True, methods=['post', 'put'])
@@ -482,6 +486,9 @@ class RideViewSet(viewsets.ModelViewSet):
         ride.driver = request.user
         ride.status = 'accepted'
         ride.save()
+        
+        self._broadcast_ride_update(ride, 'status_updated')
+        
         return Response(self.get_serializer(ride).data)
 
     @action(detail=True, methods=['post'])

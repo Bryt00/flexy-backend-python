@@ -41,6 +41,7 @@ class VehicleCategory(models.Model):
     display_name = models.CharField(max_length=100, help_text="Human readable name (e.g. 'Go', 'Pragya')")
     base_fare = models.FloatField(default=0.0)
     multiplier = models.FloatField(default=1.0, help_text="Fare multiplier for this category")
+    image = models.ImageField(upload_to='vehicle_categories/', blank=True, null=True, help_text="Upload an icon for this vehicle type (PNG recommended)")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

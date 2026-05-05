@@ -66,3 +66,6 @@ celerybeat.pid
 
 # Docker
 .dockerignoreseed_services.py
+
+# Scratch / Temporary scripts
+scratch/

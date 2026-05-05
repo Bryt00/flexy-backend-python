@@ -8,10 +8,11 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="relative min-h-[50vh] flex items-center overflow-hidden" style="background: linear-gradient(rgba(13,13,13,0.8), rgba(13,13,13,0.8)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+<section class="relative min-h-[50vh] flex items-center overflow-hidden" 
+         style="background: linear-gradient(rgba(13,13,13,0.8), rgba(13,13,13,0.8)), url('{% if hero.background_image %}{{ hero.background_image.url }}{% elif hero.background_image_url %}{{ hero.background_image_url }}{% else %}{% static "img/hero_main.png" %}{% endif %}'); background-size: cover; background-position: center;">
     <div class="container relative z-10 text-center animate-fade-in">
-        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Our Journey</h1>
-        <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto">Revolutionizing urban mobility across Ghana, one ride at a time.</p>
+        <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">{{ hero.title|default:"Our Journey" }}</h1>
+        <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto">{{ hero.subtitle|default:"Revolutionizing urban mobility across Ghana, one ride at a time." }}</p>
     </div>
 </section>
 
@@ -20,31 +21,31 @@
     <div class="flex flex-col lg:flex-row gap-20 items-center">
         <div class="flex-1 space-y-8">
             <div class="inline-block px-4 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-sm font-bold uppercase tracking-widest mb-4">
-                Since 2024
+                Since {{ site_settings.foundation_year|default:2024 }}
             </div>
             <h2 class="text-4xl md:text-5xl font-bold leading-tight">A simple idea that <span class="text-brand">changed everything.</span></h2>
-            <p class="text-gray-400 leading-relaxed text-lg">Founded in 2024, FlexyRide began with a clear mission: moving people around our cities shouldn't be stressful or expensive. We saw the struggle between premium services and everyday affordability and decided to bridge that gap.</p>
+            <p class="text-gray-400 leading-relaxed text-lg">Founded in {{ site_settings.foundation_year|default:2024 }}, FlexyRide began with a clear mission: moving people around our cities shouldn't be stressful or expensive. We saw the struggle between premium services and everyday affordability and decided to bridge that gap.</p>
             <p class="text-gray-400 leading-relaxed text-lg">Today, we are proud to serve hundreds of thousands of Ghanaians, connecting them with reliable drivers for their daily commutes, business trips, and life's special moments.</p>
             
             <div class="grid grid-cols-2 gap-8 pt-6">
                 <div>
-                    <p class="text-4xl font-bold text-white mb-1">500k+</p>
+                    <p class="text-4xl font-bold text-white mb-1">{{ site_settings.total_riders_count }}</p>
                     <p class="text-sm text-gray-500 uppercase tracking-widest font-semibold">Riders</p>
                 </div>
                 <div>
-                    <p class="text-4xl font-bold text-white mb-1">10k+</p>
+                    <p class="text-4xl font-bold text-white mb-1">{{ site_settings.total_drivers_count }}</p>
                     <p class="text-sm text-gray-500 uppercase tracking-widest font-semibold">Drivers</p>
                 </div>
             </div>
         </div>
         
         <div class="flex-1 w-full relative">
-            <div class="glass-card p-0 overflow-hidden rounded-[40px] border-white/10 aspect-square flex items-center justify-center relative">
+            <div class="ui-card p-0 overflow-hidden rounded-[40px] border-white/10 aspect-square flex items-center justify-center relative">
                 <div class="absolute inset-0 bg-gradient-to-br from-brand/20 to-transparent"></div>
                 <img src="{% static 'img/hero_main.png' %}" alt="FlexyRide Experience" class="w-[90%] h-[90%] object-cover rounded-[30px] shadow-2xl opacity-80 grayscale hover:grayscale-0 transition-all duration-700">
                 
-                <div class="absolute -bottom-8 -left-8 glass-card bg-brand p-8 animate-bounce-slow">
-                    <p class="text-4xl font-black text-dark-900 leading-none">2024</p>
+                <div class="absolute -bottom-8 -left-8 ui-card bg-brand p-8 animate-bounce-slow">
+                    <p class="text-4xl font-black text-dark-900 leading-none">{{ site_settings.foundation_year|default:2024 }}</p>
                     <p class="text-xs uppercase tracking-widest text-dark-900 font-bold mt-2">Founded</p>
                 </div>
             </div>
@@ -53,18 +54,18 @@
 </section>
 
 <!-- Mission & Vision -->
-<section class="bg-dark-800/50 py-32">
+<section class="bg-dark-800 py-32">
     <div class="container">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div class="glass-card p-12 border-brand/20">
-                <div class="text-5xl mb-8">🎯</div>
+            <div class="ui-card p-12 border-brand/20">
+                <div class="text-brand mb-8"><i data-lucide="target" class="w-12 h-12"></i></div>
                 <h3 class="text-3xl font-bold mb-6 text-brand">Our Mission</h3>
-                <p class="text-gray-400 text-lg leading-relaxed">To provide safe, reliable, and affordable transportation for every Ghanaian, empowering communities through improved mobility and economic opportunities for drivers.</p>
+                <p class="text-gray-400 text-lg leading-relaxed">{{ site_settings.mission_statement|default:"To provide safe, reliable, and affordable transportation for every Ghanaian, empowering communities through improved mobility and economic opportunities for drivers." }}</p>
             </div>
-            <div class="glass-card p-12 border-white/5">
-                <div class="text-5xl mb-8">🚀</div>
+            <div class="ui-card p-12 border-white/5">
+                <div class="text-white mb-8"><i data-lucide="rocket" class="w-12 h-12"></i></div>
                 <h3 class="text-3xl font-bold mb-6">Our Vision</h3>
-                <p class="text-gray-400 text-lg leading-relaxed">To become the backbone of urban infrastructure in West Africa, setting the gold standard for shared mobility and digital logistics services.</p>
+                <p class="text-gray-400 text-lg leading-relaxed">{{ site_settings.vision_statement|default:"To become the backbone of urban infrastructure in West Africa, setting the gold standard for shared mobility and digital logistics services." }}</p>
             </div>
         </div>
     </div>

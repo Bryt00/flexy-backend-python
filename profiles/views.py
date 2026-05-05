@@ -245,3 +245,33 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'], url_path='apply-referral')
+    def apply_referral(self, request):
+        try:
+            profile = Profile.objects.get(user=request.user)
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        code = request.data.get('referral_code')
+        if not code:
+            return Response({"error": "referral_code is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if profile.referred_by:
+            return Response({"error": "You have already applied a referral code."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            referrer_profile = Profile.objects.get(referral_code=code)
+        except Profile.DoesNotExist:
+            return Response({"error": "Invalid referral code."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if referrer_profile == profile:
+            return Response({"error": "You cannot refer yourself."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        profile.referred_by = referrer_profile
+        profile.save()
+        
+        return Response({
+            "message": "Referral code applied successfully.",
+            "referred_by": referrer_profile.referral_code
+        }, status=status.HTTP_200_OK)

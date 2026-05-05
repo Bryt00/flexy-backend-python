@@ -1,52 +1,89 @@
 {% extends 'website/base.html' %}
 {% load static %}
 
-{% block title %}Advertise with FlexyRide{% endblock %}
+{% block title %}Advertise with FlexyRide | Grow Your Brand{% endblock %}
 
 {% block content %}
-<section class="container animate-fade-in py-12 md:py-20">
+<section class="container animate-fade-in py-12 md:py-24">
     <div class="flex flex-col lg:flex-row gap-16 items-start">
         
-        <div class="flex-1 space-y-8">
+        <!-- Left Column: Value Prop & CTA -->
+        <div class="flex-1 space-y-12">
             <div>
-                <h1 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">Reach Thousands <br><span class="hero-gradient-text">Every Single Day</span></h1>
-                <p class="text-gray-400 text-lg leading-relaxed max-w-xl">Place your brand directly in front of FlexyRide passengers while they commute. Our high-engagement in-app banners ensure your message gets the attention it deserves.</p>
-            </div>
-            
-            <div class="glass-card bg-brand/5 border-brand/20 p-8 flex items-center justify-between gap-6">
-                <div>
-                    <h3 class="text-3xl font-bold text-brand">GH₵ {{ capacity_config.price_per_week_ghs }} <span class="text-sm text-gray-500 font-normal">/ week</span></h3>
-                    <p class="text-sm text-gray-400 mt-2">Only {{ capacity_config.max_ads_per_week }} exclusive spots available per week.</p>
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-bold uppercase tracking-widest mb-6">
+                    <i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
+                    Advertising Solutions
                 </div>
-                <div class="hidden sm:block text-5xl opacity-40">📊</div>
-            </div>
-            
-            <div class="space-y-4">
-                <a href="{% url 'advertise_apply' %}" class="btn btn-primary w-full text-lg py-4 shadow-lg shadow-brand/20">
-                    Apply for a Slot Now
-                </a>
-                <p class="text-center text-xs text-gray-500 font-medium uppercase tracking-widest">
-                    Returning advertiser? Check your email for your magic access link.
+                <h1 class="text-5xl md:text-7xl font-bold mb-8 leading-[1.1]">Reach Thousands <br><span class="hero-gradient-text">Every Single Day</span></h1>
+                <p class="text-gray-400 text-xl leading-relaxed max-w-xl">
+                    Place your brand directly in front of FlexyRide passengers while they commute. Our high-engagement in-app banners ensure your message gets the attention it deserves.
                 </p>
             </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="ui-card border-brand/20 bg-dark-800">
+                    <div class="text-brand mb-4"><i data-lucide="trending-up" class="w-8 h-8"></i></div>
+                    <h3 class="text-lg font-bold mb-2">High Visibility</h3>
+                    <p class="text-sm text-gray-500">Premium placement on the passenger home screen and trip tracking pages.</p>
+                </div>
+                <div class="ui-card border-white/5 bg-dark-800">
+                    <div class="text-brand mb-4"><i data-lucide="users" class="w-8 h-8"></i></div>
+                    <h3 class="text-lg font-bold mb-2">Targeted Audience</h3>
+                    <p class="text-sm text-gray-500">Connect with urban professionals, students, and active city dwellers across Ghana.</p>
+                </div>
+            </div>
+
+            <div class="ui-card bg-dark-800 border-white/10 p-10 flex flex-col sm:flex-row items-center justify-between gap-8">
+                <div>
+                    <p class="text-gray-500 uppercase tracking-widest text-xs font-bold mb-2">Starting From</p>
+                    <h3 class="text-4xl font-black text-white">GH₵ {{ capacity_config.price_per_week_ghs }} <span class="text-lg text-gray-600 font-normal">/ week</span></h3>
+                    <p class="text-sm text-gray-500 mt-4 flex items-center gap-2">
+                        <i data-lucide="info" class="w-4 h-4"></i>
+                        Only {{ capacity_config.max_ads_per_week }} exclusive spots available per week.
+                    </p>
+                </div>
+                <div class="flex-shrink-0 w-full sm:w-auto">
+                    <a href="{% url 'advertise_apply' %}" class="btn btn-primary w-full px-12 py-5 text-lg flex items-center justify-center gap-3">
+                        Book Your Slot <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <p class="text-center sm:text-left text-xs text-gray-600 font-medium uppercase tracking-widest flex items-center justify-center sm:justify-start gap-2">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                Returning advertiser? Check your email for your magic access link.
+            </p>
         </div>
         
-        <div class="w-full lg:w-[400px] space-y-8">
-            <div class="glass-card p-8">
-                <h3 class="text-xl font-bold mb-2">Upcoming Availability</h3>
-                <p class="text-gray-500 mb-8 text-sm">Real-time schedule of available advertising slots.</p>
+        <!-- Right Column: Availability & Preview -->
+        <div class="w-full lg:w-[420px] space-y-10">
+            <div class="ui-card bg-dark-900 border-white/5 shadow-2xl">
+                <div class="flex items-center justify-between mb-10 pb-6 border-b border-white/5">
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight">Availability</h3>
+                        <p class="text-gray-600 text-xs mt-1 font-medium uppercase tracking-widest">Real-time schedule</p>
+                    </div>
+                    <div class="w-12 h-12 bg-dark-800 rounded-2xl flex items-center justify-center border border-white/5">
+                        <i data-lucide="calendar" class="w-6 h-6 text-brand"></i>
+                    </div>
+                </div>
                 
-                <div class="space-y-3">
+                <div class="space-y-4">
                     {% for week in available_weeks %}
-                        <div class="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
-                            <span class="text-sm font-semibold text-gray-300">
-                                Week of {{ week.week_start|date:"M d, Y" }}
-                            </span>
+                        <div class="flex justify-between items-center p-5 bg-dark-800/40 rounded-2xl border border-white/5 hover:bg-dark-800 hover:border-brand/30 transition-all group cursor-default">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[0.65rem] text-gray-600 uppercase font-black tracking-[0.1em]">Week commencing</span>
+                                <span class="text-base font-bold text-gray-200">
+                                    {{ week.week_start|date:"M d, Y" }}
+                                </span>
+                            </div>
                             <div>
                                 {% if week.is_full %}
-                                    <span class="px-3 py-1 rounded-full text-[0.7rem] font-bold uppercase tracking-tighter bg-red-500/10 text-red-500 border border-red-500/20">Sold Out</span>
+                                    <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-red-500/5 text-red-500 border border-red-500/20">Sold Out</span>
                                 {% else %}
-                                    <span class="px-3 py-1 rounded-full text-[0.7rem] font-bold uppercase tracking-tighter bg-brand/10 text-brand border border-brand/20">{{ week.slots_remaining }} left</span>
+                                    <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-brand/5 text-brand border border-brand/20 group-hover:bg-brand/10 transition-colors">
+                                        {{ week.slots_remaining }} available
+                                    </span>
                                 {% endif %}
                             </div>
                         </div>
@@ -55,14 +92,34 @@
             </div>
 
             <!-- Ad Demo Card -->
-            <div class="glass-card p-6 bg-dark-800 border-white/10 relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 w-24 h-24 bg-brand/10 rounded-full blur-3xl group-hover:bg-brand/20 transition-colors"></div>
-                <h4 class="text-xs font-bold text-gray-500 mb-4 uppercase tracking-[0.2em]">Ad Preview Format</h4>
-                <div class="bg-dark-700 aspect-[16/9] rounded-lg mb-4 flex items-center justify-center border border-white/5">
-                    <span class="text-gray-600 text-sm italic">Brand Image Here</span>
+            <div class="ui-card bg-dark-800 border-white/5 relative overflow-hidden group p-0">
+                <div class="p-8 pb-4">
+                    <div class="flex items-center gap-2 mb-6">
+                        <i data-lucide="eye" class="w-3.5 h-3.5 text-gray-600"></i>
+                        <h4 class="text-[0.65rem] font-black text-gray-600 uppercase tracking-[0.2em]">Live Preview Format</h4>
+                    </div>
+                    
+                    <div class="bg-dark-900 aspect-[16/9] rounded-2xl mb-6 flex items-center justify-center border border-white/5 relative overflow-hidden ring-1 ring-white/5">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark-950/90 to-transparent flex items-end p-6">
+                            <div class="w-full">
+                                 <div class="h-1.5 w-1/4 bg-brand rounded-full mb-3"></div>
+                                 <div class="h-2.5 w-3/4 bg-white/20 rounded-full mb-2"></div>
+                                 <div class="h-2.5 w-1/2 bg-white/10 rounded-full"></div>
+                            </div>
+                        </div>
+                        <i data-lucide="image" class="w-10 h-10 text-dark-800"></i>
+                    </div>
                 </div>
-                <div class="h-2 w-1/3 bg-brand rounded-full mb-2"></div>
-                <div class="h-4 w-full bg-white/5 rounded-md"></div>
+                
+                <div class="px-8 pb-8 space-y-3">
+                    <div class="h-3 w-full bg-dark-900/50 rounded-full border border-white/5"></div>
+                    <div class="h-3 w-5/6 bg-dark-900/50 rounded-full border border-white/5"></div>
+                </div>
+
+                <div class="px-8 py-5 bg-dark-900/50 border-t border-white/5 flex justify-between items-center">
+                    <span class="text-[0.65rem] text-gray-600 font-black uppercase tracking-widest">Native App Placement</span>
+                    <i data-lucide="smartphone" class="w-3.5 h-3.5 text-gray-700"></i>
+                </div>
             </div>
         </div>
 

@@ -6,33 +6,47 @@
 {% block content %}
 <section class="container animate-fade-in mb-20">
     <div class="text-center mb-16">
-        <h1 class="text-5xl font-bold mb-4">Your Safety is Our Priority</h1>
-        <p class="text-gray-400 max-w-2xl mx-auto text-lg">We have built advanced safety features into both our passenger and driver apps to ensure every journey is secure and comfortable.</p>
+        <h1 class="text-5xl font-bold mb-4">{{ hero.title|default:"Your Safety is Our Priority" }}</h1>
+        <p class="text-gray-400 max-w-2xl mx-auto text-lg">{{ hero.subtitle|default:"We have built advanced safety features into both our passenger and driver apps to ensure every journey is secure and comfortable." }}</p>
     </div>
 
-    <div class="relative h-[400px] mb-16 rounded-3xl overflow-hidden flex items-end p-8 md:p-12" style="background: linear-gradient(rgba(13, 13, 13, 0.4), rgba(13, 13, 13, 0.4)), url('{% static "img/safety_feature.png" %}'); background-size: cover; background-position: center;">
-        <div class="glass-card max-w-md border-none bg-dark-900/40 backdrop-blur-md p-8">
+    <div class="relative h-[400px] mb-16 rounded-3xl overflow-hidden flex items-end p-8 md:p-12" 
+         style="background: linear-gradient(rgba(13, 13, 13, 0.4), rgba(13, 13, 13, 0.4)), url('{% if hero.background_image %}{{ hero.background_image.url }}{% elif hero.background_image_url %}{{ hero.background_image_url }}{% else %}{% static "img/safety_feature.png" %}{% endif %}'); background-size: cover; background-position: center;">
+        <div class="ui-card max-w-md border-none bg-dark-900/90 p-8">
             <h3 class="text-2xl font-bold mb-2">Built-in Protection</h3>
             <p class="text-gray-300 text-sm leading-relaxed">Our apps use industry-leading encryption and real-time monitoring to keep you safe at every turn.</p>
         </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="glass-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
-            <div class="text-4xl mb-6">🔍</div>
-            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Driver Verification</h3>
-            <p class="text-gray-400 leading-relaxed">Every driver passes a rigorous background check and vehicle inspection before they can accept rides.</p>
-        </div>
-        <div class="glass-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
-            <div class="text-4xl mb-6">📍</div>
-            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Share Your Trip</h3>
-            <p class="text-gray-400 leading-relaxed">Send a link to your loved ones so they can track your ride's route and ETA in real-time.</p>
-        </div>
-        <div class="glass-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
-            <div class="text-4xl mb-6">🚨</div>
-            <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Emergency SOS</h3>
-            <p class="text-gray-400 leading-relaxed">An in-app SOS button directly alerts our 24/7 Incident Response Team and local authorities if you ever feel unsafe.</p>
-        </div>
+        {% if safety_features %}
+            {% for feature in safety_features %}
+            <div class="ui-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
+                <div class="text-brand mb-6">
+                    <i data-lucide="{{ feature.icon_name|default:'shield' }}" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">{{ feature.title }}</h3>
+                <p class="text-gray-400 leading-relaxed">{{ feature.description }}</p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Placeholder if empty -->
+            <div class="ui-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
+                <div class="text-brand mb-6"><i data-lucide="search" class="w-10 h-10"></i></div>
+                <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Driver Verification</h3>
+                <p class="text-gray-400 leading-relaxed">Every driver passes a rigorous background check and vehicle inspection before they can accept rides.</p>
+            </div>
+            <div class="ui-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
+                <div class="text-brand mb-6"><i data-lucide="map-pin" class="w-10 h-10"></i></div>
+                <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Share Your Trip</h3>
+                <p class="text-gray-400 leading-relaxed">Send a link to your loved ones so they can track your ride's route and ETA in real-time.</p>
+            </div>
+            <div class="ui-card p-10 flex flex-col group transition-all duration-300 hover:border-brand/30">
+                <div class="text-brand mb-6"><i data-lucide="alert-triangle" class="w-10 h-10"></i></div>
+                <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Emergency SOS</h3>
+                <p class="text-gray-400 leading-relaxed">An in-app SOS button directly alerts our 24/7 Incident Response Team and local authorities if you ever feel unsafe.</p>
+            </div>
+        {% endif %}
     </div>
 </section>
 

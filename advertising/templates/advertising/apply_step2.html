@@ -3,44 +3,23 @@
 
 {% block title %}Apply - Step 2 | Advertise{% endblock %}
 
-{% block extra_css %}
-<style type="text/tailwindcss">
-    @layer components {
-        .form-input {
-            @apply w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-300;
-        }
-        .form-label {
-            @apply block text-sm font-semibold text-gray-400 mb-2 ml-1;
-        }
-        .file-input {
-            @apply block w-full text-sm text-gray-400
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-full file:border-0
-            file:text-sm file:font-semibold
-            file:bg-brand/10 file:text-brand
-            hover:file:bg-brand/20 transition-all cursor-pointer;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<section class="container animate-fade-in max-w-xl py-12 md:py-20">
+<section class="container animate-fade-in max-w-xl py-12 md:py-24">
     
-    <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold mb-4">Submit Your Ad Request</h1>
-        <p class="text-gray-400">Upload your creative assets and provide a call to action.</p>
+    <div class="text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Launch Your Ad</h1>
+        <p class="text-gray-500 text-lg">Step 2: Upload your creative assets</p>
     </div>
 
     <!-- Wizard Steps -->
-    <div class="relative flex justify-between items-center mb-16 px-4">
-        <div class="absolute top-1/2 left-0 w-full h-[2px] bg-white/5 -translate-y-1/2 z-0"></div>
-        <div class="z-10 bg-brand-dark text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">✓</div>
-        <div class="z-10 bg-brand text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl shadow-[0_0_20px_rgba(0,200,150,0.4)]">2</div>
-        <div class="z-10 bg-dark-800 text-gray-500 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border-2 border-white/5">3</div>
+    <div class="relative flex justify-between items-center mb-20 px-4">
+        <div class="absolute top-1/2 left-0 w-full h-[1px] bg-white/5 -translate-y-1/2 z-0"></div>
+        <div class="z-10 bg-brand text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl"><i data-lucide="check" class="w-6 h-6"></i></div>
+        <div class="z-10 bg-brand text-dark-900 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">2</div>
+        <div class="z-10 bg-dark-800 text-gray-600 w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl border border-white/10">3</div>
     </div>
 
-    <div class="glass-card">
+    <div class="ui-card bg-dark-900 shadow-none border-white/5">
         <div class="flex items-center gap-4 mb-8">
             <div class="w-1 h-8 bg-brand rounded-full"></div>
             <h2 class="text-2xl font-bold">Ad Creative</h2>
@@ -92,13 +71,13 @@
 
 
             
-            <div class="flex justify-between items-center pt-6">
-                <button type="submit" name="back" value="1" class="btn btn-outline px-8 py-3" formnovalidate>
-                    ← Back
+            <div class="flex justify-between items-center pt-8">
+                <button type="submit" name="back" value="1" class="text-gray-500 hover:text-white flex items-center gap-2 font-bold transition-colors" formnovalidate>
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i> Back
                 </button>
-                <button type="submit" class="btn btn-primary px-10 py-4 flex items-center gap-3 group">
+                <button type="submit" class="btn btn-primary px-12 py-4 flex items-center gap-3 group">
                     Final Review 
-                    <span class="transition-transform group-hover:translate-x-1">→</span>
+                    <i data-lucide="chevron-right" class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
                 </button>
             </div>
         </form>

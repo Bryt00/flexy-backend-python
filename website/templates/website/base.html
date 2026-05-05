@@ -27,6 +27,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -53,17 +55,34 @@
     </script>
     <style type="text/tailwindcss">
         @layer components {
-            .glass-card {
-                @apply bg-dark-700/60 backdrop-blur-xl border border-white/10 rounded-2xl p-8;
+            .ui-card {
+                @apply bg-dark-800 border border-white/10 rounded-[32px] p-8 transition-all duration-500;
+            }
+            .ui-card:hover {
+                @apply border-brand/30 shadow-2xl shadow-brand/5;
+            }
+            .form-input {
+                @apply w-full px-6 py-4 bg-dark-900 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-300;
+            }
+            .form-label {
+                @apply block text-sm font-bold text-gray-500 mb-2 ml-1 uppercase tracking-widest;
+            }
+            .file-input {
+                @apply block w-full text-sm text-gray-400
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-brand/10 file:text-brand
+                hover:file:bg-brand/20 transition-all cursor-pointer;
             }
             .btn {
                 @apply inline-block px-8 py-4 rounded-full font-bold transition-all duration-300 text-center cursor-pointer tracking-wide;
             }
             .btn-primary {
-                @apply bg-brand text-dark-900 hover:bg-brand-dark hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(0,200,150,0.3)];
+                @apply bg-brand text-dark-900 hover:bg-brand-dark hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(140,198,63,0.3)];
             }
             .btn-outline {
-                @apply bg-transparent text-white border-2 border-white/40 hover:border-brand hover:text-brand hover:bg-brand/5 hover:-translate-y-1;
+                @apply bg-dark-800 text-white border-2 border-white/20 hover:border-brand hover:text-brand hover:bg-brand/10 hover:-translate-y-1;
             }
             .hero-gradient-text {
                 background: linear-gradient(45deg, #8CC63F, #FFFFFF);
@@ -91,28 +110,48 @@
 <body class="bg-dark-900 text-gray-100 font-sans min-h-screen flex flex-col antialiased">
 
     <!-- Navbar -->
-    <nav class="fixed top-0 left-0 right-0 bg-dark-900/85 backdrop-blur-md border-b border-white/5 z-[1000] h-20 transition-all duration-300">
+    <nav class="fixed top-0 left-0 right-0 bg-dark-900 border-b border-white/5 z-[1000] h-20 transition-all duration-300">
         <div class="container h-full flex justify-between items-center">
             <a href="{% url 'home' %}" class="text-2xl font-bold flex items-center">
                 <span class="text-brand">Flexy</span>Ride
             </a>
             
             <div id="nav-links" class="hidden md:flex items-center gap-8">
-                <a href="{% url 'services' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors">Services</a>
-                <a href="{% url 'cities' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors">Cities</a>
-                <a href="{% url 'how_it_works' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors">How it Works</a>
-                <a href="{% url 'drive_with_us' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors">Drive with Us</a>
-                <a href="{% url 'corporate' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors">Corporate</a>
-                <a href="{% url 'advertise_landing' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors">Advertise</a>
+                <a href="{% url 'services' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors {% if request.resolver_match.url_name == 'services' %}text-brand{% endif %}">Services</a>
+                <a href="{% url 'cities' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors {% if request.resolver_match.url_name == 'cities' %}text-brand{% endif %}">Cities</a>
+                <a href="{% url 'how_it_works' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors {% if request.resolver_match.url_name == 'how_it_works' %}text-brand{% endif %}">How it Works</a>
+                <a href="{% url 'drive_with_us' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors {% if request.resolver_match.url_name == 'drive_with_us' %}text-brand{% endif %}">Drive with Us</a>
+                <a href="{% url 'corporate' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors {% if request.resolver_match.url_name == 'corporate' %}text-brand{% endif %}">Corporate</a>
+                <a href="{% url 'advertise_landing' %}" class="text-[0.95rem] font-medium hover:text-brand transition-colors {% if 'advertise' in request.resolver_match.url_name %}text-brand{% endif %}">Advertise</a>
             </div>
             
             <div id="nav-actions" class="hidden md:flex items-center gap-4">
                 <a href="{% url 'download' %}" class="btn btn-primary py-2 scale-90">Get the App</a>
             </div>
             
-            <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <button id="mobile-menu-btn" class="md:hidden text-white focus:outline-none p-2 hover:bg-white/5 rounded-lg transition-colors">
+                <svg id="menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                <svg id="close-icon" class="hidden" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="hidden md:hidden fixed inset-0 top-20 bg-dark-900 z-[999] border-t border-white/5 animate-fade-in">
+            <div class="container py-12 flex flex-col gap-8">
+                <div class="flex flex-col gap-6">
+                    <a href="{% url 'services' %}" class="text-2xl font-bold hover:text-brand transition-colors {% if request.resolver_match.url_name == 'services' %}text-brand{% endif %}">Services</a>
+                    <a href="{% url 'cities' %}" class="text-2xl font-bold hover:text-brand transition-colors {% if request.resolver_match.url_name == 'cities' %}text-brand{% endif %}">Cities</a>
+                    <a href="{% url 'how_it_works' %}" class="text-2xl font-bold hover:text-brand transition-colors {% if request.resolver_match.url_name == 'how_it_works' %}text-brand{% endif %}">How it Works</a>
+                    <a href="{% url 'drive_with_us' %}" class="text-2xl font-bold hover:text-brand transition-colors {% if request.resolver_match.url_name == 'drive_with_us' %}text-brand{% endif %}">Drive with Us</a>
+                    <a href="{% url 'corporate' %}" class="text-2xl font-bold hover:text-brand transition-colors {% if request.resolver_match.url_name == 'corporate' %}text-brand{% endif %}">Corporate</a>
+                    <a href="{% url 'advertise_landing' %}" class="text-2xl font-bold hover:text-brand transition-colors {% if 'advertise' in request.resolver_match.url_name %}text-brand{% endif %}">Advertise</a>
+                </div>
+                
+                <div class="pt-8 border-t border-white/5 flex flex-col gap-4">
+                    <a href="{% url 'download' %}" class="btn btn-primary w-full text-center">Download App</a>
+                    <a href="{% url 'contact' %}" class="btn btn-outline w-full text-center">Contact Support</a>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -122,41 +161,77 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-dark-800 py-20 mt-20 border-t border-white/5">
+    <footer class="bg-dark-800 pt-24 pb-12 mt-20 border-t border-white/5 relative overflow-hidden">
+        <!-- Subtle background glow -->
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-brand/5 rounded-full blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
+        
         <div class="container">
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
-                <div class="col-span-1 md:col-span-2">
-                    <h2 class="text-2xl font-bold mb-4"><span class="text-brand">Flexy</span>Ride</h2>
-                    <p class="text-gray-400 max-w-sm">Moving your city forward with safe, reliable, and affordable rides. Join the FlexyRide revolution today.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
+                <!-- Column 1: Brand & Contact -->
+                <div class="lg:col-span-1">
+                    <a href="{% url 'home' %}" class="text-3xl font-black mb-8 inline-block tracking-tight">
+                        <span class="text-brand">Flexy</span>Ride
+                    </a>
+                    <p class="text-gray-400 mb-8 leading-relaxed text-sm">
+                        Moving your city forward with safe, reliable, and affordable rides. Join the FlexyRide revolution today.
+                    </p>
+                    
+                    <div class="mb-12"></div>
+
+                    <!-- Social Icons -->
+                    <div class="flex gap-3">
+                        <a href="{{ site_settings.facebook_url|default:'#' }}" target="_blank" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all duration-300" aria-label="Facebook">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+                        </a>
+                        <a href="{{ site_settings.twitter_url|default:'#' }}" target="_blank" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all duration-300" aria-label="Twitter">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>
+                        </a>
+                        <a href="{{ site_settings.instagram_url|default:'#' }}" target="_blank" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all duration-300" aria-label="Instagram">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                        </a>
+                        <a href="{{ site_settings.linkedin_url|default:'#' }}" target="_blank" class="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all duration-300" aria-label="LinkedIn">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                        </a>
+                    </div>
                 </div>
                 
+                <!-- Column 2: Company -->
                 <div>
-                    <h4 class="text-white font-bold mb-6">Company</h4>
-                    <ul class="space-y-3">
+                    <h4 class="text-white font-bold mb-8 uppercase tracking-widest text-xs">Company</h4>
+                    <ul class="space-y-4">
                         <li><a href="{% url 'about' %}" class="text-gray-400 hover:text-brand transition-colors">About Us</a></li>
                         <li><a href="{% url 'careers' %}" class="text-gray-400 hover:text-brand transition-colors">Careers</a></li>
-                        <li><a href="{% url 'press' %}" class="text-gray-400 hover:text-brand transition-colors">Press</a></li>
-                        <li><a href="{% url 'blog_list' %}" class="text-gray-400 hover:text-brand transition-colors">Blog</a></li>
-                        <li><a href="{% url 'contact' %}" class="text-gray-400 hover:text-brand transition-colors">Contact</a></li>
+                        <li><a href="{% url 'press' %}" class="text-gray-400 hover:text-brand transition-colors">Press & Media</a></li>
+                        <li><a href="{% url 'blog_list' %}" class="text-gray-400 hover:text-brand transition-colors">News & Blog</a></li>
                     </ul>
                 </div>
                 
+                <!-- Column 3: Services -->
                 <div>
-                    <h4 class="text-white font-bold mb-6">Riders & Drivers</h4>
-                    <ul class="space-y-3">
-                        <li><a href="{% url 'services' %}" class="text-gray-400 hover:text-brand transition-colors">Our Services</a></li>
-                        <li><a href="{% url 'cities' %}" class="text-gray-400 hover:text-brand transition-colors">Cities</a></li>
-                        <li><a href="{% url 'safety' %}" class="text-gray-400 hover:text-brand transition-colors">Safety</a></li>
-                        <li><a href="{% url 'drive_with_us' %}" class="text-gray-400 hover:text-brand transition-colors">Drive with Us</a></li>
-                        <li><a href="{% url 'corporate' %}" class="text-gray-400 hover:text-brand transition-colors">Corporate Rides</a></li>
-                        <li><a href="{% url 'faq' %}" class="text-gray-400 hover:text-brand transition-colors">FAQ</a></li>
-                        <li><a href="{% url 'advertise_landing' %}" class="text-gray-400 hover:text-brand transition-colors">Advertise with Us</a></li>
+                    <h4 class="text-white font-bold mb-8 uppercase tracking-widest text-xs">Services</h4>
+                    <ul class="space-y-4">
+                        <li><a href="{% url 'services' %}" class="text-gray-400 hover:text-brand transition-colors">Vehicle Types</a></li>
+                        <li><a href="{% url 'cities' %}" class="text-gray-400 hover:text-brand transition-colors">Service Areas</a></li>
+                        <li><a href="{% url 'safety' %}" class="text-gray-400 hover:text-brand transition-colors">Safety Center</a></li>
+                        <li><a href="{% url 'corporate' %}" class="text-gray-400 hover:text-brand transition-colors">For Business</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Community -->
+                <div>
+                    <h4 class="text-white font-bold mb-8 uppercase tracking-widest text-xs">Community</h4>
+                    <ul class="space-y-4">
+                        <li><a href="{% url 'drive_with_us' %}" class="text-gray-400 hover:text-brand transition-colors">Become a Driver</a></li>
+                        <li><a href="{% url 'faq' %}" class="text-gray-400 hover:text-brand transition-colors">Help Center / FAQ</a></li>
+                        <li><a href="{% url 'contact' %}" class="text-gray-400 hover:text-brand transition-colors">Get in Touch</a></li>
+                        <li><a href="{% url 'advertise_landing' %}" class="text-gray-400 hover:text-brand transition-colors">Advertise</a></li>
                     </ul>
                 </div>
                 
+                <!-- Column 5: Legal -->
                 <div>
-                    <h4 class="text-white font-bold mb-6">Legal</h4>
-                    <ul class="space-y-3">
+                    <h4 class="text-white font-bold mb-8 uppercase tracking-widest text-xs">Legal</h4>
+                    <ul class="space-y-4">
                         <li><a href="{% url 'terms' %}" class="text-gray-400 hover:text-brand transition-colors">Terms of Service</a></li>
                         <li><a href="{% url 'privacy' %}" class="text-gray-400 hover:text-brand transition-colors">Privacy Policy</a></li>
                         <li><a href="{% url 'cookies' %}" class="text-gray-400 hover:text-brand transition-colors">Cookie Policy</a></li>
@@ -164,14 +239,15 @@
                 </div>
             </div>
             
-            <div class="pt-8 border-t border-white/5 flex flex-col md:row justify-between items-center gap-4 text-sm text-gray-400">
-                <div>&copy; {% now "Y" %} FlexyRide Ghana. All rights reserved.</div>
-                <div class="flex gap-6">
-                    <a href="https://facebook.com/flexyridegh" target="_blank" class="hover:text-brand transition-colors">Facebook</a>
-                    <a href="https://wa.me/233000000000" target="_blank" class="hover:text-brand transition-colors">WhatsApp</a>
-                    <a href="https://twitter.com/flexyridegh" target="_blank" class="hover:text-brand transition-colors">Twitter</a>
-                    <a href="https://instagram.com/flexyridegh" target="_blank" class="hover:text-brand transition-colors">Instagram</a>
-                    <a href="https://linkedin.com/company/flexyridegh" target="_blank" class="hover:text-brand transition-colors">LinkedIn</a>
+            <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-gray-500">
+                <div class="flex items-center gap-4">
+                    <span>&copy; {% now "Y" %} FlexyRide Ghana. All rights reserved.</span>
+                    <span class="hidden md:inline text-white/10">|</span>
+                    <span class="text-xs">Proudly serving urban mobility.</span>
+                </div>
+                <div class="flex gap-8">
+                    <a href="{% url 'download' %}" class="hover:text-brand transition-colors font-semibold">Download Apps</a>
+                    <a href="{% url 'how_it_works' %}" class="hover:text-brand transition-colors">How it Works</a>
                 </div>
             </div>
         </div>
@@ -195,24 +271,23 @@
     <script>
         // Mobile Menu Toggle
         const menuBtn = document.getElementById('mobile-menu-btn');
-        const navLinks = document.getElementById('nav-links');
-        const navActions = document.getElementById('nav-actions');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        const closeIcon = document.getElementById('close-icon');
 
-        if (menuBtn) {
+        if (menuBtn && mobileMenu) {
             menuBtn.addEventListener('click', () => {
-                const isHidden = navLinks.classList.toggle('hidden');
-                navActions.classList.toggle('hidden');
+                const isHidden = mobileMenu.classList.toggle('hidden');
+                menuIcon.classList.toggle('hidden', !isHidden);
+                closeIcon.classList.toggle('hidden', isHidden);
                 
-                if (!isHidden) {
-                    // Mobile flyout style could go here
-                    navLinks.classList.add('flex-col', 'absolute', 'top-20', 'left-0', 'right-0', 'bg-dark-900', 'p-8', 'border-b', 'border-white/5');
-                    navActions.classList.add('flex-col', 'absolute', 'top-[350px]', 'left-0', 'right-0', 'bg-dark-900', 'p-8', 'border-b', 'border-white/5');
-                } else {
-                    navLinks.classList.remove('flex-col', 'absolute', 'top-20', 'left-0', 'right-0', 'bg-dark-900', 'p-8', 'border-b', 'border-white/5');
-                    navActions.classList.remove('flex-col', 'absolute', 'top-[350px]', 'left-0', 'right-0', 'bg-dark-900', 'p-8', 'border-b', 'border-white/5');
-                }
+                // Prevent body scroll when menu is open
+                document.body.style.overflow = isHidden ? '' : 'hidden';
             });
         }
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
 
         // Smooth Scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

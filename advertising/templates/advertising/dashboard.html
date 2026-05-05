@@ -8,89 +8,107 @@
 {% endblock %}
 
 {% block content %}
-<section class="container animate-fade-in py-12 md:py-20">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+<section class="container animate-fade-in py-12 md:py-24">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
         <div>
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">Advertiser <span class="text-brand">Dashboard</span></h1>
-            <p class="text-gray-400 text-lg">Manage your active campaigns and track booking status.</p>
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-bold uppercase tracking-widest mb-6">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                Ad Manager
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black mb-4">Your <span class="text-brand">Dashboard</span></h1>
+            <p class="text-gray-500 text-lg">Manage your active campaigns and track booking status.</p>
         </div>
-        <a href="{% url 'advertise_apply' %}" class="btn btn-primary px-8 py-3 flex items-center gap-2 group shadow-lg shadow-brand/20">
-             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+        <a href="{% url 'advertise_apply' %}" class="btn btn-primary px-8 py-4 flex items-center gap-2 group shadow-xl shadow-brand/10">
+             <i data-lucide="plus-circle" class="w-5 h-5"></i>
              Create New Ad
         </a>
     </div>
 
-    <div class="space-y-6">
+    <div class="space-y-8">
         {% for booking in bookings %}
-        <div class="glass-card group hover:border-brand/30 transition-all duration-300">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+        <div class="ui-card bg-dark-800/50 hover:bg-dark-800 border-white/5 group">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
                 
-                <div class="flex-1 space-y-4">
-                    <div class="flex items-center gap-3">
+                <div class="flex-1 space-y-6">
+                    <div class="flex items-center gap-4">
                         {% if booking.status == 'LIVE' %}
-                            <span class="relative flex h-3 w-3">
+                            <span class="relative flex h-3.5 w-3.5">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-3 w-3 bg-brand"></span>
+                                <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-brand"></span>
                             </span>
                         {% endif %}
-                        <h3 class="text-2xl font-bold group-hover:text-brand transition-colors">{{ booking.headline }}</h3>
+                        <h3 class="text-2xl md:text-3xl font-bold group-hover:text-brand transition-colors">{{ booking.headline }}</h3>
                     </div>
                     
-                    <div class="flex flex-wrap gap-6 text-sm text-gray-400">
-                        <div class="flex items-center gap-2">
-                             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <div class="flex flex-wrap gap-8 text-sm text-gray-500">
+                        <div class="flex items-center gap-2.5 font-medium">
+                             <i data-lucide="calendar" class="w-4 h-4 text-brand"></i>
                              Week of {{ booking.week_start_date|date:"M d, Y" }}
                         </div>
-                        <div class="flex items-center gap-2">
-                             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <div class="flex items-center gap-2.5 font-medium">
+                             <i data-lucide="briefcase" class="w-4 h-4 text-brand"></i>
                              {{ booking.business_name }}
+                        </div>
+                        <div class="flex items-center gap-2.5 font-medium">
+                             <i data-lucide="hash" class="w-4 h-4 text-brand"></i>
+                             ID: {{ booking.id|truncatechars:12 }}
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-3">
                         {% if booking.status == 'PENDING_REVIEW' %}
-                            <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">Pending Review</span>
+                            <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">Pending Review</span>
                         {% elif booking.status == 'APPROVED' %}
-                            <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-blue-500/10 text-blue-500 border border-blue-500/20">Approved</span>
+                            <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-blue-500/10 text-blue-500 border border-blue-500/20">Approved</span>
                         {% elif booking.status == 'LIVE' %}
-                            <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-brand/20 text-brand border border-brand/50 shadow-[0_0_15px_rgba(0,200,150,0.2)]">Active Live</span>
+                            <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-brand/10 text-brand border border-brand/30 shadow-[0_0_20px_rgba(140,198,63,0.15)]">Active Live</span>
                         {% elif booking.status == 'COMPLETED' %}
-                            <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-white/5 text-gray-500 border border-white/5">Completed</span>
+                            <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-white/5 text-gray-500 border border-white/5">Completed</span>
                         {% elif booking.status == 'REJECTED' %}
-                            <span class="px-3 py-1 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20">Rejected</span>
+                            <span class="px-4 py-1.5 rounded-full text-[0.65rem] font-black uppercase tracking-widest bg-red-500/10 text-red-500 border border-red-500/20">Rejected</span>
                         {% endif %}
 
                         {% if booking.status == 'REJECTED' %}
-                            <span class="text-xs text-red-400 italic font-medium ml-2">— {{ booking.rejection_reason }}</span>
+                            <span class="text-xs text-red-400 font-bold ml-2">— {{ booking.rejection_reason }}</span>
                         {% endif %}
 
                         <a href="{% url 'advertise_preview' %}?token={{ current_token }}&ad_id={{ booking.id }}" 
-                           class="ml-auto text-xs font-bold text-gray-400 hover:text-brand flex items-center gap-1 group/preview transition-colors">
-                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                           class="ml-auto text-xs font-black text-gray-500 hover:text-brand flex items-center gap-2 group/preview transition-colors uppercase tracking-widest">
+                            <i data-lucide="eye" class="w-4 h-4 transition-transform group-hover/preview:scale-110"></i>
                             Live Preview
                         </a>
                     </div>
                     
                     {% if booking.analytics %}
-                    <div class="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 flex flex-wrap items-center gap-6">
+                    <div class="mt-6 p-6 rounded-2xl bg-dark-900 border border-white/5 flex flex-wrap items-center gap-10">
                         {% with total_views=booking.analytics.impressions_a|add:booking.analytics.impressions_b total_clicks=booking.analytics.clicks_a|add:booking.analytics.clicks_b %}
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Views</p>
-                            <p class="text-xl font-black">{{ total_views }}</p>
+                        <div class="space-y-1">
+                            <p class="text-[0.65rem] text-gray-600 uppercase tracking-[0.2em] font-black">Total Views</p>
+                            <p class="text-2xl font-black text-white">{{ total_views }}</p>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Total Clicks</p>
-                            <p class="text-xl font-black text-brand">{{ total_clicks }}</p>
+                        <div class="space-y-1">
+                            <p class="text-[0.65rem] text-gray-600 uppercase tracking-[0.2em] font-black">Total Clicks</p>
+                            <p class="text-2xl font-black text-brand">{{ total_clicks }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-[0.65rem] text-gray-600 uppercase tracking-[0.2em] font-black">CTR</p>
+                            <p class="text-2xl font-black text-blue-400">
+                                {% if total_views > 0 %}
+                                    {{ total_clicks|multiply:100|divide:total_views|floatformat:2 }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </p>
                         </div>
                         {% if booking.headline_b or booking.image_b or booking.body_text_b %}
-                        <div class="border-l border-white/10 pl-6 ml-auto flex gap-6">
+                        <div class="border-l border-white/5 pl-10 ml-auto flex gap-10">
                             <div>
-                                <p class="text-xs text-brand uppercase tracking-wider font-bold mb-1">Var A Clicks</p>
-                                <p class="text-lg font-bold">{{ booking.analytics.clicks_a }} <span class="text-xs text-gray-500 font-normal">/ {{ booking.analytics.impressions_a }} views</span></p>
+                                <p class="text-[0.65rem] text-brand uppercase tracking-widest font-black mb-1">Variant A</p>
+                                <p class="text-lg font-bold text-white">{{ booking.analytics.clicks_a }} <span class="text-xs text-gray-600 font-medium ml-1">clicks</span></p>
                             </div>
                             <div>
-                                <p class="text-xs text-blue-400 uppercase tracking-wider font-bold mb-1">Var B Clicks</p>
-                                <p class="text-lg font-bold">{{ booking.analytics.clicks_b }} <span class="text-xs text-gray-500 font-normal">/ {{ booking.analytics.impressions_b }} views</span></p>
+                                <p class="text-[0.65rem] text-blue-400 uppercase tracking-widest font-black mb-1">Variant B</p>
+                                <p class="text-lg font-bold text-white">{{ booking.analytics.clicks_b }} <span class="text-xs text-gray-600 font-medium ml-1">clicks</span></p>
                             </div>
                         </div>
                         {% endif %}
@@ -100,39 +118,39 @@
 
                 </div>
                 
-                <div class="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center w-full lg:w-auto gap-4 lg:gap-2 pb-2 lg:pb-0 border-t lg:border-t-0 border-white/5 pt-4 lg:pt-0">
-                    <div class="text-right lg:mb-2">
-                        <p class="text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest mb-1">Price</p>
-                        <p class="text-2xl font-black text-brand">GH₵ {{ booking.amount }}</p>
+                <div class="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center w-full lg:w-auto gap-6 pb-2 lg:pb-0 border-t lg:border-t-0 border-white/5 pt-8 lg:pt-0">
+                    <div class="text-right">
+                        <p class="text-[0.65rem] font-black text-gray-600 uppercase tracking-[0.2em] mb-1">Total Fee</p>
+                        <p class="text-3xl font-black text-white">GH₵ {{ booking.amount }}</p>
                     </div>
                     
                     <div class="text-right">
                         {% if booking.payment_status == 'PAID' %}
-                            <div class="flex items-center gap-2 text-brand font-bold text-sm bg-brand/10 px-4 py-2 rounded-full border border-brand/20">
-                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>
+                            <div class="flex items-center gap-2 text-brand font-black text-xs bg-brand/5 px-6 py-2.5 rounded-full border border-brand/20 uppercase tracking-widest">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
                                 PAID
                             </div>
                         {% elif booking.payment_status == 'UNPAID' and booking.status == 'APPROVED' %}
-                            <button class="btn btn-primary px-8 py-3 text-sm flex items-center gap-2 shadow-lg shadow-brand/20" 
+                            <button class="btn btn-primary px-10 py-3.5 text-sm flex items-center gap-2 shadow-xl shadow-brand/10" 
                                     onclick="payWithPaystack('{{ booking.id }}', '{{ booking.contact_email }}', {{ booking.amount }})">
-                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                                <i data-lucide="credit-card" class="w-5 h-5"></i>
                                 Pay Now
                             </button>
                         {% else %}
-                            <span class="text-xs font-bold text-gray-600 uppercase tracking-[0.2em] px-4 py-2 bg-white/5 rounded-full">{{ booking.get_payment_status_display }}</span>
+                            <span class="text-[0.65rem] font-black text-gray-500 uppercase tracking-widest px-5 py-2.5 bg-dark-900 rounded-full border border-white/5">{{ booking.get_payment_status_display }}</span>
                         {% endif %}
                     </div>
                 </div>
             </div>
         </div>
         {% empty %}
-        <div class="flex flex-col items-center justify-center py-32 glass-card space-y-6">
-            <div class="text-7xl opacity-20">📭</div>
-            <div class="text-center">
-                <h3 class="text-2xl font-bold mb-2">No Bookings Found</h3>
-                <p class="text-gray-500 max-w-sm mx-auto">You haven't submitted any advertising requests yet. Start growing your business with FlexyRide today.</p>
+        <div class="ui-card bg-dark-900 border-white/5 flex flex-col items-center justify-center py-40 text-center">
+            <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center text-gray-600 mb-8">
+                <i data-lucide="inbox" class="w-12 h-12"></i>
             </div>
-            <a href="{% url 'advertise_apply' %}" class="btn btn-primary px-10 py-4">Submit Your First Ad</a>
+            <h3 class="text-3xl font-black text-white mb-4">No Bookings Found</h3>
+            <p class="text-gray-500 max-w-sm mx-auto text-lg mb-12">You haven't submitted any advertising requests yet. Start growing your business with FlexyRide today.</p>
+            <a href="{% url 'advertise_apply' %}" class="btn btn-primary px-12 py-5 text-lg">Submit Your First Ad</a>
         </div>
         {% endfor %}
     </div>
@@ -142,16 +160,13 @@
 <script>
     function payWithPaystack(bookingId, email, amount) {
         let handler = PaystackPop.setup({
-            // Note: In a production environment, this should be passed from backend context
             key: '{{ paystack_public_key|default:"pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }}', 
             email: email,
-            amount: amount * 100, // in pesewas
+            amount: amount * 100,
             currency: 'GHS',
             ref: 'AD_' + bookingId + '_' + Math.floor((Math.random() * 1000000000) + 1),
             callback: function(response){
-                // In production, we would verify this reference on the server
                 alert('Payment complete! Reference: ' + response.reference + '. Your dashboard will update shortly.');
-                // For UI demo purposes, we we might reload the page
                 setTimeout(() => window.location.reload(), 2000);
             },
             onClose: function(){

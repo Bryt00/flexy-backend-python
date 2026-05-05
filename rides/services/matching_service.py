@@ -176,7 +176,7 @@ class MatchingService:
                 polled_ids.append(d_id)
                 poll_history[d_id] = now_ts
                 distance_history[d_id] = current_distances.get(d_id)
-                redis_geo.set_driver_lock(d_id, 12) # Lock for 12s dispatch window (safely < 20s retry)
+                redis_geo.set_driver_lock(d_id, 20) # Lock for 20s dispatch window (safely < 25s retry)
             
             metadata['polled_driver_ids'] = polled_ids
             metadata['rejected_driver_ids'] = rejected_ids

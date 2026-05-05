@@ -471,6 +471,29 @@ class RideViewSet(viewsets.ModelViewSet):
         
         self._broadcast_ride_update(ride, 'status_updated')
         
+        # Notify discovery stream to remove request from polled drivers
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            metadata = ride.dispatch_metadata or {}
+            polled_ids = metadata.get('polled_driver_ids', [])
+            for p_id in polled_ids:
+                from profiles.models import Profile
+                profile = Profile.objects.filter(pk=p_id).first()
+                if profile:
+                    target_group = f'driver_discovery_{profile.user.id}'
+                    async_to_sync(channel_layer.group_send)(
+                        target_group,
+                        {
+                            'type': 'ride_update',
+                            'event_type': 'ride_cancelled',
+                            'data': {'ride_id': str(ride.id)}
+                        }
+                    )
+        except Exception:
+            pass
+        
         return Response(self.get_serializer(ride).data)
 
     @action(detail=True, methods=['post', 'put'])

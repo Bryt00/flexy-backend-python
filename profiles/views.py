@@ -236,10 +236,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 # Remove from pool when going offline using the Correct API
                 redis_geo.geo_remove_driver(str(profile.pk))
 
-            return Response({
-                "is_online": profile.is_online,
-                "status": "online" if profile.is_online else "offline"
-            }, status=status.HTTP_200_OK)
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Profile.DoesNotExist:
             return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)

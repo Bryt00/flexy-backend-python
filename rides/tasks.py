@@ -65,9 +65,9 @@ def process_ride_matching(self, ride_id):
     except Exception as e:
         logger.error(f"Error in process_ride_matching: {e}")
     
-    # Always retry every 20s until status changes (accepted/cancelled)
+    # Always retry every 25s until status changes (accepted/cancelled)
     # Move outside try-except because self.retry() raises a Retry exception
-    self.retry(countdown=20)
+    self.retry(countdown=25)
 
 
 @shared_task

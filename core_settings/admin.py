@@ -19,7 +19,7 @@ class PricingRuleAdmin(ModelAdmin):
 
 @admin.register(VehicleCategory)
 class VehicleCategoryAdmin(ModelAdmin):
-    list_display = ('display_name', 'slug', 'base_fare', 'multiplier', 'is_active')
+    list_display = ('display_name', 'slug', 'base_fare', 'multiplier', 'image', 'is_active')
     list_editable = ('base_fare', 'multiplier', 'is_active')
     search_fields = ('display_name', 'slug')
 

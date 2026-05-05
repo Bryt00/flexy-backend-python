@@ -398,9 +398,54 @@ UNFOLD = {
                         "link": "/admin/core_settings/distancetier/",
                     },
                     {
-                        "title": "Website Editor",
-                        "icon": "web",
+                        "title": "Blog Posts",
+                        "icon": "article",
                         "link": "/admin/website/blogpost/",
+                    },
+                    {
+                        "title": "Service Categories",
+                        "icon": "directions_car",
+                        "link": "/admin/website/servicecategory/",
+                    },
+                    {
+                        "title": "FAQ Items",
+                        "icon": "quiz",
+                        "link": "/admin/website/faqitem/",
+                    },
+                    {
+                        "title": "Cities",
+                        "icon": "location_city",
+                        "link": "/admin/website/city/",
+                    },
+                    {
+                        "title": "Testimonials",
+                        "icon": "format_quote",
+                        "link": "/admin/website/testimonial/",
+                    },
+                    {
+                        "title": "Hero Banners",
+                        "icon": "panorama",
+                        "link": "/admin/website/herobanner/",
+                    },
+                    {
+                        "title": "Job Openings",
+                        "icon": "work",
+                        "link": "/admin/website/jobopening/",
+                    },
+                    {
+                        "title": "Brand Features",
+                        "icon": "star",
+                        "link": "/admin/website/brandfeature/",
+                    },
+                    {
+                        "title": "Website Settings",
+                        "icon": "tune",
+                        "link": "/admin/website/websitesettings/",
+                    },
+                    {
+                        "title": "Contact Inquiries",
+                        "icon": "mail",
+                        "link": "/admin/website/contactinquiry/",
                     },
                     {
                         "title": "Global Settings",

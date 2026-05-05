@@ -141,8 +141,8 @@ class MatchingService:
                     continue
                 
                 last_poll = poll_history.get(d_id, 0)
-                # Allow re-polling if never polled OR polled more than 45s ago
-                if d_id not in polled_ids or (now_ts - last_poll > 45):
+                # Allow re-polling if never polled OR polled more than 30s ago
+                if d_id not in polled_ids or (now_ts - last_poll > 30):
                     target_drivers.append(d)
                     if len(target_drivers) >= batch_size:
                         break
@@ -176,15 +176,16 @@ class MatchingService:
                 polled_ids.append(d_id)
                 poll_history[d_id] = now_ts
                 distance_history[d_id] = current_distances.get(d_id)
-                redis_geo.set_driver_lock(d_id, 20) # Lock for 20s dispatch window
+                redis_geo.set_driver_lock(d_id, 12) # Lock for 12s dispatch window (safely < 20s retry)
             
             metadata['polled_driver_ids'] = polled_ids
             metadata['rejected_driver_ids'] = rejected_ids
             metadata['poll_history'] = poll_history
             metadata['distance_history'] = distance_history
             metadata['last_dispatch_at'] = timezone.now().isoformat()
-            ride.dispatch_metadata = metadata
-            ride.save()
+            
+            # Use atomic update to avoid overwriting status if driver accepted concurrently
+            Ride.objects.filter(id=ride_id, status__in=['pending', 'requested']).update(dispatch_metadata=metadata)
             
             logger.info(f"Matching: Dispatched ride {ride_id} to {len(target_drivers)} driver(s).")
             return len(target_drivers)

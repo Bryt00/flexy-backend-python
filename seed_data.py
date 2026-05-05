@@ -47,7 +47,7 @@ if user:
     verification.save()
 
     # 3. Setup Test Vehicle for "Current Vehicle" display
-    Vehicle.objects.get_or_create(
+    vehicle, created = Vehicle.objects.get_or_create(
         driver=profile,
         license_plate='GW-772-24',
         defaults={
@@ -61,6 +61,21 @@ if user:
             'is_verified': True
         }
     )
+    if not created:
+        vehicle.is_active = True
+        vehicle.is_verified = True
+        vehicle.save()
+
+    # Set a default location (Accra central) to ensure they show up in Redis Geo immediately
+    profile.last_lat = 5.6037
+    profile.last_lng = -0.1870
+    profile.save()
+
+    try:
+        from flexy_backend.redis_client import redis_geo
+        redis_geo.geo_add_driver(str(profile.pk), profile.last_lat, profile.last_lng)
+    except Exception as e:
+        print(f"Warning: Could not sync to Redis: {e}")
     
     # 4. Setup Loyalty Status for "FlexyPro"
     profile.points = 1250

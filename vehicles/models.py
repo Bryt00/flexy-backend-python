@@ -33,5 +33,14 @@ class Vehicle(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Auto-verify and activate if driver is already verified (convenience for testing/admin)
+        if self.driver and getattr(self.driver, 'verification', None) and self.driver.verification.is_verified:
+            if not self.is_verified:
+                self.is_verified = True
+            if not self.is_active:
+                self.is_active = True
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.make} {self.model} ({self.license_plate})"

@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class MatchingService:
     @staticmethod
-    def find_nearby_drivers(ride_id, radius_km=3.0, exclude_locked=True):
+    def find_nearby_drivers(ride_id, radius_km=3.0, exclude_locked=True, attempt_count=0):
         """
         Calculates a pool of verified, online drivers within the radius.
         Includes Redis-based concurrency locking check.
@@ -21,18 +21,23 @@ class MatchingService:
             if ride.status not in ['pending', 'requested']:
                 return [], {}
             
-            # 1. Category Matching (Restore Cascade/Auto-Upgrades - Point 3)
+            # 1. Category Matching (Cascade Upgrades + Fallback - Point 3 & 4)
             requested_category = ride.preferred_vehicle_type or 'go'
-            target_categories = [requested_category]
             
-            if requested_category == 'go':
-                target_categories.extend(['standard', 'comfort', 'xl', 'exec'])
-            elif requested_category == 'standard':
-                target_categories.extend(['comfort', 'xl', 'exec'])
-            elif requested_category == 'comfort':
-                target_categories.extend(['xl', 'exec'])
-            elif requested_category == 'xl':
-                target_categories.extend(['exec'])
+            # Fallback logic: If no drivers found after 2 attempts, expand to ALL categories
+            if attempt_count >= 2:
+                target_categories = ['go', 'standard', 'comfort', 'xl', 'exec', 'pragya']
+                logger.info(f"Matching: Falling back to ALL categories for ride {ride_id} (Attempt {attempt_count + 1}).")
+            else:
+                target_categories = [requested_category]
+                if requested_category == 'go':
+                    target_categories.extend(['standard', 'comfort', 'xl', 'exec'])
+                elif requested_category == 'standard':
+                    target_categories.extend(['comfort', 'xl', 'exec'])
+                elif requested_category == 'comfort':
+                    target_categories.extend(['xl', 'exec'])
+                elif requested_category == 'xl':
+                    target_categories.extend(['exec'])
                 
             # 2. Redis Geospatial Filter with Distance
             nearby_data = redis_geo.geo_radius_drivers_with_dist(ride.pickup_lat, ride.pickup_lng, radius_km)
@@ -107,7 +112,7 @@ class MatchingService:
             # Adaptive Radius: Increase radius by 1.5km on each attempt (max 15km)
             radius = min(3.0 + (attempt_count * 1.5), 15.0)
             
-            drivers, current_distances = cls.find_nearby_drivers(ride_id, radius_km=radius)
+            drivers, current_distances = cls.find_nearby_drivers(ride_id, radius_km=radius, attempt_count=attempt_count)
             
             # Update attempt count for next cycle (persist even if no drivers found)
             metadata['attempt_count'] = attempt_count + 1

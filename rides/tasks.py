@@ -54,6 +54,14 @@ def process_ride_matching(self, ride_id):
     Orchestrates finding drivers. Retries every 15s for up to 2 minutes until ride is accepted.
     """
     try:
+        from flexy_backend.redis_client import redis_geo
+        lock_key = f"matching_lock:{ride_id}"
+        
+        # 20s lock to ensure only one task runs per dispatch window
+        if not redis_geo.r.set(lock_key, "locked", nx=True, ex=20):
+            logger.info(f"Matching: Task for ride {ride_id} already in progress. Skipping.")
+            return
+
         ride = Ride.objects.get(id=ride_id)
         if ride.status not in ['pending', 'requested']:
             return

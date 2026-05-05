@@ -208,10 +208,10 @@ class RideViewSet(viewsets.ModelViewSet):
             final_estimates = {}
             
             for category_slug, fare in base_estimates.items():
-                is_available = category_slug in category_availability
+                is_real_time_available = category_slug in category_availability
                 eta_minutes = None
                 
-                if is_available:
+                if is_real_time_available:
                     # Calculate ETA for this category
                     c_pos = category_availability[category_slug]
                     # ETA from driver [lng, lat] to pickup [p_lat, p_lng]
@@ -224,7 +224,8 @@ class RideViewSet(viewsets.ModelViewSet):
                 
                 final_estimates[category_slug] = {
                     "fare": fare,
-                    "is_available": is_available,
+                    "is_available": True, # Always selectable (Restore Point 4)
+                    "real_time_available": is_real_time_available,
                     "eta_minutes": eta_minutes
                 }
 

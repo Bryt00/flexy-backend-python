@@ -59,15 +59,15 @@ def process_ride_matching(self, ride_id):
             return
 
         MatchingService.dispatch_ride_request(ride_id)
-        
-        # Always retry every 20s until status changes (accepted/cancelled)
-        # 12 retries * 20s = 240 seconds
-        self.retry(countdown=20)
             
     except Ride.DoesNotExist:
-        pass
+        return
     except Exception as e:
         logger.error(f"Error in process_ride_matching: {e}")
+    
+    # Always retry every 20s until status changes (accepted/cancelled)
+    # Move outside try-except because self.retry() raises a Retry exception
+    self.retry(countdown=20)
 
 
 @shared_task

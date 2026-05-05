@@ -499,17 +499,22 @@ class RideViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post', 'put'])
     def accept(self, request, pk=None):
         ride = self.get_object()
+        print(f"DEBUG: Driver {request.user.id} attempting to accept ride {ride.id}. Current status: {ride.status}")
+        
         if ride.status != 'pending' and ride.status != 'requested':
+            print(f"DEBUG: Acceptance failed for ride {ride.id}. Status is {ride.status}")
             return Response({"error": "Ride already accepted or cancelled"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Profile check for driver name extraction
         if not hasattr(request.user, 'profile'):
+             print(f"DEBUG: Acceptance failed for ride {ride.id}. Driver {request.user.id} has no profile.")
              return Response({"error": "User has no profile"}, status=status.HTTP_400_BAD_REQUEST)
              
         ride.driver = request.user
         ride.status = 'accepted'
         ride.save()
         
+        print(f"DEBUG: Ride {ride.id} successfully accepted by driver {request.user.id}")
         self._broadcast_ride_update(ride, 'status_updated')
         
         return Response(self.get_serializer(ride).data)

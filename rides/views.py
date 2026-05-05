@@ -373,6 +373,12 @@ class RideViewSet(viewsets.ModelViewSet):
                 from integrations.email_service import EmailService
                 EmailService.send_ride_receipt_email(ride, receipt)
             
+            # If transitioning FROM active states TO terminal states, reset vehicle status
+            if new_status in ['completed', 'cancelled'] and old_status in ['accepted', 'arrived', 'in_progress']:
+                if ride.driver:
+                    from profiles.services.tracking_service import TrackingService
+                    TrackingService.set_driver_ride_status(str(ride.driver.id), is_riding=False)
+            
             ride.save()
             
             # Broadcast the status update via WebSocket room (Screenshot 6)
@@ -467,6 +473,9 @@ class RideViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         ride.status = 'cancelled'
+        if ride.driver:
+            from profiles.services.tracking_service import TrackingService
+            TrackingService.set_driver_ride_status(str(ride.driver.id), is_riding=False)
         ride.save()
         
         self._broadcast_ride_update(ride, 'status_updated')
@@ -513,6 +522,10 @@ class RideViewSet(viewsets.ModelViewSet):
         ride.driver = request.user
         ride.status = 'accepted'
         ride.save()
+        
+        # Sync Vehicle Status to 'riding'
+        from profiles.services.tracking_service import TrackingService
+        TrackingService.set_driver_ride_status(str(request.user.id), is_riding=True)
         
         print(f"DEBUG: Ride {ride.id} successfully accepted by driver {request.user.id}")
         self._broadcast_ride_update(ride, 'status_updated')

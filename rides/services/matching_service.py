@@ -100,15 +100,22 @@ class MatchingService:
                 return 0
 
             # 1. Get Sorted Pool with Distance Data
-            # Adaptive Radius: Increase radius by 1.5km on each retry (max 15km)
             metadata = ride.dispatch_metadata or {}
             polled_ids = metadata.get('polled_driver_ids', [])
-            radius = min(3.0 + (len(polled_ids) * 1.5), 15.0)
+            attempt_count = metadata.get('attempt_count', 0)
+            
+            # Adaptive Radius: Increase radius by 1.5km on each attempt (max 15km)
+            radius = min(3.0 + (attempt_count * 1.5), 15.0)
             
             drivers, current_distances = cls.find_nearby_drivers(ride_id, radius_km=radius)
             
+            # Update attempt count for next cycle (persist even if no drivers found)
+            metadata['attempt_count'] = attempt_count + 1
+            
             if not drivers:
-                logger.info(f"Matching: No eligible drivers found within {radius}km for ride {ride_id}.")
+                logger.info(f"Matching: No eligible drivers found within {radius}km for ride {ride_id} (Attempt {attempt_count + 1}).")
+                # Atomic update to persist the incremented attempt count for the next Celery retry
+                Ride.objects.filter(id=ride_id, status__in=['pending', 'requested']).update(dispatch_metadata=metadata)
                 return 0
 
             # 2. Load Dispatch Metadata
@@ -183,6 +190,7 @@ class MatchingService:
             metadata['poll_history'] = poll_history
             metadata['distance_history'] = distance_history
             metadata['last_dispatch_at'] = timezone.now().isoformat()
+            metadata['attempt_count'] = attempt_count + 1 # Redundant but safe
             
             # Use atomic update to avoid overwriting status if driver accepted concurrently
             Ride.objects.filter(id=ride_id, status__in=['pending', 'requested']).update(dispatch_metadata=metadata)

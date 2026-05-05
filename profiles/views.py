@@ -165,14 +165,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
             if lat is None or lng is None:
                 return Response({"error": "lat and lng are required"}, status=status.HTTP_400_BAD_REQUEST)
                 
-            profile.last_lat = float(lat)
-            profile.last_lng = float(lng)
-            profile.last_location_update = timezone.now()
-            profile.save()
-            
-            # Push to Redis for lightning fast spherical driver matching
-            from flexy_backend.redis_client import redis_geo
-            redis_geo.geo_add_driver(str(profile.pk), profile.last_lat, profile.last_lng)
+            from .services.tracking_service import TrackingService
+            TrackingService.update_driver_location(str(profile.pk), float(lat), float(lng))
             
             return Response({"status": "Location updated"}, status=status.HTTP_200_OK)
         except Profile.DoesNotExist:
@@ -216,25 +210,15 @@ class ProfileViewSet(viewsets.ModelViewSet):
                     "detail": "You need an active subscription to go online. Please check your plan status."
                 }, status=status.HTTP_403_FORBIDDEN)
 
-            # 3. Toggle Status
+            # 3. Toggle Status via Centralized Service
             requested_status = request.data.get('is_online')
-            if requested_status is not None:
-                profile.is_online = bool(requested_status)
-            else:
-                profile.is_online = not profile.is_online
+            is_online = bool(requested_status) if requested_status is not None else not profile.is_online
             
-            profile.last_location_update = timezone.now()
-            profile.save()
-
-            # 3. Redis Synchronization
-            from flexy_backend.redis_client import redis_geo
-            if profile.is_online:
-                # If they have a last known location, add them to the pool immediately
-                if profile.last_lat and profile.last_lng:
-                    redis_geo.geo_add_driver(str(profile.pk), profile.last_lat, profile.last_lng)
-            else:
-                # Remove from pool when going offline using the Correct API
-                redis_geo.geo_remove_driver(str(profile.pk))
+            from .services.tracking_service import TrackingService
+            TrackingService.set_driver_online_status(str(profile.pk), is_online)
+            
+            # Refresh to reflect updated status in response
+            profile.refresh_from_db()
 
             serializer = self.get_serializer(profile)
             return Response(serializer.data, status=status.HTTP_200_OK)

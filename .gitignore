@@ -65,4 +65,4 @@ celerybeat.pid
 .DS_Store
 
 # Docker
-.dockerignore
+.dockerignoreseed_services.py

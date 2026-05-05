@@ -388,6 +388,16 @@ UNFOLD = {
                         "link": "/admin/core_settings/pricingrule/",
                     },
                     {
+                        "title": "Vehicle Categories",
+                        "icon": "category",
+                        "link": "/admin/core_settings/vehiclecategory/",
+                    },
+                    {
+                        "title": "Distance Tiers",
+                        "icon": "straighten",
+                        "link": "/admin/core_settings/distancetier/",
+                    },
+                    {
                         "title": "Website Editor",
                         "icon": "web",
                         "link": "/admin/website/blogpost/",
@@ -396,6 +406,11 @@ UNFOLD = {
                         "title": "Global Settings",
                         "icon": "settings",
                         "link": "/admin/core_settings/sitesetting/",
+                    },
+                    {
+                        "title": "Legal Documents",
+                        "icon": "description",
+                        "link": "/admin/core_settings/legaldocument/",
                     },
                     {
                         "title": "System Audit Logs",

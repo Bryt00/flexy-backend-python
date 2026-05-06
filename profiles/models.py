@@ -132,9 +132,13 @@ class DriverVerification(models.Model):
             type=vehicle_type
         )
 
-        # 2. Sync Subscription
+        # 2. Sync Subscription with 14-day Free Trial
         DriverSubscription = apps.get_model('subscriptions', 'DriverSubscription')
-        DriverSubscription.objects.get_or_create(profile=self.driver)
+        sub, created = DriverSubscription.objects.get_or_create(profile=self.driver)
+        if not sub.is_trial_used:
+            sub.trial_end_date = timezone.now() + timezone.timedelta(days=14)
+            sub.is_trial_used = True
+            sub.save()
 
         # 3. Notify the user
         title = "Account Verified!"

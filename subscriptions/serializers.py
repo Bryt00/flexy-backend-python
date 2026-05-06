@@ -17,5 +17,9 @@ class DriverSubscriptionSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DriverSubscription
-        fields = ['id', 'plan', 'plan_details', 'status', 'expiry_date', 'is_active', 'auto_renew']
-        read_only_fields = ['status', 'expiry_date']
+        fields = [
+            'id', 'plan', 'plan_details', 'status', 'expiry_date', 
+            'is_active', 'auto_renew', 'trial_end_date', 'is_in_trial', 
+            'trial_days_remaining'
+        ]
+        read_only_fields = ['status', 'expiry_date', 'trial_end_date']

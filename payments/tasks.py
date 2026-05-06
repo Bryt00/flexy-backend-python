@@ -14,8 +14,8 @@ def process_ride_earnings(driver_user_id, amount, ride_id, metadata=None):
                 wallet=wallet,
                 amount=amount,
                 type='off_app_sale', 
-                reference_id=str(ride_id),
                 status='completed',
+                metadata=metadata or {},
                 description=f"Sales record for ride {ride_id} (Collected Off-App)"
             )
             

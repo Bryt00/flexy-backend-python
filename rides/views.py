@@ -90,11 +90,19 @@ class RideViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def active(self, request):
         five_mins_ago = timezone.now() - timezone.timedelta(minutes=5)
-        ride = Ride.objects.filter(
+        
+        # Base filter: participant in the ride AND (active status OR recently completed)
+        qs = Ride.objects.filter(
             (Q(rider=request.user) | Q(driver=request.user)),
             Q(status__in=['pending', 'accepted', 'arrived', 'in_progress']) |
             Q(status='completed', updated_at__gte=five_mins_ago)
-        ).order_by('-updated_at').first()
+        ).order_by('-updated_at')
+
+        # Critical: Exclude rides that the user has already rated.
+        # This prevents the summary sheet from reappearing if they've already finished the flow.
+        rated_ride_ids = Rating.objects.filter(rater=request.user).values_list('ride_id', flat=True)
+        ride = qs.exclude(id__in=rated_ride_ids).first()
+
         if ride:
             return Response(self.get_serializer(ride).data)
         # Return 200 with null to avoid Dio errors in frontend when no trip exists
@@ -102,7 +110,13 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def scheduled(self, request):
-        rides = Ride.objects.filter(rider=request.user, is_scheduled=True).order_by('scheduled_for')
+        rides = Ride.objects.filter(
+            Q(rider=request.user) | Q(driver=request.user)
+        ).filter(
+            Q(is_scheduled=True) | Q(scheduled_for__isnull=False)
+        ).filter(
+            Q(status__in=['pending', 'requested', 'accepted', 'arrived', 'in_progress'])
+        ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
     @action(detail=False, methods=['get'])
@@ -113,6 +127,7 @@ class RideViewSet(viewsets.ModelViewSet):
         rides = Ride.objects.filter(
             is_scheduled=True, 
             status='pending',
+            driver__isnull=True,
             scheduled_for__gt=timezone.now()
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
@@ -136,6 +151,11 @@ class RideViewSet(viewsets.ModelViewSet):
                 is_scheduled=True,
                 status='pending'
             )
+            
+            # Explicitly set is_scheduled to True to ensure it wins over any data in the serializer
+            if not ride.is_scheduled:
+                ride.is_scheduled = True
+                ride.save(update_fields=['is_scheduled'])
             return Response(self.get_serializer(ride).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -298,12 +318,17 @@ class RideViewSet(viewsets.ModelViewSet):
                 ride.fare = ledger['total_fare'] - discount_to_apply # User facing fare
                 
                 # Trigger earnings processing
-                if ride.driver:
-                    process_ride_earnings.delay(
-                        ride.driver.id, # Driver is a User ID in my new model
-                        ride.driver_payout_amount,
-                        ride.id
-                    )
+                from payments.tasks import process_ride_earnings
+                process_ride_earnings.delay(
+                    str(ride.driver.id), 
+                    float(ride.fare), 
+                    str(ride.id),
+                    metadata={
+                        "pickup_address": ride.pickup_address,
+                        "dropoff_address": ride.dropoff_address,
+                        "ride_id": str(ride.id)
+                    }
+                )
 
                 # --- REFERRAL REWARD LOGIC ---
                 if hasattr(ride.rider, 'profile'):

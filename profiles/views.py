@@ -77,13 +77,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
         verification, created = DriverVerification.objects.get_or_create(driver=profile)
 
         # --- Re-submission Guard ---
-        # Prevent tampering: once submitted or verified, block further document changes.
-        # Only allow re-submission if the previous attempt was rejected.
-        if not created and verification.status in ('SUBMITTED', 'VERIFIED'):
+        # Prevent tampering once verified.
+        # Allow re-submission if status is PENDING, SUBMITTED (to fix mistakes), or REJECTED.
+        if not created and verification.status == 'VERIFIED':
             return Response({
-                'error': 'Verification already submitted.',
-                'detail': f'Your verification is currently {verification.status.lower()}. '
-                          f'You cannot re-submit while it is under review or already approved.',
+                'error': 'Verification already approved.',
+                'detail': 'Your account is already verified. Please contact support to update your documents.',
                 'verification_status': verification.status,
             }, status=status.HTTP_400_BAD_REQUEST)
 

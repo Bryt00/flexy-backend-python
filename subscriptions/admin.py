@@ -11,10 +11,24 @@ class SubscriptionPlanAdmin(ModelAdmin):
 
 @admin.register(DriverSubscription)
 class DriverSubscriptionAdmin(ModelAdmin):
-    list_display = ('profile', 'plan', 'status', 'start_date', 'expiry_date', 'is_currently_active')
-    list_filter = ('status', 'plan__category')
-    search_fields = ('profile__user__email', 'profile__first_name', 'profile__last_name')
+    list_display = ('profile', 'plan', 'status', 'trial_end_date', 'expiry_date', 'is_in_trial', 'is_currently_active')
+    list_filter = ('status', 'is_trial_used', 'plan__category')
+    search_fields = ('profile__user__email', 'profile__full_name')
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': ('profile', 'plan', 'status')
+        }),
+        ('Trial Information', {
+            'fields': ('is_trial_used', 'trial_end_date')
+        }),
+        ('Dates', {
+            'fields': ('start_date', 'expiry_date', 'auto_renew')
+        }),
+        ('Metadata', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
 
 @admin.register(SubscriptionPayment)
 class SubscriptionPaymentAdmin(ModelAdmin):

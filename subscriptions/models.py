@@ -46,13 +46,33 @@ class DriverSubscription(models.Model):
     expiry_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
     
+    trial_end_date = models.DateTimeField(null=True, blank=True)
+    is_trial_used = models.BooleanField(default=False)
+    
     auto_renew = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
+    def is_in_trial(self):
+        from django.utils import timezone
+        if not self.trial_end_date:
+            return False
+        return self.trial_end_date > timezone.now()
+
+    @property
+    def trial_days_remaining(self):
+        from django.utils import timezone
+        if not self.is_in_trial:
+            return 0
+        diff = self.trial_end_date - timezone.now()
+        return max(0, diff.days)
+
+    @property
     def is_currently_active(self):
         from django.utils import timezone
+        if self.is_in_trial:
+            return True
         if self.status != 'active':
             return False
         if self.expiry_date and self.expiry_date < timezone.now():
@@ -77,7 +97,10 @@ class DriverSubscription(models.Model):
         """
         Strict: must NOT be expired to be visible.
         Once month is due, they are blocked from being visible.
+        Trial period allows them to be visible.
         """
+        if self.is_in_trial:
+            return True
         return self.status == 'active' and not self.is_expired
 
     @property

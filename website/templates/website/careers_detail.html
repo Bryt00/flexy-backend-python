@@ -1,0 +1,216 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ job.title }} | Careers | FlexyRide{% endblock %}
+{% block meta_description %}{{ job.description|striptags|truncatewords:30 }}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative pt-32 pb-20 overflow-hidden">
+    <!-- Background Decor -->
+    <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-brand/10 rounded-full blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
+    <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand/5 rounded-full blur-[100px] -z-10 -translate-x-1/2 translate-y-1/2"></div>
+
+    <div class="container animate-fade-in">
+        <nav class="flex items-center gap-2 text-sm text-gray-500 mb-8">
+            <a href="{% url 'home' %}" class="hover:text-brand transition-colors">Home</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <a href="{% url 'careers' %}" class="hover:text-brand transition-colors">Careers</a>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            <span class="text-white font-medium">{{ job.title }}</span>
+        </nav>
+
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div class="max-w-3xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-bold uppercase tracking-widest mb-6">
+                    <span class="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+                    {{ job.get_department_display }}
+                </div>
+                <h1 class="text-4xl md:text-6xl font-bold mb-6 hero-gradient-text leading-tight">{{ job.title }}</h1>
+                <div class="flex flex-wrap gap-6 text-gray-400 font-medium">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-brand"></i>
+                        {{ job.location }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="clock" class="w-5 h-5 text-brand"></i>
+                        {{ job.get_job_type_display }}
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="calendar" class="w-5 h-5 text-brand"></i>
+                        Posted {{ job.created_at|date:"M d, Y" }}
+                    </div>
+                </div>
+            </div>
+            <div class="flex-shrink-0">
+                <a href="#apply" class="btn btn-primary px-10 py-5 text-lg shadow-xl shadow-brand/20">Apply for this Position</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container py-20">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        <!-- Main Content -->
+        <div class="lg:col-span-8 animate-fade-in">
+            <!-- Job Description -->
+            <div class="prose prose-invert prose-brand max-w-none mb-16">
+                <h2 class="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    <span class="w-8 h-1 bg-brand rounded-full"></span>
+                    Job Description
+                </h2>
+                <div class="text-gray-400 leading-relaxed text-lg space-y-6">
+                    {{ job.description|safe }}
+                </div>
+            </div>
+
+            {% if job.responsibilities %}
+            <div class="prose prose-invert prose-brand max-w-none mb-16">
+                <h2 class="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    <span class="w-8 h-1 bg-brand rounded-full"></span>
+                    Responsibilities
+                </h2>
+                <div class="text-gray-400 leading-relaxed text-lg">
+                    {{ job.responsibilities|safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if job.requirements %}
+            <div class="prose prose-invert prose-brand max-w-none mb-16">
+                <h2 class="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    <span class="w-8 h-1 bg-brand rounded-full"></span>
+                    Requirements
+                </h2>
+                <div class="text-gray-400 leading-relaxed text-lg">
+                    {{ job.requirements|safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if job.benefits %}
+            <div class="prose prose-invert prose-brand max-w-none mb-16">
+                <h2 class="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    <span class="w-8 h-1 bg-brand rounded-full"></span>
+                    Benefits & Perks
+                </h2>
+                <div class="text-gray-400 leading-relaxed text-lg">
+                    {{ job.benefits|safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Apply Section -->
+            <div id="apply" class="ui-card p-12 mt-20 bg-gradient-to-br from-dark-800 to-dark-900 border-white/5 relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-brand/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-brand/20 transition-colors"></div>
+                
+                <div class="relative z-10">
+                    <h2 class="text-3xl font-bold mb-4">Ready to move Ghana forward?</h2>
+                    <p class="text-gray-400 mb-10 max-w-xl text-lg">If you're passionate about urban mobility and building world-class technology, we want to hear from you.</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        {% if job.apply_url %}
+                        <a href="{{ job.apply_url }}" target="_blank" class="btn btn-primary px-12 py-5">Apply Externally</a>
+                        {% endif %}
+                        <a href="{% url 'contact' %}?subject=Application for {{ job.title }}" class="btn btn-outline px-12 py-5 flex items-center justify-center gap-2">
+                            <i data-lucide="mail" class="w-5 h-5"></i>
+                            Send us your CV
+                        </a>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-6 italic">By applying, you agree to our recruitment privacy policy.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-4">
+            <div class="sticky top-32 space-y-8 animate-fade-in" style="animation-delay: 0.2s">
+                <!-- Job Summary Card -->
+                <div class="ui-card p-8 border-white/5 bg-dark-800/50 backdrop-blur-xl">
+                    <h3 class="text-xl font-bold mb-6 border-b border-white/5 pb-4">Job Summary</h3>
+                    <ul class="space-y-6">
+                        <li class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand flex-shrink-0">
+                                <i data-lucide="layers" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Department</p>
+                                <p class="text-white font-semibold">{{ job.get_department_display }}</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand flex-shrink-0">
+                                <i data-lucide="briefcase" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Employment Type</p>
+                                <p class="text-white font-semibold">{{ job.get_job_type_display }}</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center text-brand flex-shrink-0">
+                                <i data-lucide="map" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Location</p>
+                                <p class="text-white font-semibold">{{ job.location }}</p>
+                            </div>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-10 pt-8 border-t border-white/5">
+                        <p class="text-sm text-gray-400 mb-6 text-center">Know someone perfect for this role?</p>
+                        <div class="flex justify-center gap-4">
+                            <button class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all" title="Share on Twitter">
+                                <i data-lucide="twitter" class="w-5 h-5"></i>
+                            </button>
+                            <button class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all" title="Share on LinkedIn">
+                                <i data-lucide="linkedin" class="w-5 h-5"></i>
+                            </button>
+                            <button class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:bg-brand hover:text-dark-900 transition-all" title="Copy Link" onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied!');">
+                                <i data-lucide="link" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Roles Card -->
+                {% if other_jobs %}
+                <div class="ui-card p-8 border-white/5 bg-dark-800/50 backdrop-blur-xl">
+                    <h3 class="text-xl font-bold mb-6 border-b border-white/5 pb-4">Other Roles</h3>
+                    <div class="space-y-6">
+                        {% for other in other_jobs %}
+                        <a href="{% url 'career_detail' other.slug %}" class="block group">
+                            <h4 class="text-white font-bold group-hover:text-brand transition-colors mb-1">{{ other.title }}</h4>
+                            <p class="text-xs text-gray-500">{{ other.get_department_display }} &bull; {{ other.location }}</p>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    <a href="{% url 'careers' %}" class="inline-flex items-center gap-2 text-brand text-sm font-bold mt-8 hover:gap-3 transition-all">
+                        View All Positions <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prose h2 { margin-top: 0; }
+    .prose ul { list-style-type: none; padding-left: 0; }
+    .prose li { position: relative; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+    .prose li::before { 
+        content: ""; 
+        position: absolute; 
+        left: 0; 
+        top: 0.6rem; 
+        width: 0.5rem; 
+        height: 0.5rem; 
+        background: #8CC63F; 
+        border-radius: 50%; 
+    }
+</style>
+{% endblock %}

@@ -9,10 +9,20 @@ class FareCalculator:
     @staticmethod
     def get_surge_multiplier(target_time=None, lat=None, lng=None, radius=5.0):
         """
-        Calculates compounded surge multiplier factoring in peak hours and 
-        live Redis spatial density.
+        Calculates compounded surge multiplier factoring in admin-set rules, 
+        peak hours, and live Redis spatial density.
         """
+        from core_settings.models import PricingRule
         multiplier = 1.0
+
+        # Step 1: Admin-set Pricing Rule (Manual Surge)
+        # We fetch the Global rule or a city-specific one if we have lat/lng (simplified to Global for now)
+        try:
+            rule = PricingRule.objects.filter(is_active=True).first()
+            if rule:
+                multiplier = max(multiplier, rule.surge_multiplier)
+        except Exception as e:
+            logger.error(f"Error fetching PricingRule: {e}")
 
         if target_time is None:
             target_time = datetime.now().time()
@@ -20,11 +30,11 @@ class FareCalculator:
         peak1_start, peak1_end = datetime.strptime("06:30", "%H:%M").time(), datetime.strptime("09:00", "%H:%M").time()
         peak2_start, peak2_end = datetime.strptime("16:00", "%H:%M").time(), datetime.strptime("20:00", "%H:%M").time()
 
-        # Step 1: Base Peak Hour Surge
+        # Step 2: Base Peak Hour Surge
         if (peak1_start <= target_time <= peak1_end) or (peak2_start <= target_time <= peak2_end):
             multiplier = max(multiplier, 1.3)
         
-        # Step 2: Dynamic Spatial Demand Surge
+        # Step 3: Dynamic Spatial Demand Surge
         if lat is not None and lng is not None:
             try:
                 from flexy_backend.redis_client import redis_geo
@@ -69,13 +79,14 @@ class FareCalculator:
         return round(fee, 2)
 
     @staticmethod
-    def compute_final_fare(distance_km, vehicle_category_slug, waiting_minutes=0, payment_method='cash', is_cancelled=False):
+    def compute_final_fare(distance_km, vehicle_category_slug, waiting_minutes=0, payment_method='cash', is_cancelled=False, surge_override=None, num_stops=0):
         """
         Final Fare Calculation Sequence (8 Stages - Screenshot 7)
         """
         ledger = {
             'base_fare': 0.0,
             'distance_fare': 0.0,
+            'stops_fee': 0.0,
             'waiting_fee': 0.0,
             'cancellation_fee': 0.0,
             'surge_multiplier': 1.0,
@@ -108,13 +119,17 @@ class FareCalculator:
             remaining_dist -= dist_in_tier
 
         # Stage 4: Apply Surge Multiplier (To km-based charges only)
-        ledger['surge_multiplier'] = FareCalculator.get_surge_multiplier()
+        ledger['surge_multiplier'] = surge_override if surge_override is not None else FareCalculator.get_surge_multiplier()
         ledger['distance_fare'] = tiered_dist_charge * ledger['surge_multiplier']
 
-        # Stage 5: Add Waiting Fee
+        # Stage 5: Add Stops Fee (GHS 2 per extra stop)
+        if num_stops > 0:
+            ledger['stops_fee'] = num_stops * 2.0
+
+        # Stage 6: Add Waiting Fee
         ledger['waiting_fee'] = FareCalculator.calculate_waiting_fee(waiting_minutes)
 
-        # Stage 6: Apply Cancellation Logic
+        # Stage 7: Apply Cancellation Logic
         if is_cancelled:
             # GHS 8 fee only for card/momo
             if payment_method.lower() in ['card', 'momo', 'wallet']:
@@ -122,11 +137,11 @@ class FareCalculator:
             else:
                 ledger['cancellation_fee'] = 0.0
 
-        # Stage 7: Format Final Amount
-        total = ledger['base_fare'] + ledger['distance_fare'] + ledger['waiting_fee'] + ledger['cancellation_fee']
+        # Stage 8: Format Final Amount
+        total = ledger['base_fare'] + ledger['distance_fare'] + ledger['stops_fee'] + ledger['waiting_fee'] + ledger['cancellation_fee']
         ledger['total_fare'] = round(total, 2)
 
-        # Stage 8: Payout Assignment (100% to driver)
+        # Stage 9: Payout Assignment (100% to driver)
         ledger['driver_payout'] = ledger['total_fare']
 
         return ledger

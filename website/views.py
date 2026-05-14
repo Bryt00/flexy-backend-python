@@ -170,6 +170,21 @@ class CareersView(TemplateView):
         context['hero'] = HeroBanner.objects.filter(page_name='careers').first()
         return context
 
+class JobDetailView(DetailView):
+    model = JobOpening
+    template_name = 'website/careers_detail.html'
+    context_object_name = 'job'
+    
+    def get_queryset(self):
+        return JobOpening.objects.filter(is_active=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_global_context())
+        # Suggest other roles
+        context['other_jobs'] = JobOpening.objects.filter(is_active=True).exclude(id=self.object.id).order_by('?')[:3]
+        return context
+
 class PressView(TemplateView):
     template_name = 'website/press.html'
 
@@ -224,12 +239,25 @@ class LegalDocumentView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_global_context())
-        slug = self.kwargs.get('slug')
-        doc_type = self.kwargs.get('doc_type')
+        slug = kwargs.get('slug') or self.kwargs.get('slug')
+        doc_type = kwargs.get('doc_type') or self.kwargs.get('doc_type')
+        document = None
         if slug:
-            context['document'] = get_object_or_404(LegalDocument, slug=slug)
+            document = LegalDocument.objects.filter(slug=slug).first()
         elif doc_type:
-             context['document'] = get_object_or_404(LegalDocument, document_type=doc_type)
+            document = LegalDocument.objects.filter(document_type=doc_type).order_by('-last_updated').first()
+        
+        if not document:
+            # Provide a placeholder so the template renders gracefully
+            from types import SimpleNamespace
+            from django.utils import timezone
+            type_labels = {'terms': 'Terms of Service', 'privacy': 'Privacy Policy', 'cookies': 'Cookie Policy'}
+            document = SimpleNamespace(
+                title=type_labels.get(doc_type, 'Legal Document'),
+                content='<p>This document is currently being prepared. Please check back soon.</p>',
+                last_updated=timezone.now(),
+            )
+        context['document'] = document
         return context
 
 class TermsView(LegalDocumentView):

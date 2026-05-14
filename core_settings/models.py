@@ -24,7 +24,7 @@ class LegalDocument(models.Model):
 
 class PricingRule(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    city = models.CharField(max_length=100, default='Global')
+    city = models.ForeignKey('website.City', on_delete=models.CASCADE, related_name='pricing_rules', null=True, blank=True)
     base_fare = models.FloatField(default=0.0)
     per_km_rate = models.FloatField(default=0.0)
     per_minute_rate = models.FloatField(default=0.0)

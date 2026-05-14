@@ -455,7 +455,7 @@ UNFOLD = {
                     {
                         "title": "Legal Documents",
                         "icon": "description",
-                        "link": "/admin/core_settings/legaldocument/",
+                        "link": "/admin/website/legaldocument/",
                     },
                     {
                         "title": "System Audit Logs",
@@ -508,11 +508,13 @@ CKEDITOR_5_CONFIGS = {
             '|',
             'blockQuote',
         ],
-        'toolbar': ['heading', '|', 'outdent', 'indent', '|', 'bold', 'italic', 'link', 'underline', 'strikethrough',
-        'code','subscript', 'superscript', 'highlight', '|', 'codeBlock', 'sourceEditing', 'insertImage',
-                    'bulletedList', 'numberedList', 'todoList', '|',  'blockQuote', 'imageUpload', '|',
-                    'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', 'mediaEmbed', 'removeFormat',
-                    'insertTable',],
+        'toolbar': [
+            'heading', '|', 
+            'bold', 'italic', 'underline', 'link', '|', 
+            'bulletedList', 'numberedList', 'outdent', 'indent', '|', 
+            'blockQuote', 'insertImage', 'insertTable', '|', 
+            'sourceEditing', 'removeFormat'
+        ],
         'image': {
             'toolbar': ['imageTextAlternative', '|', 'imageStyle:alignLeft',
                         'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side',  '|'],

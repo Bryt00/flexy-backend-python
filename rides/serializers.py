@@ -68,6 +68,12 @@ class RideSerializer(serializers.ModelSerializer):
     rider_photo = serializers.SerializerMethodField()
     rider_phone = serializers.SerializerMethodField()
     
+    # Structural Fixes: Direct links to related objects
+    receipt_no = serializers.CharField(source='receipt.receipt_no', read_only=True)
+    
+    # Financial Voids: Clear Payout info for drivers
+    matching_attempts = serializers.SerializerMethodField()
+    
     class Meta:
         model = Ride
         fields = '__all__'
@@ -120,3 +126,8 @@ class RideSerializer(serializers.ModelSerializer):
 
     def get_rider_phone(self, obj):
         return obj.rider_phone or (obj.rider.profile.phone_number if obj.rider and hasattr(obj.rider, 'profile') else None)
+
+    def get_matching_attempts(self, obj):
+        if obj.dispatch_metadata:
+            return obj.dispatch_metadata.get('attempt_count', 0)
+        return 0

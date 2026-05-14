@@ -124,11 +124,14 @@ class JobOpening(models.Model):
         ('internship', 'Internship'),
     ]
     title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)
     department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
     location = models.CharField(max_length=100, default='Accra, Ghana')
     job_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='full_time')
-    description = models.TextField()
-    requirements = models.TextField(blank=True)
+    description = CKEditor5Field('Description', config_name='extends')
+    responsibilities = CKEditor5Field('Responsibilities', config_name='extends', blank=True)
+    requirements = CKEditor5Field('Requirements', config_name='extends', blank=True)
+    benefits = CKEditor5Field('Benefits', config_name='extends', blank=True)
     apply_url = models.URLField(blank=True, help_text='External application link (optional)')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -137,6 +140,11 @@ class JobOpening(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Job Opening'
         verbose_name_plural = 'Job Openings'
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.title} ({self.department})"

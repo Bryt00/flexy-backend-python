@@ -6,9 +6,9 @@ logger = logging.getLogger(__name__)
 
 class GoogleMapsService:
     @staticmethod
-    def get_trip_metrics(origin_lat, origin_lng, dest_lat, dest_lng):
+    def get_trip_metrics(origin_lat, origin_lng, dest_lat, dest_lng, waypoints=None):
         """
-        Fetches distance and duration between two points using Google Maps Distance Matrix API.
+        Fetches distance and duration. For multi-stop routes, uses Directions API to sum up legs.
         Returns a tuple: (distance_km, duration_seconds)
         """
         api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
@@ -17,6 +17,40 @@ class GoogleMapsService:
             logger.warning("Google Maps API Key not configured. Using fallback estimation.")
             return GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
 
+        # If waypoints exist, we must use Directions API to get total route metrics
+        if waypoints and len(waypoints) > 0:
+            url = "https://maps.googleapis.com/maps/api/directions/json"
+            # Format: 'lat1,lng1|lat2,lng2'
+            waypoints_str = "|".join([f"{w['lat']},{w['lng']}" for w in waypoints])
+            params = {
+                'origin': f"{origin_lat},{origin_lng}",
+                'destination': f"{dest_lat},{dest_lng}",
+                'waypoints': waypoints_str,
+                'key': api_key,
+                'mode': 'driving'
+            }
+            
+            try:
+                response = requests.get(url, params=params, timeout=5)
+                data = response.json()
+                
+                if data['status'] == 'OK':
+                    route = data['routes'][0]
+                    total_distance_m = 0
+                    total_duration_s = 0
+                    for leg in route['legs']:
+                        total_distance_m += leg['distance']['value']
+                        total_duration_s += leg['duration']['value']
+                    
+                    return total_distance_m / 1000.0, total_duration_s
+                else:
+                    logger.error(f"Directions API Error: {data.get('status')}")
+            except Exception as e:
+                logger.error(f"Directions API Exception: {e}")
+            
+            return GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+
+        # Simple point-to-point can still use Distance Matrix
         url = "https://maps.googleapis.com/maps/api/distancematrix/json"
         params = {
             'origins': f"{origin_lat},{origin_lng}",

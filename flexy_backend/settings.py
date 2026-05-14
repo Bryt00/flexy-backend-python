@@ -347,6 +347,11 @@ UNFOLD = {
                         "icon": "ads_click",
                         "link": "/admin/advertising/adbooking/",
                     },
+                    {
+                        "title": "Ad Analytics",
+                        "icon": "analytics",
+                        "link": "/admin/advertising/adanalytics/",
+                    },
                 ],
             },
             {

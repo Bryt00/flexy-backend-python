@@ -258,7 +258,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get', 'post'], url_path='settings/(?P<key>[^/.]+)')
-    def settings(self, request, key=None):
+    def config_settings(self, request, key=None):
         if not request.user.is_staff and not request.user.is_superuser and getattr(request.user, 'role', '') != 'admin':
             return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
             

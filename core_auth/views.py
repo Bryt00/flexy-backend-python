@@ -56,9 +56,11 @@ class LoginView(views.APIView):
         auth=[]
     )
     def post(self, request):
-        email = request.data.get("email")
+        email = request.data.get("email", "").strip()
         password = request.data.get("password")
-        user = User.objects.filter(email=email).first()
+        
+        # Use __iexact to ensure login works regardless of email capitalization
+        user = User.objects.filter(email__iexact=email).first()
         if user and user.check_password(password):
             if not user.is_email_verified:
                 # Automatically send a new OTP
@@ -131,11 +133,11 @@ class OTPRequestView(views.APIView):
         serializer = OTPRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data['email']
+        email = serializer.validated_data['email'].strip()
         otp_type = serializer.validated_data['type']
         
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
             return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -173,12 +175,12 @@ class OTPVerifyView(views.APIView):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data['email']
+        email = serializer.validated_data['email'].strip()
         otp = serializer.validated_data['otp']
         otp_type = serializer.validated_data['type']
         
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
             otp_obj = OTPCode.objects.filter(
                 user=user, 
                 code=otp, 
@@ -228,12 +230,12 @@ class PasswordResetView(views.APIView):
         serializer = PasswordResetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data['email']
+        email = serializer.validated_data['email'].strip()
         otp = serializer.validated_data['otp']
         new_password = serializer.validated_data['new_password']
         
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
             otp_obj = OTPCode.objects.filter(
                 user=user, 
                 code=otp, 
@@ -290,7 +292,7 @@ class SocialAuthView(views.APIView):
 
             if not user and email:
                 # 2. Try finding user by email
-                user = User.objects.filter(email=email).first()
+                user = User.objects.filter(email__iexact=email).first()
                 if user:
                     # Link account
                     setattr(user, social_field, social_id)

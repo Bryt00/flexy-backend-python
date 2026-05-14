@@ -60,3 +60,20 @@ class Delivery(models.Model):
 
     def __str__(self):
         return f"Delivery {self.id} - {self.status}"
+
+class DeliveryProof(models.Model):
+    PROOF_TYPES = (
+        ('PICKUP', 'Pickup Proof'),
+        ('DROPOFF', 'Dropoff Proof'),
+    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    delivery = models.ForeignKey(Delivery, on_delete=models.CASCADE, related_name='proofs')
+    proof_type = models.CharField(max_length=20, choices=PROOF_TYPES)
+    image_url = models.URLField(blank=True, null=True)
+    signature_base64 = models.TextField(blank=True, null=True)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_proof_type_display()} for Delivery {self.delivery.id}"

@@ -59,14 +59,15 @@ class Ride(models.Model):
     rider_photo = models.URLField(blank=True, null=True)
     rider_phone = models.CharField(max_length=20, blank=True, null=True)
 
-    # 8-Stage Pricing Ledger (Screenshot 6 & 7)
+    # 9-Stage Pricing Ledger (Screenshot 6 & 7)
     base_fare_ledger = models.FloatField(default=0.0) # Stage 1
     distance_fare_ledger = models.FloatField(default=0.0) # Stage 2 + 3 + 4
-    waiting_fare_ledger = models.FloatField(default=0.0) # Stage 5
-    cancellation_fee_ledger = models.FloatField(default=0.0) # Stage 6
+    stops_fee_ledger = models.FloatField(default=0.0) # Stage 5
+    waiting_fare_ledger = models.FloatField(default=0.0) # Stage 6
+    cancellation_fee_ledger = models.FloatField(default=0.0) # Stage 7
     surge_multiplier_applied = models.FloatField(default=1.0) # Applied in Stage 4
-    total_calculated_fare = models.FloatField(default=0.0) # Stage 7 (Rounding applied here)
-    driver_payout_amount = models.FloatField(default=0.0) # Stage 8
+    total_calculated_fare = models.FloatField(default=0.0) # Stage 8 (Rounding applied here)
+    driver_payout_amount = models.FloatField(default=0.0) # Stage 9
     
     # Internal Tracker State (for throttling ETA recalculation)
     last_lat_update = models.FloatField(blank=True, null=True)
@@ -110,9 +111,10 @@ class RideReceipt(models.Model):
     ride = models.OneToOneField(Ride, on_delete=models.CASCADE, related_name='receipt')
     receipt_no = models.CharField(max_length=50, unique=True)
     
-    # Store finalized snapshot of the 8-stage ledger
+    # Store finalized snapshot of the 9-stage ledger
     base_fare = models.FloatField()
     distance_fare = models.FloatField()
+    stops_fee = models.FloatField(default=0.0)
     waiting_fee = models.FloatField()
     cancellation_fee = models.FloatField()
     total_fare = models.FloatField()

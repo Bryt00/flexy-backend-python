@@ -213,6 +213,31 @@ body.login {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-accent);
+/* ─── Fix Form Layouts & CKEditor Overflow ───────────── */
+/* Limit max width of the actual form fields box so it doesn't stretch infinitely */
+.aligned.form-rows {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+}
+
+/* Force Unfold form rows to stack vertically (label on top) */
+.field-line {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+}
+.field-line > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Force CKEditor toolbar to wrap and obey container */
+.django_ckeditor_5, .django-ckeditor-5-widget, .ck-editor-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+.ck.ck-toolbar {
+    flex-wrap: wrap !important;
+    min-width: 0 !important;
 }

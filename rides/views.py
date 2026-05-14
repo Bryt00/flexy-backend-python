@@ -213,18 +213,34 @@ class RideViewSet(viewsets.ModelViewSet):
                     if v.type not in category_availability:
                         category_availability[v.type] = pos
 
-            # 3. Fetch trip metrics (Passenger's route) - Only if destination is provided
+            # 3. Fetch trip metrics (Passenger's route)
+            import json
+            stops_raw = request.query_params.get('stops') or request.data.get('stops', [])
+            if isinstance(stops_raw, str):
+                try:
+                    stops = json.loads(stops_raw)
+                except:
+                    stops = []
+            else:
+                stops = stops_raw
+
             dist_km, duration_sec = 0.0, 0
             if d_lat and d_lng:
                 try:
+                    # Pass waypoints to Directions API for accurate multi-stop distance
                     dist_km, duration_sec = GoogleMapsService.get_trip_metrics(
-                        p_lat, p_lng, float(d_lat), float(d_lng)
+                        p_lat, p_lng, float(d_lat), float(d_lng),
+                        waypoints=stops
                     )
                 except Exception as e:
                     print(f"Error fetching trip metrics: {e}")
             
             # 4. Calculate Fares with ETA and Availability
-            base_estimates = PricingService.calculate_fare_estimates(dist_km, duration_sec, lat=p_lat, lng=p_lng)
+            base_estimates = PricingService.calculate_fare_estimates(
+                dist_km, duration_sec, 
+                lat=p_lat, lng=p_lng,
+                num_stops=len(stops)
+            )
             final_estimates = {}
             
             for category_slug, fare in base_estimates.items():
@@ -296,7 +312,8 @@ class RideViewSet(viewsets.ModelViewSet):
                     lat=ride.pickup_lat,
                     lng=ride.pickup_lng,
                     waiting_minutes=waiting_mins,
-                    payment_method=ride.payment_method or 'cash'
+                    payment_method=ride.payment_method or 'cash',
+                    num_stops=ride.stops.count()
                 )
                 
                 # Apply PromoCode Discount if applicable
@@ -311,6 +328,7 @@ class RideViewSet(viewsets.ModelViewSet):
                 # Store ledger breakdown
                 ride.base_fare_ledger = ledger['base_fare']
                 ride.distance_fare_ledger = ledger['distance_fare']
+                ride.stops_fee_ledger = ledger['stops_fee']
                 ride.waiting_fare_ledger = ledger['waiting_fee']
                 ride.surge_multiplier_applied = ledger['surge_multiplier']
                 ride.total_calculated_fare = ledger['total_fare'] - discount_to_apply
@@ -389,6 +407,7 @@ class RideViewSet(viewsets.ModelViewSet):
                         "receipt_no": receipt_no,
                         "base_fare": ride.base_fare_ledger,
                         "distance_fare": ride.distance_fare_ledger,
+                        "stops_fee": ride.stops_fee_ledger,
                         "waiting_fee": ride.waiting_fare_ledger,
                         "cancellation_fee": ride.cancellation_fee_ledger,
                         "total_fare": ride.total_calculated_fare
@@ -409,6 +428,26 @@ class RideViewSet(viewsets.ModelViewSet):
             
             # Broadcast the status update via WebSocket room (Screenshot 6)
             self._broadcast_ride_update(ride, 'status_updated')
+
+            # Send Push Notification to Passenger
+            try:
+                from notification.utils import send_notification
+                if new_status != old_status:
+                    title = "Ride Update"
+                    body = None
+                    if new_status == 'accepted':
+                        body = f"Great news! {ride.driver.profile.full_name} has accepted your ride request."
+                    elif new_status == 'arrived':
+                        body = f"Your driver has arrived at {ride.pickup_address}."
+                    elif new_status == 'in_progress':
+                        body = "Your trip has started. Enjoy the ride!"
+                    elif new_status == 'completed':
+                        body = f"You've arrived! Your total is GH₵ {ride.fare:.2f}."
+                    
+                    if body:
+                        send_notification(ride.rider, title=title, body=body, type='PUSH', ref_id=ride.id)
+            except Exception as e:
+                print(f"Notification error: {e}")
 
             return Response(self.get_serializer(ride).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
@@ -451,11 +490,17 @@ class RideViewSet(viewsets.ModelViewSet):
                     should_update_eta = True
 
         if should_update_eta:
-            # Determine Waypoint
-            # If 'accepted', target is Pickup. If 'in_progress', target is Dropoff.
-            target_lat = ride.pickup_lat if ride.status == 'accepted' else ride.dropoff_lat
-            target_lng = ride.pickup_lng if ride.status == 'accepted' else ride.dropoff_lng
+            # Determine Target Milestone
+            target_lat, target_lng = ride.dropoff_lat, ride.dropoff_lng
             
+            if ride.status in ['accepted', 'arrived', 'pending_pickup']:
+                target_lat, target_lng = ride.pickup_lat, ride.pickup_lng
+            elif ride.status == 'in_progress':
+                # Check for the next pending intermediate stop
+                next_stop = ride.stops.filter(status__in=['pending', 'arrived']).order_by('stop_order').first()
+                if next_stop:
+                    target_lat, target_lng = next_stop.latitude, next_stop.longitude
+
             dist_km, duration_sec = GoogleMapsService.get_trip_metrics(lat, lng, target_lat, target_lng)
             
             ride.distance_remaining = dist_km
@@ -629,13 +674,61 @@ class RideViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'], url_path='stops/(?P<stop_id>[^/.]+)/status')
+    def update_stop_status(self, request, pk=None, stop_id=None):
+        """
+        Allows drivers to mark individual intermediate stops as 'arrived' or 'completed'.
+        """
+        ride = self.get_object()
+        from .models import RideStop
+        try:
+            stop = RideStop.objects.get(id=stop_id, ride=ride)
+            new_status = request.data.get('status')
+            
+            if new_status in ['pending', 'arrived', 'completed']:
+                stop.status = new_status
+                if new_status == 'arrived':
+                    stop.arrived_at = timezone.now()
+                elif new_status == 'completed':
+                    stop.completed_at = timezone.now()
+                stop.save()
+                
+                # Broadcast the update via WebSocket so the passenger's map updates
+                self._broadcast_ride_update(ride, 'stops_updated')
+                
+                # Send Push Notification to Passenger
+                try:
+                    from notification.utils import send_notification
+                    title = "Stop Update"
+                    if new_status == 'arrived':
+                        body = f"Your driver has arrived at {stop.address}."
+                    elif new_status == 'completed':
+                        body = f"Driver completed the stop at {stop.address} and is moving to the next destination."
+                    else:
+                        body = f"Stop at {stop.address} is now {new_status}."
+                    
+                    send_notification(ride.rider, title=title, body=body, type='PUSH', ref_id=ride.id)
+                except Exception as e:
+                    print(f"Notification error: {e}")
+                
+                return Response(self.get_serializer(ride).data)
+            return Response({"error": "Invalid status. Must be pending, arrived, or completed."}, status=status.HTTP_400_BAD_REQUEST)
+        except RideStop.DoesNotExist:
+            return Response({"error": "Stop not found for this ride."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['get'])
     def chat_history(self, request, pk=None):
         ride = self.get_object()
         
-        # Only return chat history if the ride communication is still "ongoing"
+        # Only return chat history if the ride communication is still "ongoing" 
+        # or within a 30-minute grace period for post-ride coordination (lost items, etc)
         if ride.status in ['completed', 'cancelled']:
-            return Response([])
+            from django.utils import timezone
+            time_since_terminal = (timezone.now() - ride.updated_at).total_seconds()
+            if time_since_terminal > 1800: # 30 minutes
+                return Response([])
             
         from .crypto_utils import ChatEncryption
         messages = ride.messages.all().order_by('created_at')
@@ -647,6 +740,13 @@ class RideViewSet(viewsets.ModelViewSet):
         serializer = ChatMessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['post'])
+    def share(self, request, pk=None):
+        ride = self.get_object()
+        share_url = f"https://flexyride.com/track/{ride.id}"
+        return Response({"share_url": share_url})
+
+
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 class SystemSettingsView(APIView):
@@ -656,8 +756,8 @@ class SystemSettingsView(APIView):
     def get(self, request):
         from core_settings.models import SiteSetting
         
-        privacy = LegalDocument.objects.filter(title__icontains='privacy', is_active=True).order_by('-created_at').first()
-        terms = LegalDocument.objects.filter(title__icontains='terms', is_active=True).order_by('-created_at').first()
+        privacy = LegalDocument.objects.filter(document_type='privacy').order_by('-last_updated').first()
+        terms = LegalDocument.objects.filter(document_type='terms').order_by('-last_updated').first()
         
         support_email = SiteSetting.objects.filter(key='support_email').first()
         support_phone = SiteSetting.objects.filter(key='support_phone').first()

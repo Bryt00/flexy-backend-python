@@ -1,4 +1,5 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin, TabularInline
 from solo.admin import SingletonModelAdmin
 from .models import AdSlotCapacity, AdBooking, AdExtension
 from integrations.email_service import EmailService
@@ -8,12 +9,12 @@ from integrations.email_service import EmailService
 class AdSlotCapacityAdmin(SingletonModelAdmin):
     pass
 
-class AdExtensionInline(admin.TabularInline):
+class AdExtensionInline(TabularInline):
     model = AdExtension
     extra = 0
 
 @admin.register(AdBooking)
-class AdBookingAdmin(admin.ModelAdmin):
+class AdBookingAdmin(ModelAdmin):
     list_display = ('business_name', 'week_start_date', 'status', 'payment_status', 'created_at')
     list_filter = ('status', 'payment_status', 'week_start_date')
     search_fields = ('business_name', 'contact_email', 'contact_phone')
@@ -59,7 +60,7 @@ class AdBookingAdmin(admin.ModelAdmin):
     reject_bookings.short_description = "Reject selected bookings"
 
 @admin.register(AdExtension)
-class AdExtensionAdmin(admin.ModelAdmin):
+class AdExtensionAdmin(ModelAdmin):
     list_display = ('get_business_name', 'extended_week_start', 'status', 'payment_status')
     list_filter = ('status', 'payment_status', 'extended_week_start')
 

@@ -64,18 +64,23 @@ def process_ride_matching(self, ride_id):
 
         ride = Ride.objects.get(id=ride_id)
         if ride.status not in ['pending', 'requested']:
+            # Remove from Redis surge index if no longer pending
+            redis_geo.geo_remove_request(ride_id)
             return
+
+        # Add to surge index for the current cycle
+        redis_geo.geo_add_request(ride_id, ride.pickup_lat, ride.pickup_lng)
 
         MatchingService.dispatch_ride_request(ride_id)
             
     except Ride.DoesNotExist:
+        redis_geo.geo_remove_request(ride_id)
         return
     except Exception as e:
         logger.error(f"Error in process_ride_matching: {e}")
     
-    # Always retry every 25s until status changes (accepted/cancelled)
-    # Move outside try-except because self.retry() raises a Retry exception
-    self.retry(countdown=25)
+    # Retry every 10s (reduced from 25s for better responsiveness)
+    self.retry(countdown=10)
 
 
 @shared_task
@@ -102,5 +107,21 @@ def activate_scheduled_rides():
         count += 1
             
     if count > 0:
-        logger.info(f"Activated {count} scheduled rides.")
+        logger.info(f"Triggered dispatch for {count} scheduled rides.")
+
+@shared_task
+def monitor_active_rides_safety():
+    """
+    Scans all 'in_progress' rides and checks for route anomalies.
+    Runs every 60s via celery-beat.
+    """
+    from .services.safety_service import SafetyService
+    active_rides = Ride.objects.filter(status='in_progress')
+    count = 0
+    for ride in active_rides:
+        if SafetyService.check_ride_anomaly(ride.id):
+            count += 1
+    
+    if count > 0:
+        logger.info(f"Safety: Detected {count} anomalies in active rides.")
 

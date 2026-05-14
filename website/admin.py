@@ -80,3 +80,17 @@ class JobOpeningAdmin(ModelAdmin):
     list_filter = ('department', 'job_type', 'is_active')
     search_fields = ('title', 'description')
     list_editable = ('is_active',)
+    prepopulated_fields = {'slug': ('title',)}
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'slug', 'department', 'location', 'job_type', 'is_active'),
+            'classes': ('unfold-fieldset-border',), # Custom class for potential CSS if needed, but fieldsets already group
+        }),
+        ('Job Details', {
+            'fields': ('description', 'responsibilities', 'requirements', 'benefits'),
+        }),
+        ('Application', {
+            'fields': ('apply_url',),
+        }),
+    )

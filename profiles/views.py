@@ -256,3 +256,43 @@ class ProfileViewSet(viewsets.ModelViewSet):
             "message": "Referral code applied successfully.",
             "referred_by": referrer_profile.referral_code
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get', 'post'], url_path='settings/(?P<key>[^/.]+)')
+    def settings(self, request, key=None):
+        if not request.user.is_staff and not request.user.is_superuser and getattr(request.user, 'role', '') != 'admin':
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+            
+        from website.models import LegalDocument
+        from core_settings.models import SiteSetting
+        
+        if key in ['terms_and_conditions', 'privacy_policy']:
+            doc_type = 'terms' if key == 'terms_and_conditions' else 'privacy'
+            if request.method == 'GET':
+                doc = LegalDocument.objects.filter(document_type=doc_type).order_by('-last_updated').first()
+                return Response({"value": doc.content if doc else ""})
+            else:
+                content = request.data.get('value', '')
+                doc = LegalDocument.objects.filter(document_type=doc_type).order_by('-last_updated').first()
+                if doc:
+                    doc.content = content
+                    doc.save()
+                else:
+                    title = 'Terms of Service' if doc_type == 'terms' else 'Privacy Policy'
+                    LegalDocument.objects.create(
+                        title=title,
+                        slug=doc_type,
+                        document_type=doc_type,
+                        content=content,
+                    )
+                return Response({"status": "success", "value": content})
+        else:
+            if request.method == 'GET':
+                setting = SiteSetting.objects.filter(key=key).first()
+                return Response({"value": setting.value if setting else ""})
+            else:
+                value = request.data.get('value', '')
+                setting, created = SiteSetting.objects.get_or_create(key=key, defaults={'value': value, 'name': key.replace('_', ' ').title()})
+                if not created:
+                    setting.value = value
+                    setting.save()
+                return Response({"status": "success", "value": value})

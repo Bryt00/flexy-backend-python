@@ -23,6 +23,7 @@ urlpatterns = [
     path('download/', views.DownloadView.as_view(), name='download'),
     path('faq/', views.FAQView.as_view(), name='faq'),
     path('careers/', views.CareersView.as_view(), name='careers'),
+    path('careers/<slug:slug>/', views.JobDetailView.as_view(), name='career_detail'),
     path('press/', views.PressView.as_view(), name='press'),
     path('corporate/', views.CorporateView.as_view(), name='corporate'),
     path('legal/terms/', views.TermsView.as_view(), name='terms'),

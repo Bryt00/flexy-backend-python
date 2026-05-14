@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 from solo.admin import SingletonModelAdmin
-from .models import AdSlotCapacity, AdBooking, AdExtension
+from .models import AdSlotCapacity, AdBooking, AdExtension, AdAnalytics
 from integrations.email_service import EmailService
 # We will import the email tasks here later for approval/rejection
 
@@ -15,10 +15,21 @@ class AdExtensionInline(TabularInline):
 
 @admin.register(AdBooking)
 class AdBookingAdmin(ModelAdmin):
-    list_display = ('business_name', 'week_start_date', 'status', 'payment_status', 'created_at')
+    list_display = ('business_name', 'target_url', 'week_start_date', 'status', 'payment_status', 'created_at')
     list_filter = ('status', 'payment_status', 'week_start_date')
-    search_fields = ('business_name', 'contact_email', 'contact_phone')
+    search_fields = ('business_name', 'contact_email', 'contact_phone', 'target_url')
     inlines = [AdExtensionInline]
+
+@admin.register(AdAnalytics)
+class AdAnalyticsAdmin(ModelAdmin):
+    list_display = ('ad_booking', 'total_impressions', 'total_clicks', 'last_updated')
+    readonly_fields = ('ad_booking', 'impressions_a', 'clicks_a', 'impressions_b', 'clicks_b', 'last_updated')
+
+    def total_impressions(self, obj):
+        return obj.impressions_a + obj.impressions_b
+    
+    def total_clicks(self, obj):
+        return obj.clicks_a + obj.clicks_b
     
     actions = ['approve_bookings', 'reject_bookings', 'generate_ai_content']
     

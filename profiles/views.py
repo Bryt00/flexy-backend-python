@@ -265,8 +265,14 @@ class ProfileViewSet(viewsets.ModelViewSet):
         from website.models import LegalDocument
         from core_settings.models import SiteSetting
         
-        if key in ['terms_and_conditions', 'privacy_policy']:
-            doc_type = 'terms' if key == 'terms_and_conditions' else 'privacy'
+        if key in ['terms_and_conditions', 'privacy_policy', 'about_us']:
+            if key == 'terms_and_conditions':
+                doc_type = 'terms'
+            elif key == 'privacy_policy':
+                doc_type = 'privacy'
+            else:
+                doc_type = 'about'
+
             if request.method == 'GET':
                 doc = LegalDocument.objects.filter(document_type=doc_type).order_by('-last_updated').first()
                 return Response({"value": doc.content if doc else ""})
@@ -277,7 +283,13 @@ class ProfileViewSet(viewsets.ModelViewSet):
                     doc.content = content
                     doc.save()
                 else:
-                    title = 'Terms of Service' if doc_type == 'terms' else 'Privacy Policy'
+                    if doc_type == 'terms':
+                        title = 'Terms of Service'
+                    elif doc_type == 'privacy':
+                        title = 'Privacy Policy'
+                    else:
+                        title = 'About Us'
+                        
                     LegalDocument.objects.create(
                         title=title,
                         slug=doc_type,

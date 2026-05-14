@@ -220,6 +220,7 @@ class LegalDocument(models.Model):
         ('terms', 'Terms of Service'),
         ('privacy', 'Privacy Policy'),
         ('cookies', 'Cookie Policy'),
+        ('about', 'About Us'),
     ]
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)

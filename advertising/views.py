@@ -39,8 +39,13 @@ class ActiveAdsAPIView(APIView):
             body_text = ad.body_text_b if variant == 'B' and ad.body_text_b else ad.body_text
             image = ad.image_b if variant == 'B' and ad.image_b else ad.image
             
-            # Use relative URL for our redirect tracker instead of actual target_url
-            target_url = request.build_absolute_uri(f'/api/advertising/click/{ad.id}/?variant={variant}') if ad.target_url else None
+            # Enhancement: Give the app the DIRECT URL for a better user experience,
+            # but provide a tracking_url for a background "ping" to log the click.
+            target_url = ad.target_url
+            if target_url and not target_url.startswith(('http://', 'https://')):
+                target_url = f'https://{target_url}'
+
+            tracking_url = request.build_absolute_uri(f'/api/advertising/click/{ad.id}/?variant={variant}') if ad.target_url else None
             
             data.append({
                 'id': str(ad.id),
@@ -49,6 +54,7 @@ class ActiveAdsAPIView(APIView):
                 'body_text': body_text,
                 'image_url': request.build_absolute_uri(image.url) if image else None,
                 'target_url': target_url,
+                'tracking_url': tracking_url, # For background logging
                 'variant': variant,
             })
             
@@ -95,5 +101,9 @@ class AdClickRedirectView(APIView):
             pass # Failsafe
             
         if ad.target_url:
-            return redirect(ad.target_url)
+            url = ad.target_url
+            # Safety: Ensure the URL starts with a scheme so it doesn't redirect to a local path
+            if not url.startswith(('http://', 'https://')):
+                url = f'https://{url}'
+            return redirect(url)
         return Response({'error': 'No URL provided'}, status=status.HTTP_400_BAD_REQUEST)

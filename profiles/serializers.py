@@ -43,15 +43,18 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_is_verified(self, obj):
         """True only when DriverVerification.is_verified is True."""
         try:
-            return bool(obj.verification.is_verified)
-        except Exception:
+            # Safer check for OneToOne relation to avoid RelatedObjectDoesNotExist
+            verification = getattr(obj, 'verification', None)
+            return bool(verification.is_verified) if verification else False
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error in get_is_verified: {e}")
             return False
 
     def get_is_subscribed(self, obj):
         """True only when the driver has an active subscription."""
         try:
-            # Check if current user is a driver first
-            if obj.user.role != 'driver':
+            if not hasattr(obj, 'user') or obj.user.role != 'driver':
                 return False
             
             # Check for the DriverSubscription relation
@@ -60,7 +63,9 @@ class ProfileSerializer(serializers.ModelSerializer):
                 return False
                 
             return bool(subscription.is_currently_active)
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error in get_is_subscribed: {e}")
             return False
 
     def get_rating_count(self, obj):

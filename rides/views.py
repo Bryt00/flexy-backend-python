@@ -110,12 +110,13 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def scheduled(self, request):
+        # Only show rides that are in the future OR are already accepted/active.
+        # If a ride is still 'pending' or 'requested' but the time has passed, it's considered overdue/expired.
         rides = Ride.objects.filter(
-            Q(rider=request.user) | Q(driver=request.user)
-        ).filter(
-            Q(is_scheduled=True) | Q(scheduled_for__isnull=False)
-        ).filter(
-            Q(status__in=['pending', 'requested', 'accepted', 'arrived', 'in_progress'])
+            (Q(rider=request.user) | Q(driver=request.user)),
+            (Q(is_scheduled=True) | Q(scheduled_for__isnull=False)),
+            Q(status__in=['accepted', 'arrived', 'in_progress']) | 
+            (Q(status__in=['pending', 'requested']) & Q(scheduled_for__gt=timezone.now()))
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 

@@ -15,9 +15,21 @@ class ProfileSerializer(serializers.ModelSerializer):
     email = serializers.ReadOnlyField(source='user.email')
     role = serializers.ReadOnlyField(source='user.role')
     user_id = serializers.ReadOnlyField(source='user.id')
-    # Use ImageField to automatically provide a full URL for the Flutter app
-    profile_picture = serializers.ImageField(required=False, allow_null=True)
-    photo_url = serializers.ImageField(source='profile_picture', read_only=True)
+    # Use SerializerMethodField to ensure absolute URLs regardless of request context
+    profile_picture = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
+
+    def get_profile_picture(self, obj):
+        if not obj.profile_picture:
+            return None
+        # Handle relative paths for Flutter compatibility
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.profile_picture.url)
+        return f"https://api.flexyridegh.com{obj.profile_picture.url}"
+
+    def get_photo_url(self, obj):
+        return self.get_profile_picture(obj)
 
     # Computed cross-model fields consumed by the Flutter app
     is_verified = serializers.SerializerMethodField()

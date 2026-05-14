@@ -101,6 +101,17 @@ def activate_scheduled_rides():
         scheduled_for__gte=now - timedelta(minutes=30)
     )
     
+    # 2. Cleanup: Cancel rides that are more than 30 minutes overdue and never got matched
+    overdue_rides = Ride.objects.filter(
+        is_scheduled=True,
+        status='pending',
+        scheduled_for__lt=now - timedelta(minutes=30)
+    )
+    overdue_count = overdue_rides.update(status='cancelled')
+    if overdue_count > 0:
+        logger.info(f"Cleanup: Cancelled {overdue_count} overdue scheduled rides.")
+
+    # 3. Activation: Trigger matching for upcoming rides
     count = 0
     for ride in scheduled_rides:
         process_ride_matching.delay(str(ride.id))

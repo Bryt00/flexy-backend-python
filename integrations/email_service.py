@@ -201,3 +201,38 @@ class EmailService:
             logger.info(f"Ad report email sent to {contact_email}")
         except Exception as e:
             logger.error(f"Failed to send ad report email to {contact_email}: {str(e)}")
+    @staticmethod
+    def send_sos_alert_email(incident):
+        """
+        Urgent notification to admin when SOS is triggered.
+        """
+        from profiles.models import Profile
+        reporter_name = "Unknown"
+        try:
+            profile = Profile.objects.get(user=incident.reporter)
+            reporter_name = profile.full_name or incident.reporter.email
+        except:
+            reporter_name = incident.reporter.email
+
+        subject = f'🚨 SOS ALERT: {reporter_name}'
+        message = (
+            f"URGENT: SOS triggered by {incident.reporter.role} {incident.reporter.email}\n"
+            f"Name: {reporter_name}\n"
+            f"Ride ID: {incident.ride.id}\n"
+            f"Description: {incident.description}\n"
+            f"Coordinates: {incident.location_lat}, {incident.location_lng}\n"
+            f"Google Maps Link: https://www.google.com/maps?q={incident.location_lat},{incident.location_lng}\n\n"
+            f"Please investigate immediately via the Admin Dashboard."
+        )
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [settings.ADMIN_EMAIL],
+                fail_silently=False,
+            )
+            logger.info(f"SOS Alert email sent for incident {incident.id}")
+        except Exception as e:
+            logger.error(f"Failed to send SOS Alert email: {str(e)}")

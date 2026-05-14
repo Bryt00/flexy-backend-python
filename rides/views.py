@@ -637,6 +637,11 @@ class RideViewSet(viewsets.ModelViewSet):
             location_lat=request.data.get('lat'),
             location_lng=request.data.get('lng')
         )
+        
+        # Trigger Admin Email Notification
+        from integrations.email_service import EmailService
+        EmailService.send_sos_alert_email(incident)
+        
         return Response(IncidentSerializer(incident).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
@@ -756,14 +761,17 @@ class SystemSettingsView(APIView):
     @extend_schema(responses={200: OpenApiTypes.OBJECT}, auth=[])
     def get(self, request):
         from core_settings.models import SiteSetting
+        from website.models import LegalDocument
         
         privacy = LegalDocument.objects.filter(document_type='privacy').order_by('-last_updated').first()
         terms = LegalDocument.objects.filter(document_type='terms').order_by('-last_updated').first()
+        about = LegalDocument.objects.filter(document_type='about').order_by('-last_updated').first()
         
         support_email = SiteSetting.objects.filter(key='support_email').first()
         support_phone = SiteSetting.objects.filter(key='support_phone').first()
         
         return Response({
+            'about_us': about.content if about else "Welcome to FlexyRide. We are transforming mobility in Ghana.",
             'privacy_policy': privacy.content if privacy else "Privacy policy coming soon.",
             'terms_conditions': terms.content if terms else "Terms and conditions coming soon.",
             'support_email': support_email.value if support_email else "support@flexyride.com",

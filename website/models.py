@@ -124,7 +124,7 @@ class JobOpening(models.Model):
         ('internship', 'Internship'),
     ]
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, blank=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
     location = models.CharField(max_length=100, default='Accra, Ghana')
     job_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='full_time')

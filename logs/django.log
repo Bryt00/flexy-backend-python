@@ -1,0 +1,4 @@
+INFO 2026-05-15 16:53:21,590 autoreload 12204 16252 C:\Users\r4v3n\Desktop\mobile\django-rest-backend\website\models.py changed, reloading.
+INFO 2026-05-15 16:53:21,460 autoreload 9 124341624247040 /app/website/models.py changed, reloading.
+INFO 2026-05-15 16:53:24,740 autoreload 25 138412545032960 Watching for file changes with StatReloader
+INFO 2026-05-15 16:53:25,565 autoreload 17836 22516 Watching for file changes with StatReloader

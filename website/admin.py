@@ -84,13 +84,23 @@ class JobOpeningAdmin(ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'slug', 'department', 'location', 'job_type', 'is_active'),
-            'classes': ('unfold-fieldset-border',), # Custom class for potential CSS if needed, but fieldsets already group
+            'fields': (
+                ('title', 'slug'),
+                ('department', 'job_type'),
+                ('location', 'is_active'),
+            ),
         }),
-        ('Job Details', {
-            'fields': ('description', 'responsibilities', 'requirements', 'benefits'),
+        ('Job Content', {
+            'fields': (
+                'description',
+                'responsibilities',
+                'requirements',
+                'benefits',
+            ),
+            'description': 'Use these fields to structure the job posting as seen in the "PatMacTech Solutions" example.'
         }),
-        ('Application', {
+        ('External Application', {
             'fields': ('apply_url',),
+            'classes': ('collapse',),
         }),
     )

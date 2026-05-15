@@ -60,7 +60,7 @@
                     Job Description
                 </h2>
                 <div class="text-gray-400 leading-relaxed text-lg space-y-6">
-                    {{ job.description|safe }}
+                    {{ job.description|linebreaks }}
                 </div>
             </div>
 
@@ -71,7 +71,7 @@
                     Responsibilities
                 </h2>
                 <div class="text-gray-400 leading-relaxed text-lg">
-                    {{ job.responsibilities|safe }}
+                    {{ job.responsibilities|linebreaks }}
                 </div>
             </div>
             {% endif %}
@@ -83,7 +83,7 @@
                     Requirements
                 </h2>
                 <div class="text-gray-400 leading-relaxed text-lg">
-                    {{ job.requirements|safe }}
+                    {{ job.requirements|linebreaks }}
                 </div>
             </div>
             {% endif %}
@@ -95,7 +95,31 @@
                     Benefits & Perks
                 </h2>
                 <div class="text-gray-400 leading-relaxed text-lg">
-                    {{ job.benefits|safe }}
+                    {{ job.benefits|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if job.how_to_apply %}
+            <div class="prose prose-invert prose-brand max-w-none mb-16">
+                <h2 class="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    <span class="w-8 h-1 bg-brand rounded-full"></span>
+                    How to Apply
+                </h2>
+                <div class="text-gray-400 leading-relaxed text-lg">
+                    {{ job.how_to_apply|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if job.about_company %}
+            <div class="prose prose-invert prose-brand max-w-none mb-16">
+                <h2 class="text-3xl font-bold mb-8 text-white flex items-center gap-3">
+                    <span class="w-8 h-1 bg-brand rounded-full"></span>
+                    About the Company
+                </h2>
+                <div class="text-gray-400 leading-relaxed text-lg">
+                    {{ job.about_company|linebreaks }}
                 </div>
             </div>
             {% endif %}

@@ -96,8 +96,9 @@ class JobOpeningAdmin(ModelAdmin):
                 'responsibilities',
                 'requirements',
                 'benefits',
+                'how_to_apply',
+                'about_company',
             ),
-            'description': 'Use these fields to structure the job posting as seen in the "PatMacTech Solutions" example.'
         }),
         ('External Application', {
             'fields': ('apply_url',),

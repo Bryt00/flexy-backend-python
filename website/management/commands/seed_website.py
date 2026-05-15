@@ -292,10 +292,83 @@ class Command(BaseCommand):
                 'description': 'Support our finance team with reconciliations, driver payout reports, and compliance documentation. A great opportunity to gain hands-on fintech experience.',
                 'requirements': 'Pursuing or completed a degree in Finance, Accounting, or Economics. Proficient in Excel. Detail-oriented with strong numerical skills.',
             },
+            {
+                'title': 'Independent Commission-Based Sales Partners & Freelance Marketers',
+                'department': 'marketing',
+                'location': 'Nationwide, Ghana (Remote)',
+                'job_type': 'contract',
+                'description': """
+<h3>Trading in Ghana as PatMacTech Solutions</h3>
+<p>Are you confident, persuasive, business-minded, and hungry to earn based on performance? <strong>PatMacTech UK Ltd</strong> is expanding across Ghana and we are recruiting ambitious individuals in Accra, Kumasi, and nationwide to help market our growing portfolio of digital platforms, business services, and technology solutions.</p>
+
+<h4>This opportunity is ideal for:</h4>
+<ul>
+    <li>Freelancers & Students</li>
+    <li>National Service Personnel</li>
+    <li>Sales & Digital Marketers</li>
+    <li>Side-hustle professionals & Social media influencers</li>
+    <li>Anyone confident in communication and business development</li>
+</ul>
+
+<h3>ABOUT THE ROLE</h3>
+<p>You will work as an <strong>Independent Commission-Based Sales Partner</strong> representing PatMacTech Solutions in Ghana. You will help promote and secure customers for:</p>
+<ul>
+    <li><strong>PMTHRFlow</strong> – HR & workforce management platform</li>
+    <li><strong>FlexyRide Ghana</strong> – Ride-hailing & mobility platform</li>
+    <li><strong>PatMacTech</strong> business and IT services</li>
+</ul>
+
+<h3>WHAT YOU WILL DO</h3>
+<h4>Online Marketers</h4>
+<ul>
+    <li>Promote products on social media and generate leads online.</li>
+    <li>Engage businesses digitally via WhatsApp, TikTok, Facebook, Instagram, and LinkedIn.</li>
+    <li>Follow up with potential clients and book demos/consultations.</li>
+</ul>
+
+<h4>Field / Walk-About Marketers</h4>
+<ul>
+    <li>Visit businesses physically to introduce company services.</li>
+    <li>Register interested customers and build relationships with SMEs, organizations, and businesses.</li>
+    <li>Represent the company professionally in public.</li>
+</ul>
+
+<h3>EARNINGS & COMMISSION</h3>
+<p>This is a <strong>pure commission-based opportunity</strong> with strong earning potential. Successful marketers will receive:</p>
+<ul>
+    <li><strong>10% Commission</strong> on subscription services, one-off sales, and business service contracts.</li>
+    <li><strong>Commission Duration:</strong> You will continue earning commission on qualifying subscription payments for up to <strong>6 months</strong> per client you onboard.</li>
+    <li>There is <strong>NO earning cap</strong>.</li>
+</ul>
+
+<h3>WHAT WE PROVIDE</h3>
+<ul>
+    <li>Official company onboarding and product training.</li>
+    <li>Marketing support materials and company communication system access.</li>
+    <li>Remote working flexibility and future leadership opportunities for top performers.</li>
+</ul>
+
+<h3>REQUIREMENTS</h3>
+<ul>
+    <li>Confident communication and self-motivation.</li>
+    <li>Access to a smartphone or laptop and personal headphones/earpieces.</li>
+    <li>Willingness to learn company products and be professional and reliable.</li>
+</ul>
+
+<h3>HOW TO APPLY</h3>
+<p>Send your <strong>Full Name, Location, Phone Number, and Brief Background</strong> to:</p>
+<ul>
+    <li>📧 <strong>Email:</strong> admin@patmactechuk.net</li>
+    <li>📱 <strong>WhatsApp:</strong> +447413025596</li>
+    <li><strong>Subject:</strong> Application – Independent Sales Partner Ghana</li>
+</ul>
+                """,
+                'requirements': 'Confident communication, self-motivated, access to smartphone/laptop, and professional reliability.',
+            },
         ]
         created = 0
         for j in jobs:
-            _, was_created = JobOpening.objects.get_or_create(title=j['title'], defaults=j)
+            _, was_created = JobOpening.objects.update_or_create(title=j['title'], defaults=j)
             if was_created:
                 created += 1
-        self.stdout.write(f'  [+] Job Openings: {created} created, {len(jobs) - created} already existed')
+        self.stdout.write(f'  [+] Job Openings: {created} created, {len(jobs) - created} updated')

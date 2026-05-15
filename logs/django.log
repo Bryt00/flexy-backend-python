@@ -2,3 +2,11 @@ INFO 2026-05-15 16:53:21,590 autoreload 12204 16252 C:\Users\r4v3n\Desktop\mobil
 INFO 2026-05-15 16:53:21,460 autoreload 9 124341624247040 /app/website/models.py changed, reloading.
 INFO 2026-05-15 16:53:24,740 autoreload 25 138412545032960 Watching for file changes with StatReloader
 INFO 2026-05-15 16:53:25,565 autoreload 17836 22516 Watching for file changes with StatReloader
+INFO 2026-05-15 17:11:33,426 autoreload 17836 22516 C:\Users\r4v3n\Desktop\mobile\django-rest-backend\website\admin.py changed, reloading.
+INFO 2026-05-15 17:11:34,862 autoreload 25 138412545032960 /app/website/admin.py changed, reloading.
+INFO 2026-05-15 17:11:36,705 autoreload 18692 13836 Watching for file changes with StatReloader
+INFO 2026-05-15 17:11:37,784 autoreload 29 136978967413504 Watching for file changes with StatReloader
+INFO 2026-05-15 17:14:24,901 autoreload 29 136978967413504 /app/website/models.py changed, reloading.
+INFO 2026-05-15 17:14:24,303 autoreload 18692 13836 C:\Users\r4v3n\Desktop\mobile\django-rest-backend\website\models.py changed, reloading.
+INFO 2026-05-15 17:14:27,968 autoreload 33 125311160156928 Watching for file changes with StatReloader
+INFO 2026-05-15 17:14:27,800 autoreload 11364 14888 Watching for file changes with StatReloader

@@ -70,4 +70,4 @@ celerybeat.pid
 # Scratch / Temporary scripts
 scratch/
 logs/
- 
+*.sql

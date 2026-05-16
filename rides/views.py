@@ -235,6 +235,8 @@ class RideViewSet(viewsets.ModelViewSet):
                     )
                 except Exception as e:
                     print(f"Error fetching trip metrics: {e}")
+                
+                print(f"DEBUG ESTIMATE: dist_km={dist_km}, duration_sec={duration_sec}, stops={len(stops)}")
             
             # 4. Calculate Fares with ETA and Availability
             base_estimates = PricingService.calculate_fare_estimates(

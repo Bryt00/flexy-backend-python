@@ -78,7 +78,7 @@ class RideAdmin(ModelAdmin):
         count = obj.incidents.count()
         if count > 0:
             return format_html('<span style="color:#ef4444; font-weight:bold;">⚠️ {} INCIDENTS</span>', count)
-        return format_html('<span style="color:#94a3b8;">None</span>')
+        return format_html('<span style="color:#94a3b8;">{}</span>', 'None')
     has_incidents.short_description = 'Safety'
 
 

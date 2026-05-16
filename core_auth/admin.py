@@ -4,6 +4,7 @@ from .models import User, DeletionRequest
 
 @admin.register(User)
 class UserAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('email', 'role', 'is_active', 'created_at')
     list_filter = ('role', 'is_active')
     search_fields = ('email',)
@@ -20,6 +21,7 @@ class UserAdmin(ModelAdmin):
 
 @admin.register(DeletionRequest)
 class DeletionRequestAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('user', 'status', 'requested_at', 'processed_at')
     list_filter = ('status',)
     search_fields = ('user__email',)

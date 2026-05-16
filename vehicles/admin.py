@@ -5,6 +5,7 @@ from .models import Vehicle
 
 @admin.register(Vehicle)
 class VehicleAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('license_plate', 'make', 'model', 'type', 'status', 'is_active', 'is_verified', 'driver')
     list_filter = ('type', 'status', 'is_active', 'is_verified')
     search_fields = ('license_plate', 'make', 'model', 'driver__user__email', 'driver__full_name')

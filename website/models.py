@@ -178,7 +178,8 @@ class WebsiteSettings(models.Model):
 class BrandFeature(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
-    icon_name = models.CharField(max_length=50, help_text="Lucide icon name (e.g. shield, zap)", default="star")
+    icon_name = models.CharField(max_length=50, help_text="Lucide icon name (e.g. shield, zap)", default="star", blank=True, null=True)
+    image = models.ImageField(upload_to='brand_features/', blank=True, null=True, help_text="Upload a custom logo or image")
     order = models.IntegerField(default=0)
 
     class Meta:

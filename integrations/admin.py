@@ -5,6 +5,7 @@ from .models import APIKey
 
 @admin.register(APIKey)
 class APIKeyAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('name', 'user', 'prefix', 'is_active', 'last_used_at', 'created_at')
     list_filter = ('is_active', 'created_at')
     search_fields = ('name', 'user__email', 'prefix')

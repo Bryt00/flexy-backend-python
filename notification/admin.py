@@ -5,6 +5,7 @@ from .tasks import send_campaign_task
 
 @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('user', 'title', 'type', 'is_read', 'created_at')
     list_filter = ('type', 'is_read', 'created_at')
     search_fields = ('user__email', 'title', 'body')
@@ -12,6 +13,7 @@ class NotificationAdmin(ModelAdmin):
 
 @admin.register(Campaign)
 class CampaignAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('title', 'target_audience', 'status', 'sent_at', 'created_at')
     list_filter = ('status', 'target_audience', 'created_at')
     search_fields = ('title', 'body')

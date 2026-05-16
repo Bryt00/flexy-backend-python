@@ -13,6 +13,7 @@ class RideStopInline(admin.TabularInline):
 
 @admin.register(Ride)
 class RideAdmin(ModelAdmin):
+    list_per_page = 20
     inlines = [RideStopInline]
     list_display = ('short_id', 'rider', 'driver', 'status_badge', 'type', 'fare_display', 'has_incidents', 'created_at')
     list_filter = ('status', 'type', 'is_scheduled', 'preferred_vehicle_type')
@@ -84,12 +85,14 @@ class RideAdmin(ModelAdmin):
 
 @admin.register(Incident)
 class IncidentAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('type', 'ride', 'reporter', 'status', 'created_at')
     list_filter = ('type', 'status')
     search_fields = ('ride__id', 'reporter__email', 'description')
     list_editable = ('status',)
 @admin.register(RideReceipt)
 class RideReceiptAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('receipt_no', 'ride', 'total_fare', 'generated_at')
     search_fields = ('receipt_no', 'ride__id')
     readonly_fields = ('generated_at',)

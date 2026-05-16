@@ -6,7 +6,7 @@ services:
       - POSTGRES_PASSWORD=ravendb
       - POSTGRES_DB=flexyride_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -33,6 +33,7 @@ services:
       - DATABASE_URL=postgres://postgres:ravendb@db:5432/flexyride_db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
     depends_on:
       - db
       - redis
@@ -47,6 +48,7 @@ services:
       - DATABASE_URL=postgres://postgres:ravendb@db:5432/flexyride_db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
     depends_on:
       - db
       - redis

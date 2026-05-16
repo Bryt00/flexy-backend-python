@@ -4,4 +4,5 @@ from .models import Delivery
 
 @admin.register(Delivery)
 class DeliveryAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('id', 'status', 'item_category')

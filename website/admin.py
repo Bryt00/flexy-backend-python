@@ -7,6 +7,7 @@ from .models import (
 
 @admin.register(WebsiteSettings)
 class WebsiteSettingsAdmin(ModelAdmin):
+    list_per_page = 20
     def has_add_permission(self, request):
         # Limit to one instance
         if self.model.objects.exists():
@@ -15,30 +16,41 @@ class WebsiteSettingsAdmin(ModelAdmin):
 
 @admin.register(BrandFeature)
 class BrandFeatureAdmin(ModelAdmin):
-    list_display = ('title', 'order')
+    list_per_page = 20
+    list_display = ('title', 'order', 'has_image')
     list_editable = ('order',)
+
+    def has_image(self, obj):
+        return bool(obj.image)
+    has_image.boolean = True
+    has_image.short_description = 'Logo'
 
 @admin.register(ServiceCategory)
 class ServiceCategoryAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('name', 'order', 'is_active')
     list_editable = ('order', 'is_active')
 
 @admin.register(SafetyFeature)
 class SafetyFeatureAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('title', 'order')
     list_editable = ('order',)
 
 @admin.register(LegalDocument)
 class LegalDocumentAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('title', 'document_type', 'last_updated')
     prepopulated_fields = {'slug': ('title',)}
 
 @admin.register(HeroBanner)
 class HeroBannerAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('page_name', 'title')
 
 @admin.register(BlogPost)
 class BlogPostAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('title', 'author_name', 'category', 'is_published', 'published_at', 'created_at')
     list_filter = ('is_published', 'category', 'created_at')
     search_fields = ('title', 'author_name', 'content')
@@ -47,6 +59,7 @@ class BlogPostAdmin(ModelAdmin):
 
 @admin.register(Testimonial)
 class TestimonialAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('name', 'role', 'rating', 'created_at')
     list_filter = ('role', 'rating')
     search_fields = ('name', 'quote')
@@ -54,6 +67,7 @@ class TestimonialAdmin(ModelAdmin):
 
 @admin.register(ContactInquiry)
 class ContactInquiryAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('name', 'email', 'category', 'is_resolved', 'created_at')
     list_filter = ('category', 'is_resolved', 'created_at')
     search_fields = ('name', 'email', 'message')
@@ -62,6 +76,7 @@ class ContactInquiryAdmin(ModelAdmin):
 
 @admin.register(City)
 class CityAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('name', 'region', 'is_active', 'driver_count')
     list_filter = ('is_active', 'region')
     search_fields = ('name', 'region')
@@ -69,6 +84,7 @@ class CityAdmin(ModelAdmin):
 
 @admin.register(FAQItem)
 class FAQItemAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('question', 'category', 'order', 'is_active')
     list_filter = ('category', 'is_active')
     search_fields = ('question', 'answer')
@@ -76,6 +92,7 @@ class FAQItemAdmin(ModelAdmin):
 
 @admin.register(JobOpening)
 class JobOpeningAdmin(ModelAdmin):
+    list_per_page = 20
     list_display = ('title', 'department', 'location', 'job_type', 'is_active', 'created_at')
     list_filter = ('department', 'job_type', 'is_active')
     search_fields = ('title', 'description')

@@ -21,7 +21,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure--2igbe1w0zqjl_(8w2)irn!e
 
 DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*', '192.168.1.76'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*', '192.168.1.76', '192.168.0.101'])
 
 # Security Settings
 if not DEBUG:

@@ -21,7 +21,7 @@ class GoogleMapsService:
         if waypoints and len(waypoints) > 0:
             url = "https://maps.googleapis.com/maps/api/directions/json"
             # Format: 'lat1,lng1|lat2,lng2'
-            waypoints_str = "|".join([f"{w['lat']},{w['lng']}" for w in waypoints])
+            waypoints_str = "|".join([f"{w.get('lat') or w.get('latitude')},{w.get('lng') or w.get('longitude')}" for w in waypoints])
             params = {
                 'origin': f"{origin_lat},{origin_lng}",
                 'destination': f"{dest_lat},{dest_lng}",

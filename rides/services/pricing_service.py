@@ -28,7 +28,9 @@ class PricingService:
                 dist_km, 
                 category.slug, 
                 surge_override=surge,
-                num_stops=num_stops
+                num_stops=num_stops,
+                lat=lat,
+                lng=lng
             )
             estimates[category.slug] = ledger['total_fare']
             
@@ -48,5 +50,7 @@ class PricingService:
             waiting_minutes=waiting_minutes,
             payment_method=payment_method,
             surge_override=surge,
-            num_stops=num_stops
+            num_stops=num_stops,
+            lat=lat,
+            lng=lng
         )

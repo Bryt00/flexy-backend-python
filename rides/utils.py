@@ -16,11 +16,36 @@ class FareCalculator:
         multiplier = 1.0
 
         # Step 1: Admin-set Pricing Rule (Manual Surge)
-        # We fetch the Global rule or a city-specific one if we have lat/lng (simplified to Global for now)
+        # We fetch the Global rule or a city-specific one if we have lat/lng
         try:
-            rule = PricingRule.objects.filter(is_active=True).first()
+            rule = None
+            if lat is not None and lng is not None:
+                from website.models import City
+                closest_city = None
+                min_dist = float('inf')
+                # Find closest active city within 100km using Haversine
+                for city in City.objects.filter(is_active=True, latitude__isnull=False, longitude__isnull=False):
+                    dist = GeospatialUtils.calculate_haversine_distance(lat, lng, city.latitude, city.longitude) / 1000.0
+                    if dist < 100.0 and dist < min_dist:
+                        min_dist = dist
+                        closest_city = city
+                if closest_city:
+                    rule = PricingRule.objects.filter(city=closest_city, is_active=True).first()
+            
+            if not rule:
+                # Fallback: global rule (city is null) or first active rule
+                rule = PricingRule.objects.filter(city__isnull=True, is_active=True).first()
+                if not rule:
+                    rule = PricingRule.objects.filter(is_active=True).first()
+
             if rule:
-                multiplier = max(multiplier, rule.surge_multiplier)
+                raw_surge = rule.surge_multiplier
+                # Automatically scale surge multiplier if entered as percentage/scaled (e.g. 11.0 for 1.1x surge)
+                if raw_surge > 3.0:
+                    scaled_surge = raw_surge / 10.0
+                else:
+                    scaled_surge = raw_surge
+                multiplier = max(multiplier, scaled_surge)
         except Exception as e:
             logger.error(f"Error fetching PricingRule: {e}")
 
@@ -79,7 +104,7 @@ class FareCalculator:
         return round(fee, 2)
 
     @staticmethod
-    def compute_final_fare(distance_km, vehicle_category_slug, waiting_minutes=0, payment_method='cash', is_cancelled=False, surge_override=None, num_stops=0):
+    def compute_final_fare(distance_km, vehicle_category_slug, waiting_minutes=0, payment_method='cash', is_cancelled=False, surge_override=None, num_stops=0, lat=None, lng=None):
         """
         Final Fare Calculation Sequence (8 Stages - Screenshot 7)
         """
@@ -100,26 +125,55 @@ class FareCalculator:
             logger.error(f"Category {vehicle_category_slug} not found.")
             return ledger
 
-        # Stage 1: Add Base Fare
-        ledger['base_fare'] = category.base_fare
-
-        # Stage 2 & 3: Add Tiered Distance Charges + Category Multiplier
-        tiers = DistanceTier.objects.filter(is_active=True).order_by('min_km')
-        remaining_dist = distance_km
-        tiered_dist_charge = 0
+        from core_settings.models import PricingRule
+        rule = None
+        if lat is not None and lng is not None:
+            from website.models import City
+            closest_city = None
+            min_dist = float('inf')
+            # Find closest active city within 100km using Haversine
+            for city in City.objects.filter(is_active=True, latitude__isnull=False, longitude__isnull=False):
+                dist = GeospatialUtils.calculate_haversine_distance(lat, lng, city.latitude, city.longitude) / 1000.0
+                if dist < 100.0 and dist < min_dist:
+                    min_dist = dist
+                    closest_city = city
+            if closest_city:
+                rule = PricingRule.objects.filter(city=closest_city, is_active=True).first()
         
-        for tier in tiers:
-            if remaining_dist <= 0: break
-            tier_range = tier.max_km - tier.min_km
-            dist_in_tier = min(remaining_dist, tier_range)
+        if not rule:
+            # Fallback: global rule (city is null) or first active rule
+            rule = PricingRule.objects.filter(city__isnull=True, is_active=True).first()
+            if not rule:
+                rule = PricingRule.objects.filter(is_active=True).first()
+
+        # Stage 1: Add Base Fare
+        if rule and rule.base_fare > 0:
+            ledger['base_fare'] = rule.base_fare * category.multiplier
+        else:
+            ledger['base_fare'] = category.base_fare
+
+        # Stage 2 & 3: Add Distance Charges + Category Multiplier
+        if rule and rule.per_km_rate > 0:
+            # City-specific flat per-km rate override
+            tiered_dist_charge = distance_km * rule.per_km_rate * category.multiplier
+        else:
+            # Default Distance Tiers fallback
+            tiers = DistanceTier.objects.filter(is_active=True).order_by('min_km')
+            remaining_dist = distance_km
+            tiered_dist_charge = 0
             
-            # (Stage 2) Tier Rate * (Stage 3) Category Multiplier
-            scaled_rate = tier.rate_per_km * category.multiplier
-            tiered_dist_charge += dist_in_tier * scaled_rate
-            remaining_dist -= dist_in_tier
+            for tier in tiers:
+                if remaining_dist <= 0: break
+                tier_range = tier.max_km - tier.min_km
+                dist_in_tier = min(remaining_dist, tier_range)
+                
+                # (Stage 2) Tier Rate * (Stage 3) Category Multiplier
+                scaled_rate = tier.rate_per_km * category.multiplier
+                tiered_dist_charge += dist_in_tier * scaled_rate
+                remaining_dist -= dist_in_tier
 
         # Stage 4: Apply Surge Multiplier (To km-based charges only)
-        ledger['surge_multiplier'] = surge_override if surge_override is not None else FareCalculator.get_surge_multiplier()
+        ledger['surge_multiplier'] = surge_override if surge_override is not None else FareCalculator.get_surge_multiplier(lat=lat, lng=lng)
         ledger['distance_fare'] = tiered_dist_charge * ledger['surge_multiplier']
 
         # Stage 5: Add Stops Fee (GHS 2 per extra stop)

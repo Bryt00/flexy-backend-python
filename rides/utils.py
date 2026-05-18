@@ -7,23 +7,27 @@ logger = logging.getLogger(__name__)
 
 class FareCalculator:
     @staticmethod
-    def get_surge_multiplier(target_time=None, lat=None, lng=None, radius=5.0):
+    def get_surge_multiplier(target_time=None, lat=None, lng=None, radius=5.0, duration_seconds=None, duration_in_traffic=None):
         """
         Calculates compounded surge multiplier factoring in admin-set rules, 
-        peak hours, and live Redis spatial density.
+        peak hours, live Redis spatial density, traffic delays, and weather.
         """
         from core_settings.models import PricingRule
+        from integrations.weather import WeatherService
         multiplier = 1.0
+        
+        enable_weather = True
+        max_weather = 1.5
+        enable_traffic = True
+        max_traffic = 1.5
 
-        # Step 1: Admin-set Pricing Rule (Manual Surge)
-        # We fetch the Global rule or a city-specific one if we have lat/lng
+        # Step 1: Admin-set Pricing Rule (Manual Surge & Toggles)
         try:
             rule = None
             if lat is not None and lng is not None:
                 from website.models import City
                 closest_city = None
                 min_dist = float('inf')
-                # Find closest active city within 100km using Haversine
                 for city in City.objects.filter(is_active=True, latitude__isnull=False, longitude__isnull=False):
                     dist = GeospatialUtils.calculate_haversine_distance(lat, lng, city.latitude, city.longitude) / 1000.0
                     if dist < 100.0 and dist < min_dist:
@@ -33,14 +37,17 @@ class FareCalculator:
                     rule = PricingRule.objects.filter(city=closest_city, is_active=True).first()
             
             if not rule:
-                # Fallback: global rule (city is null) or first active rule
                 rule = PricingRule.objects.filter(city__isnull=True, is_active=True).first()
                 if not rule:
                     rule = PricingRule.objects.filter(is_active=True).first()
 
             if rule:
+                enable_weather = rule.enable_weather_surge
+                max_weather = rule.max_weather_surge
+                enable_traffic = rule.enable_traffic_surge
+                max_traffic = rule.max_traffic_surge
+                
                 raw_surge = rule.surge_multiplier
-                # Automatically scale surge multiplier if entered as percentage/scaled (e.g. 11.0 for 1.1x surge)
                 if raw_surge > 3.0:
                     scaled_surge = raw_surge / 10.0
                 else:
@@ -58,6 +65,29 @@ class FareCalculator:
         # Step 2: Base Peak Hour Surge
         if (peak1_start <= target_time <= peak1_end) or (peak2_start <= target_time <= peak2_end):
             multiplier = max(multiplier, 1.3)
+            
+        # Step 2.5: Environmental Surge (Weather & Traffic)
+        try:
+            env_surge = 1.0
+            
+            # Weather
+            if enable_weather and lat and lng:
+                w_surge = WeatherService.get_weather_surge(lat, lng)
+                w_surge = min(w_surge, max_weather) # Cap at admin limit
+                env_surge = max(env_surge, w_surge)
+                
+            # Traffic
+            if enable_traffic and duration_seconds and duration_in_traffic:
+                if duration_in_traffic > duration_seconds:
+                    delay_ratio = duration_in_traffic / float(duration_seconds)
+                    if delay_ratio > 1.2: # More than 20% delay
+                        t_surge = 1.0 + ((delay_ratio - 1.2) / 2.0) # E.g., 1.5 ratio -> 1.0 + 0.15 = 1.15
+                        t_surge = min(t_surge, max_traffic) # Cap at admin limit
+                        env_surge = max(env_surge, t_surge)
+                        
+            multiplier = max(multiplier, env_surge)
+        except Exception as e:
+            logger.error(f"Error calculating environmental surge: {e}")
         
         # Step 3: Dynamic Spatial Demand Surge
         if lat is not None and lng is not None:
@@ -104,7 +134,7 @@ class FareCalculator:
         return round(fee, 2)
 
     @staticmethod
-    def compute_final_fare(distance_km, vehicle_category_slug, waiting_minutes=0, payment_method='cash', is_cancelled=False, surge_override=None, num_stops=0, lat=None, lng=None):
+    def compute_final_fare(distance_km, vehicle_category_slug, waiting_minutes=0, payment_method='cash', is_cancelled=False, surge_override=None, num_stops=0, lat=None, lng=None, is_sharing_enabled=False):
         """
         Final Fare Calculation Sequence (8 Stages - Screenshot 7)
         """
@@ -191,6 +221,11 @@ class FareCalculator:
             else:
                 ledger['cancellation_fee'] = 0.0
 
+        # Apply Carpooling / Shared Ride Discount (20% off base and distance charges)
+        if is_sharing_enabled:
+            ledger['base_fare'] = round(ledger['base_fare'] * 0.80, 2)
+            ledger['distance_fare'] = round(ledger['distance_fare'] * 0.80, 2)
+
         # Stage 8: Format Final Amount
         total = ledger['base_fare'] + ledger['distance_fare'] + ledger['stops_fee'] + ledger['waiting_fee'] + ledger['cancellation_fee']
         ledger['total_fare'] = round(total, 2)
@@ -201,7 +236,7 @@ class FareCalculator:
         return ledger
 
     @staticmethod
-    def calculate_fare_estimates(distance_km, duration_seconds):
+    def calculate_fare_estimates(distance_km, duration_seconds, is_sharing_enabled=False):
         """
         Provides estimates for all active categories (Simplified 8-stage).
         """
@@ -209,7 +244,7 @@ class FareCalculator:
         estimates = {}
         
         for category in categories:
-            ledger = FareCalculator.compute_final_fare(distance_km, category.slug)
+            ledger = FareCalculator.compute_final_fare(distance_km, category.slug, is_sharing_enabled=is_sharing_enabled)
             estimates[category.slug] = ledger['total_fare']
             
         return estimates

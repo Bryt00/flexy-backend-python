@@ -8,6 +8,7 @@ class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, related_name='profile')
     full_name = models.CharField(max_length=255, blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True, help_text="Driver's date of birth")
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     emergency_name = models.CharField(max_length=255, blank=True, null=True)
@@ -51,6 +52,7 @@ class Profile(models.Model):
     # Preferences & Security
     notification_preferences = models.JSONField(default=dict, blank=True)
     is_2fa_enabled = models.BooleanField(default=False)
+    auto_navigate = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.referral_code:

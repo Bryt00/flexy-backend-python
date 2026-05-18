@@ -180,6 +180,7 @@ class BrandFeature(models.Model):
     description = models.TextField()
     icon_name = models.CharField(max_length=50, help_text="Lucide icon name (e.g. shield, zap)", default="star", blank=True, null=True)
     image = models.ImageField(upload_to='brand_features/', blank=True, null=True, help_text="Upload a custom logo or image")
+    url = models.URLField(max_length=500, blank=True, null=True, help_text="Optional link when this feature is clicked")
     order = models.IntegerField(default=0)
 
     class Meta:

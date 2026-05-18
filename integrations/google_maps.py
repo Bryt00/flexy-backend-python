@@ -27,7 +27,8 @@ class GoogleMapsService:
                 'destination': f"{dest_lat},{dest_lng}",
                 'waypoints': waypoints_str,
                 'key': api_key,
-                'mode': 'driving'
+                'mode': 'driving',
+                'departure_time': 'now'
             }
             
             try:
@@ -38,11 +39,16 @@ class GoogleMapsService:
                     route = data['routes'][0]
                     total_distance_m = 0
                     total_duration_s = 0
+                    total_traffic_s = 0
                     for leg in route['legs']:
                         total_distance_m += leg['distance']['value']
                         total_duration_s += leg['duration']['value']
+                        if 'duration_in_traffic' in leg:
+                            total_traffic_s += leg['duration_in_traffic']['value']
+                        else:
+                            total_traffic_s += leg['duration']['value']
                     
-                    return total_distance_m / 1000.0, total_duration_s
+                    return total_distance_m / 1000.0, total_duration_s, total_traffic_s
                 else:
                     logger.error(f"Directions API Error: {data.get('status')}")
             except Exception as e:
@@ -56,7 +62,8 @@ class GoogleMapsService:
             'origins': f"{origin_lat},{origin_lng}",
             'destinations': f"{dest_lat},{dest_lng}",
             'key': api_key,
-            'mode': 'driving'
+            'mode': 'driving',
+            'departure_time': 'now'
         }
 
         try:
@@ -68,7 +75,10 @@ class GoogleMapsService:
                 if element['status'] == 'OK':
                     distance_km = element['distance']['value'] / 1000.0
                     duration_seconds = element['duration']['value']
-                    return distance_km, duration_seconds
+                    duration_in_traffic = duration_seconds
+                    if 'duration_in_traffic' in element:
+                        duration_in_traffic = element['duration_in_traffic']['value']
+                    return distance_km, duration_seconds, duration_in_traffic
                 else:
                     logger.error(f"Google Maps Element Error: {element['status']}")
             else:
@@ -100,4 +110,4 @@ class GoogleMapsService:
         # Assume average city speed of 30 km/h (0.5 km/min)
         duration_seconds = (distance_km / 30.0) * 3600
         
-        return round(distance_km, 2), int(duration_seconds)
+        return round(distance_km, 2), int(duration_seconds), int(duration_seconds)

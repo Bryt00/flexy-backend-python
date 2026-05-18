@@ -22,7 +22,37 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         return Delivery.objects.filter(passenger=user)
 
     def perform_create(self, serializer):
-        delivery = serializer.save(passenger=self.request.user)
+        # 1. Calculate fare using coordinates
+        pickup_lat = serializer.validated_data.get('pickup_lat')
+        pickup_lng = serializer.validated_data.get('pickup_lng')
+        dropoff_lat = serializer.validated_data.get('dropoff_lat')
+        dropoff_lng = serializer.validated_data.get('dropoff_lng')
+        
+        distance_km = 0.0
+        duration_sec = 0.0
+        total_fare = 0.0
+        base_fare = 0.0
+        distance_fee = 0.0
+        
+        try:
+            distance_km, duration_sec, _ = GoogleMapsService.get_trip_metrics(pickup_lat, pickup_lng, dropoff_lat, dropoff_lng)
+            # Use motorbike for base delivery calculation
+            ledger = FareCalculator.compute_final_fare(distance_km, 'motorbike')
+            total_fare = ledger.get('total_fare', 0.0)
+            base_fare = ledger.get('base_fare', 0.0)
+            distance_fee = ledger.get('distance_fare', 0.0)
+        except Exception as e:
+            print(f"Error calculating delivery metrics/fares: {e}")
+            
+        delivery = serializer.save(
+            passenger=self.request.user,
+            distance=distance_km,
+            estimated_eta=duration_sec / 60.0,
+            estimated_fare=total_fare,
+            base_fare=base_fare,
+            distance_fee=distance_fee,
+            final_fare=total_fare
+        )
         
         # Broadcast to available drivers (Discovery stream)
         channel_layer = get_channel_layer()
@@ -48,7 +78,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             # item_category and weight are available but we use distance-based pricing for now
             
             # 1. Fetch real metrics from Google
-            dist_km, duration_sec = GoogleMapsService.get_trip_metrics(p_lat, p_lng, d_lat, d_lng)
+            dist_km, duration_sec, _ = GoogleMapsService.get_trip_metrics(p_lat, p_lng, d_lat, d_lng)
             
             # 2. Calculate fare using 'motorbike' as the baseline for delivery
             ledger = FareCalculator.compute_final_fare(dist_km, 'motorbike')
@@ -102,7 +132,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         delivery.status = 'ACCEPTED'
         delivery.save()
 
-        # Broadcast acceptance update
+        # Broadcast acceptance update to subscriber tracking group
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f'delivery_{delivery.id}',
@@ -113,7 +143,78 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             }
         )
 
+        # Broadcast removal to discovery stream
+        async_to_sync(channel_layer.group_send)(
+            'delivery_discovery',
+            {
+                'type': 'delivery_broadcast',
+                'message_type': 'delivery_taken',
+                'data': {'delivery_id': str(delivery.id)}
+            }
+        )
+
         return Response(DeliverySerializer(delivery).data)
+
+    @action(detail=True, methods=['post'])
+    def upload_proof(self, request, pk=None):
+        """
+        Uploads delivery proof (signature, coordinates, photo) and advances delivery status.
+        """
+        delivery = self.get_object()
+        proof_type = request.data.get('proof_type') # 'PICKUP' or 'DROPOFF'
+        image_url = request.data.get('image_url')
+        signature_base64 = request.data.get('signature_base64')
+        lat = request.data.get('latitude')
+        lng = request.data.get('longitude')
+        
+        if not proof_type or proof_type not in ['PICKUP', 'DROPOFF']:
+            return Response({"error": "Invalid proof_type. Must be PICKUP or DROPOFF."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if lat is None or lng is None:
+            return Response({"error": "Latitude and longitude coordinates are required for verification."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            lat = float(lat)
+            lng = float(lng)
+        except ValueError:
+            return Response({"error": "Invalid coordinates format."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Create the proof record
+        from .models import DeliveryProof
+        proof = DeliveryProof.objects.create(
+            delivery=delivery,
+            proof_type=proof_type,
+            image_url=image_url,
+            signature_base64=signature_base64,
+            latitude=lat,
+            longitude=lng
+        )
+        
+        # Advance state
+        if proof_type == 'PICKUP':
+            delivery.status = 'PACKAGE_COLLECTED'
+        else: # DROPOFF
+            delivery.status = 'DELIVERED'
+            if image_url:
+                delivery.proof_photo_url = image_url
+                
+        delivery.save()
+        
+        # Broadcast status update
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'delivery_{delivery.id}',
+            {
+                'type': 'delivery_broadcast',
+                'message_type': 'status_update',
+                'data': DeliverySerializer(delivery).data
+            }
+        )
+        
+        return Response({
+            "message": f"Proof uploaded successfully. Delivery advanced to {delivery.status}.",
+            "delivery": DeliverySerializer(delivery).data
+        })
 
     @action(detail=False, methods=['get'])
     def available(self, request):

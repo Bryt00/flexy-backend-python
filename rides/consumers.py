@@ -68,6 +68,44 @@ class RideConsumer(AsyncWebsocketConsumer):
         event_type = text_data_json.get('type')
         data = text_data_json.get('data')
 
+        if event_type == 'chat' and data:
+            content = data.get('content')
+            if content:
+                from asgiref.sync import sync_to_async
+                from .crypto_utils import ChatEncryption
+                from .models import ChatMessage, Ride
+                from courier.models import Delivery
+                from .serializers import ChatMessageSerializer
+
+                encrypted_content = ChatEncryption.encrypt(content)
+
+                @sync_to_async
+                def save_message_db():
+                    ride = None
+                    delivery = None
+                    try:
+                        ride = Ride.objects.get(id=self.ride_id)
+                    except Ride.DoesNotExist:
+                        try:
+                            delivery = Delivery.objects.get(id=self.ride_id)
+                        except Delivery.DoesNotExist:
+                            pass
+                    
+                    message = ChatMessage.objects.create(
+                        ride=ride,
+                        delivery=delivery,
+                        sender=self.user,
+                        content=encrypted_content
+                    )
+                    message.content = content
+                    return ChatMessageSerializer(message).data
+
+                try:
+                    serialized_data = await save_message_db()
+                    data = serialized_data
+                except Exception as e:
+                    print(f"Failed to save chat message: {e}")
+
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -80,7 +118,8 @@ class RideConsumer(AsyncWebsocketConsumer):
 
     async def ride_update(self, event):
         # Prevent echo: don't send back to the user who originated the message
-        if event.get('sender_id') == self.user.id:
+        # EXCEPT for chat messages where the sender needs the real DB ID to replace the temp message
+        if event.get('sender_id') == self.user.id and event.get('event_type') != 'chat':
             return
 
         await self.send(text_data=json.dumps({

@@ -225,24 +225,25 @@ class RideViewSet(viewsets.ModelViewSet):
             else:
                 stops = stops_raw
 
-            dist_km, duration_sec = 0.0, 0
+            dist_km, duration_sec, traffic_sec = 0.0, 0, 0
             if d_lat and d_lng:
                 try:
                     # Pass waypoints to Directions API for accurate multi-stop distance
-                    dist_km, duration_sec = GoogleMapsService.get_trip_metrics(
+                    dist_km, duration_sec, traffic_sec = GoogleMapsService.get_trip_metrics(
                         p_lat, p_lng, float(d_lat), float(d_lng),
                         waypoints=stops
                     )
                 except Exception as e:
                     print(f"Error fetching trip metrics: {e}")
                 
-                print(f"DEBUG ESTIMATE: dist_km={dist_km}, duration_sec={duration_sec}, stops={len(stops)}")
+                print(f"DEBUG ESTIMATE: dist_km={dist_km}, duration_sec={duration_sec}, traffic_sec={traffic_sec}, stops={len(stops)}")
             
             # 4. Calculate Fares with ETA and Availability
             base_estimates = PricingService.calculate_fare_estimates(
                 dist_km, duration_sec, 
                 lat=p_lat, lng=p_lng,
-                num_stops=len(stops)
+                num_stops=len(stops),
+                duration_in_traffic_sec=traffic_sec
             )
             final_estimates = {}
             
@@ -255,7 +256,7 @@ class RideViewSet(viewsets.ModelViewSet):
                     c_pos = category_availability[category_slug]
                     # ETA from driver [lng, lat] to pickup [p_lat, p_lng]
                     try:
-                        _, eta_seconds = GoogleMapsService.get_trip_metrics(c_pos[1], c_pos[0], p_lat, p_lng)
+                        _, eta_seconds, _ = GoogleMapsService.get_trip_metrics(c_pos[1], c_pos[0], p_lat, p_lng)
                         eta_minutes = max(1, int(eta_seconds // 60))
                     except Exception:
                         # Fallback to a very rough distance-based estimate if Maps fails for ETA
@@ -504,7 +505,7 @@ class RideViewSet(viewsets.ModelViewSet):
                 if next_stop:
                     target_lat, target_lng = next_stop.latitude, next_stop.longitude
 
-            dist_km, duration_sec = GoogleMapsService.get_trip_metrics(lat, lng, target_lat, target_lng)
+            dist_km, duration_sec, _ = GoogleMapsService.get_trip_metrics(lat, lng, target_lat, target_lng)
             
             ride.distance_remaining = dist_km
             ride.duration_remaining = duration_sec
@@ -728,19 +729,31 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def chat_history(self, request, pk=None):
-        ride = self.get_object()
-        
-        # Only return chat history if the ride communication is still "ongoing" 
-        # or within a 30-minute grace period for post-ride coordination (lost items, etc)
-        if ride.status in ['completed', 'cancelled']:
-            from django.utils import timezone
-            time_since_terminal = (timezone.now() - ride.updated_at).total_seconds()
-            if time_since_terminal > 1800: # 30 minutes
-                return Response([])
-            
         from .crypto_utils import ChatEncryption
-        messages = ride.messages.all().order_by('created_at')
+        from courier.models import Delivery
+        from django.utils import timezone
         
+        messages = []
+        try:
+            ride = Ride.objects.get(pk=pk)
+            # Only return chat history if the ride communication is still "ongoing" 
+            # or within a 30-minute grace period for post-ride coordination (lost items, etc)
+            if ride.status in ['completed', 'cancelled']:
+                time_since_terminal = (timezone.now() - ride.updated_at).total_seconds()
+                if time_since_terminal > 1800: # 30 minutes
+                    return Response([])
+            messages = ride.messages.all().order_by('created_at')
+        except Ride.DoesNotExist:
+            try:
+                delivery = Delivery.objects.get(pk=pk)
+                if delivery.status in ['DELIVERED', 'CANCELLED']:
+                    time_since_terminal = (timezone.now() - delivery.updated_at).total_seconds()
+                    if time_since_terminal > 1800: # 30 minutes
+                        return Response([])
+                messages = delivery.messages.all().order_by('created_at')
+            except Delivery.DoesNotExist:
+                return Response({"detail": "Not found."}, status=404)
+            
         # Decrypt messages for the session view
         for msg in messages:
             msg.content = ChatEncryption.decrypt(msg.content)

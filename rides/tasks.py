@@ -89,6 +89,47 @@ def cancel_stale_rides():
     Ride.objects.filter(status='pending', created_at__lt=limit).update(status='cancelled')
 
 @shared_task
+def cancel_stale_deliveries():
+    """
+    Cancels courier deliveries that have been pending for more than 2 minutes
+    without being accepted by any rider/driver.
+    """
+    from courier.models import Delivery
+    from courier.serializers import DeliverySerializer
+    from asgiref.sync import async_to_sync
+    from channels.layers import get_channel_layer
+
+    limit = timezone.now() - timezone.timedelta(minutes=2)
+    stale_deliveries = Delivery.objects.filter(status='PENDING', created_at__lt=limit)
+    
+    if stale_deliveries.exists():
+        channel_layer = get_channel_layer()
+        for delivery in stale_deliveries:
+            delivery.status = 'CANCELLED'
+            delivery.save()
+            logger.info(f"Courier: Stale delivery {delivery.id} timed out and was cancelled automatically.")
+            
+            # Broadcast status update to the passenger
+            async_to_sync(channel_layer.group_send)(
+                f'delivery_{delivery.id}',
+                {
+                    'type': 'delivery_broadcast',
+                    'message_type': 'status_update',
+                    'data': DeliverySerializer(delivery).data
+                }
+            )
+            
+            # Broadcast removal from discovery stream for all drivers
+            async_to_sync(channel_layer.group_send)(
+                'delivery_discovery',
+                {
+                    'type': 'delivery_broadcast',
+                    'message_type': 'delivery_taken',
+                    'data': {'delivery_id': str(delivery.id)}
+                }
+            )
+
+@shared_task
 def activate_scheduled_rides():
     from datetime import timedelta
     now = timezone.now()

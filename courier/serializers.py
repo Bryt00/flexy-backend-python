@@ -1,11 +1,17 @@
 from rest_framework import serializers
-from .models import Delivery
+from .models import Delivery, DeliveryProof
 from core_auth.serializers import UserSerializer
+
+class DeliveryProofSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryProof
+        fields = '__all__'
 
 class DeliverySerializer(serializers.ModelSerializer):
     passenger_details = UserSerializer(source='passenger', read_only=True)
     driver_name = serializers.SerializerMethodField()
     driver_photo = serializers.SerializerMethodField()
+    proofs = DeliveryProofSerializer(many=True, read_only=True)
 
     class Meta:
         model = Delivery

@@ -42,6 +42,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         
         return value
 
+    def validate_referral_code(self, value):
+        if value:
+            from profiles.models import Profile
+            if not Profile.objects.filter(referral_code=value).exists():
+                raise serializers.ValidationError("Invalid referral code. Please check for typos.")
+        return value
+
     def create(self, validated_data):
         referral_code = validated_data.pop('referral_code', None)
         user = User.objects.create_user(
@@ -60,8 +67,39 @@ class RegisterSerializer(serializers.ModelSerializer):
                 referrer_profile = Profile.objects.get(referral_code=referral_code)
                 profile.referred_by = referrer_profile
                 profile.save()
+
+                # --- DOUBLE-SIDED WELCOME REWARD ---
+                # Instantly generate a WELCOME promo code for the referee
+                import random
+                from rides.models import PromoCode
+                from django.utils import timezone
+                from datetime import timedelta
+                
+                welcome_code_str = f"WELCOME-{referrer_profile.referral_code}-{random.randint(100, 999)}"
+                PromoCode.objects.create(
+                    user=user,
+                    code=welcome_code_str,
+                    type='fixed',
+                    value=5.0,
+                    usage_limit=1,
+                    expires_at=timezone.now() + timedelta(days=30),
+                    active=True
+                )
+                
+                # Try sending push notification for welcome reward
+                try:
+                    from notification.utils import send_notification
+                    send_notification(
+                        user,
+                        title="Welcome Bonus! 🎁",
+                        body=f"Enjoy GH₵ 5.00 off your first ride with promo code {welcome_code_str}.",
+                        type='PUSH'
+                    )
+                except Exception:
+                    pass
+
             except Profile.DoesNotExist:
-                pass # Invalid referral code, silently ignore
+                pass # Already handled by validate_referral_code, but keep try-except to be absolutely safe
 
         return user
 

@@ -21,7 +21,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure--2igbe1w0zqjl_(8w2)irn!e
 
 DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*', '192.168.1.76', '192.168.0.101'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*', '192.168.1.76'])
 
 # Security Settings
 if not DEBUG:
@@ -236,6 +236,14 @@ CELERY_BEAT_SCHEDULE = {
     'activate-scheduled-rides-every-minute': {
         'task': 'rides.tasks.activate_scheduled_rides',
         'schedule': 60.0,
+    },
+    'cancel-stale-rides-every-15-seconds': {
+        'task': 'rides.tasks.cancel_stale_rides',
+        'schedule': 15.0,
+    },
+    'cancel-stale-deliveries-every-15-seconds': {
+        'task': 'rides.tasks.cancel_stale_deliveries',
+        'schedule': 15.0,
     },
 }
 

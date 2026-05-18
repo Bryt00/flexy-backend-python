@@ -29,6 +29,13 @@ class PricingRule(models.Model):
     per_km_rate = models.FloatField(default=0.0)
     per_minute_rate = models.FloatField(default=0.0)
     surge_multiplier = models.FloatField(default=1.0)
+    
+    # Environmental Surge Toggles
+    enable_weather_surge = models.BooleanField(default=True, help_text="Automatically increase prices during adverse weather")
+    enable_traffic_surge = models.BooleanField(default=True, help_text="Automatically increase prices during severe traffic delays")
+    max_weather_surge = models.FloatField(default=1.5, help_text="Maximum multiplier for severe weather (e.g. 1.5x)")
+    max_traffic_surge = models.FloatField(default=1.5, help_text="Maximum multiplier for heavy traffic (e.g. 1.5x)")
+    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

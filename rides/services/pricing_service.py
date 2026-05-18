@@ -12,7 +12,7 @@ class PricingService:
         return FareCalculator.get_surge_multiplier(lat=lat, lng=lng, radius=radius)
 
     @staticmethod
-    def calculate_fare_estimates(dist_km, duration_sec, lat=None, lng=None, num_stops=0):
+    def calculate_fare_estimates(dist_km, duration_sec, lat=None, lng=None, num_stops=0, duration_in_traffic_sec=None):
         """
         Calculates fare estimates for all active vehicle categories.
         """
@@ -21,7 +21,11 @@ class PricingService:
         estimates = {}
         
         # Calculate global surge once for this estimate request
-        surge = FareCalculator.get_surge_multiplier(lat=lat, lng=lng)
+        surge = FareCalculator.get_surge_multiplier(
+            lat=lat, lng=lng,
+            duration_seconds=duration_sec,
+            duration_in_traffic=duration_in_traffic_sec
+        )
         
         for category in categories:
             ledger = FareCalculator.compute_final_fare(

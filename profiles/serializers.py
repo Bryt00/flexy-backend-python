@@ -41,16 +41,17 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = (
             'user', 'user_id', 'email', 'role',
-            'full_name', 'phone_number', 'city',
+            'full_name', 'phone_number', 'date_of_birth', 'city',
             'emergency_name', 'emergency_phone',
             'profile_picture', 'photo_url',
             'rating', 'rating_count',
             'points', 'tier', 'acceptance_rate', 'cancellation_rate', 'total_rides',
             'verification',
-            'is_verified', 'is_subscribed', 'is_active', 'is_online',
+            'is_verified', 'is_subscribed', 'is_active', 'is_online', 'auto_navigate',
+            'referral_code', 'referred_by', 'total_referrals', 'total_referral_earnings',
             'created_at',
         )
-        read_only_fields = ('user', 'created_at', 'rating')
+        read_only_fields = ('user', 'created_at', 'rating', 'referral_code', 'total_referrals', 'total_referral_earnings')
 
     def get_is_verified(self, obj):
         """True only when DriverVerification.is_verified is True."""

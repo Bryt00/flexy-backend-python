@@ -35,3 +35,17 @@ def cleanup_ride_chat(sender, instance, **kwargs):
         if msg_count > 0:
             ChatMessage.objects.filter(ride=instance).delete()
             print(f"Purged {msg_count} ephemeral messages for concluding Ride {instance.id}")
+
+from courier.models import Delivery
+@receiver(post_save, sender=Delivery)
+def cleanup_delivery_chat(sender, instance, **kwargs):
+    """
+    Purges all chat messages when a delivery is completed or cancelled.
+    This fulfills the ephemeral chat requirement for active session temporary storage.
+    """
+    if instance.status in ['DELIVERED', 'CANCELLED']:
+        from .models import ChatMessage
+        msg_count = ChatMessage.objects.filter(delivery=instance).count()
+        if msg_count > 0:
+            ChatMessage.objects.filter(delivery=instance).delete()
+            print(f"Purged {msg_count} ephemeral messages for concluding Delivery {instance.id}")

@@ -17,8 +17,17 @@ class LegalDocumentAdmin(ModelAdmin):
 @admin.register(PricingRule)
 class PricingRuleAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('city', 'base_fare', 'surge_multiplier', 'is_active')
-    list_editable = ('surge_multiplier', 'is_active')
+    list_display = ('city', 'base_fare', 'surge_multiplier', 'enable_weather_surge', 'enable_traffic_surge', 'is_active')
+    list_editable = ('surge_multiplier', 'enable_weather_surge', 'enable_traffic_surge', 'is_active')
+    fieldsets = (
+        ('Standard Pricing', {
+            'fields': ('city', 'base_fare', 'per_km_rate', 'per_minute_rate', 'surge_multiplier', 'is_active')
+        }),
+        ('Environmental Auto-Surge Controls', {
+            'fields': ('enable_weather_surge', 'max_weather_surge', 'enable_traffic_surge', 'max_traffic_surge'),
+            'classes': ('collapse',)
+        }),
+    )
 
 @admin.register(VehicleCategory)
 class VehicleCategoryAdmin(ModelAdmin):

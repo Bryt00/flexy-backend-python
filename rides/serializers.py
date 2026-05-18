@@ -14,7 +14,7 @@ class PromoCodeSerializer(serializers.ModelSerializer):
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_type = serializers.SerializerMethodField()
-    ride_id = serializers.CharField(source='ride.id', read_only=True)
+    ride_id = serializers.SerializerMethodField()
     sender_id = serializers.CharField(source='sender.id', read_only=True)
     timestamp = serializers.DateTimeField(source='created_at', read_only=True, format='%Y-%m-%dT%H:%M:%S.%fZ')
 
@@ -22,6 +22,13 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         model = ChatMessage
         fields = ('id', 'ride_id', 'sender_id', 'sender_type', 'content', 'timestamp', 'is_quick_message')
         read_only_fields = ('id', 'timestamp')
+
+    def get_ride_id(self, obj):
+        if obj.ride:
+            return str(obj.ride.id)
+        if obj.delivery:
+            return str(obj.delivery.id)
+        return ''
 
     def get_sender_type(self, obj):
         # We assume 'rider' if they are the rider of the linked ride, else 'driver'

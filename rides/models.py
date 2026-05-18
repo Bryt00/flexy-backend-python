@@ -165,14 +165,16 @@ class Incident(models.Model):
 
 class ChatMessage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    ride = models.ForeignKey(Ride, on_delete=models.CASCADE, related_name='messages')
+    ride = models.ForeignKey(Ride, on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
+    delivery = models.ForeignKey('courier.Delivery', on_delete=models.CASCADE, related_name='messages', null=True, blank=True)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     content = models.TextField()
     is_quick_message = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Msg from {self.sender.email} on Ride {self.ride.id}"
+        dest = f"Ride {self.ride.id}" if self.ride else f"Delivery {self.delivery_id}"
+        return f"Msg from {self.sender.email} on {dest}"
 class Rating(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     ride = models.ForeignKey(Ride, on_delete=models.CASCADE, related_name='ratings')

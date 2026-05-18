@@ -252,6 +252,47 @@ class ProfileViewSet(viewsets.ModelViewSet):
         profile.referred_by = referrer_profile
         profile.save()
         
+        # --- DOUBLE-SIDED REWARDS & NOTIFICATIONS ---
+        # 1. Instantly generate a WELCOME promo code for the referee
+        import random
+        from rides.models import PromoCode
+        from django.utils import timezone
+        from datetime import timedelta
+        from notification.utils import send_notification
+
+        try:
+            welcome_code_str = f"WELCOME-{referrer_profile.referral_code}-{random.randint(100, 999)}"
+            PromoCode.objects.create(
+                user=profile.user,
+                code=welcome_code_str,
+                type='fixed',
+                value=5.0,
+                usage_limit=1,
+                expires_at=timezone.now() + timedelta(days=30),
+                active=True
+            )
+            
+            send_notification(
+                profile.user,
+                title="Welcome Bonus! 🎁",
+                body=f"Enjoy GH₵ 5.00 off your first ride with promo code {welcome_code_str}.",
+                type='PUSH'
+            )
+        except Exception:
+            pass
+
+        # 2. Notify the Referrer that their friend joined
+        try:
+            friend_display_name = profile.full_name or profile.user.email
+            send_notification(
+                referrer_profile.user,
+                title="Friend Joined! 👥",
+                body=f"Your friend {friend_display_name} just linked your referral code! You will get GH₵ 5.00 off once they complete their first ride.",
+                type='PUSH'
+            )
+        except Exception:
+            pass
+        
         return Response({
             "message": "Referral code applied successfully.",
             "referred_by": referrer_profile.referral_code

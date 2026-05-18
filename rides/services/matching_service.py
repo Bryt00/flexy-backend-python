@@ -104,6 +104,84 @@ class MatchingService:
             if ride.status not in ['pending', 'requested']:
                 return 0
 
+            # 0. Check if Carpooling / Shared Ride Match is possible
+            if ride.is_sharing_enabled:
+                logger.info(f"Carpooling: Scanning for active shared rides compatible with ride {ride_id}")
+                from rides.utils import GeospatialUtils
+                
+                # Find active drivers executing a shared ride
+                active_shared_rides = Ride.objects.filter(
+                    is_sharing_enabled=True,
+                    status__in=['accepted', 'arrived', 'in_progress'],
+                    driver__isnull=False
+                ).exclude(id=ride_id)
+                
+                for active_ride in active_shared_rides:
+                    # 1. Capacity Check: Sum of max_riders on all rides active for this driver
+                    driver_active_rides = Ride.objects.filter(
+                        driver=active_ride.driver,
+                        status__in=['accepted', 'arrived', 'in_progress']
+                    )
+                    total_riders = sum(r.max_riders for r in driver_active_rides)
+                    
+                    # Assume typical car capacity is 4 passengers
+                    if total_riders + ride.max_riders > 4:
+                        logger.info(f"Carpooling: Driver {active_ride.driver.id} has no available capacity. Total current riders: {total_riders}")
+                        continue
+                    
+                    # 2. Geospatial Proximity Check:
+                    # New pickup must be close to active pickup (within 4km)
+                    pickup_dist = GeospatialUtils.calculate_haversine_distance(
+                        active_ride.pickup_lat, active_ride.pickup_lng,
+                        ride.pickup_lat, ride.pickup_lng
+                    ) / 1000.0
+                    
+                    # New dropoff must be close to active dropoff (within 5km)
+                    dropoff_dist = GeospatialUtils.calculate_haversine_distance(
+                        active_ride.dropoff_lat, active_ride.dropoff_lng,
+                        ride.dropoff_lat, ride.dropoff_lng
+                    ) / 1000.0
+                    
+                    if pickup_dist <= 4.0 and dropoff_dist <= 5.0:
+                        logger.info(f"Carpooling Match Found! Pooling ride {ride_id} with active ride {active_ride.id} of driver {active_ride.driver.id}")
+                        
+                        # 3. Associate driver to new ride
+                        ride.driver = active_ride.driver
+                        ride.status = 'accepted'
+                        ride.save()
+                        
+                        # 4. Create Intermediate Stops on the Active Ride
+                        from rides.models import RideStop
+                        
+                        # Determine next stop order
+                        current_stops_count = active_ride.stops.count()
+                        
+                        # Add Passenger B's Pickup as Stop 1
+                        RideStop.objects.create(
+                            ride=active_ride,
+                            address=ride.pickup_address,
+                            latitude=ride.pickup_lat,
+                            longitude=ride.pickup_lng,
+                            stop_order=current_stops_count + 1,
+                            status='pending'
+                        )
+                        
+                        # Add Passenger B's Dropoff as Stop 2
+                        RideStop.objects.create(
+                            ride=active_ride,
+                            address=ride.dropoff_address,
+                            latitude=ride.dropoff_lat,
+                            longitude=ride.dropoff_lng,
+                            stop_order=current_stops_count + 2,
+                            status='pending'
+                        )
+                        
+                        # 5. Broadcast to Passenger A and Driver that stops list has changed
+                        active_ride.save()
+                        
+                        # Return 1 to indicate successful pool matching
+                        return 1
+
             # 1. Get Sorted Pool with Distance Data
             metadata = ride.dispatch_metadata or {}
             polled_ids = metadata.get('polled_driver_ids', [])

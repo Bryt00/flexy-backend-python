@@ -1,9 +1,10 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from .models import BlogPost, City, Testimonial, FAQItem, JobOpening, ContactInquiry
+from .models import BlogPost, City, Testimonial, FAQItem, JobOpening, ContactInquiry, LegalDocument
 from .serializers import (
     BlogPostSerializer, CitySerializer, TestimonialSerializer, 
-    FAQItemSerializer, JobOpeningSerializer, ContactInquirySerializer
+    FAQItemSerializer, JobOpeningSerializer, ContactInquirySerializer,
+    LegalDocumentSerializer
 )
 
 class AdminOrReadOnly(permissions.BasePermission):
@@ -47,3 +48,15 @@ class ContactInquiryViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [permissions.IsAdminUser]
         return [permission() for permission in permission_classes]
+
+class LegalDocumentViewSet(viewsets.ModelViewSet):
+    serializer_class = LegalDocumentSerializer
+    permission_classes = [AdminOrReadOnly]
+    lookup_field = 'document_type'
+
+    def get_queryset(self):
+        queryset = LegalDocument.objects.all().order_by('-last_updated')
+        doc_type = self.request.query_params.get('document_type', None)
+        if doc_type is not None:
+            queryset = queryset.filter(document_type=doc_type)
+        return queryset

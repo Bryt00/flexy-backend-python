@@ -32,5 +32,7 @@ class ReferralStatsView(APIView):
         profile = request.user.profile
         return Response({
             "referralCount": profile.total_referrals,
-            "totalEarned": profile.total_referral_earnings
+            "referral_count": profile.total_referrals,
+            "totalEarned": profile.total_referral_earnings,
+            "total_earned": profile.total_referral_earnings
         })

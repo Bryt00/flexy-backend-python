@@ -58,10 +58,29 @@ class LoginView(views.APIView):
     def post(self, request):
         email = request.data.get("email", "").strip()
         password = request.data.get("password")
+        requested_role = request.data.get("role", "rider")
+        
+        # Robust normalization of role
+        if not requested_role:
+            requested_role = 'rider'
+        requested_role = str(requested_role).lower().strip()
+        if requested_role == 'passenger':
+            requested_role = 'rider'
+        if requested_role not in ['rider', 'driver', 'partner', 'admin', 'super_admin']:
+            requested_role = 'rider'
         
         # Use __iexact to ensure login works regardless of email capitalization
         user = User.objects.filter(email__iexact=email).first()
         if user and user.check_password(password):
+            # Auto-repair empty, invalid, or passenger roles
+            user_updated = False
+            current_role = getattr(user, 'role', None)
+            if not current_role or current_role == '' or current_role == 'passenger':
+                user.role = requested_role
+                user_updated = True
+            if user_updated:
+                user.save()
+            
             if not user.is_email_verified:
                 # Automatically send a new OTP
                 from .models import OTPCode
@@ -271,6 +290,15 @@ class SocialAuthView(views.APIView):
         token = serializer.validated_data['token']
         role = serializer.validated_data.get('role', 'rider')
 
+        # Robust normalization of role
+        if not role:
+            role = 'rider'
+        role = str(role).lower().strip()
+        if role == 'passenger':
+            role = 'rider'
+        if role not in ['rider', 'driver', 'partner', 'admin', 'super_admin']:
+            role = 'rider'
+
         try:
             if provider == 'google':
                 user_info = SocialAuthService.verify_google_token(token)
@@ -297,6 +325,16 @@ class SocialAuthView(views.APIView):
                     # Link account
                     setattr(user, social_field, social_id)
                     user.is_email_verified = True
+                    user.save()
+
+            if user:
+                # Auto-repair empty, invalid, or passenger roles
+                user_updated = False
+                current_role = getattr(user, 'role', None)
+                if not current_role or current_role == '' or current_role == 'passenger':
+                    user.role = role
+                    user_updated = True
+                if user_updated:
                     user.save()
 
             if not user:

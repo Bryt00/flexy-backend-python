@@ -501,6 +501,11 @@ GOOGLE_MAPS_API_KEY = env('GOOGLE_MAPS_API_KEY', default='')
 PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')
 PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='')
 
+# Social Auth Configuration
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+APPLE_OAUTH_CLIENT_ID = env('APPLE_OAUTH_CLIENT_ID', default='')
+
 # Email Configuration (SMTP Details)
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = env('EMAIL_HOST', default='flexyridegh.com')

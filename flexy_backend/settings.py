@@ -245,7 +245,13 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'rides.tasks.cancel_stale_deliveries',
         'schedule': 15.0,
     },
+    'check-document-expirations-daily': {
+        'task': 'notification.tasks.check_document_expirations',
+        'schedule': 86400.0,  # Every 24 hours
+    },
 }
+
+DOCUMENT_RENEWAL_THRESHOLD_DAYS = 7
 
 
 CHANNEL_LAYERS = {

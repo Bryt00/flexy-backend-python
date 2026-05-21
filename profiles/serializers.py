@@ -4,10 +4,53 @@ from .models import Profile, DriverVerification
 
 class DriverVerificationSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='driver_id')
+    can_resubmit_license = serializers.SerializerMethodField()
+    can_resubmit_id_card = serializers.SerializerMethodField()
+    can_resubmit_insurance = serializers.SerializerMethodField()
+    can_resubmit_roadworthy = serializers.SerializerMethodField()
 
     class Meta:
         model = DriverVerification
         fields = '__all__'
+
+    def _can_resubmit(self, expiry_date):
+        if not expiry_date:
+            return True
+        from django.utils import timezone
+        import datetime
+        from django.conf import settings
+        from core_settings.models import SiteSetting
+        
+        threshold_days = 7
+        try:
+            setting = SiteSetting.objects.filter(key="DOCUMENT_RENEWAL_THRESHOLD_DAYS").first()
+            if setting and setting.value.strip().isdigit():
+                threshold_days = int(setting.value.strip())
+            else:
+                threshold_days = getattr(settings, 'DOCUMENT_RENEWAL_THRESHOLD_DAYS', 7)
+        except Exception:
+            threshold_days = getattr(settings, 'DOCUMENT_RENEWAL_THRESHOLD_DAYS', 7)
+
+        return (expiry_date - timezone.now().date()) <= datetime.timedelta(days=threshold_days)
+
+
+    def get_can_resubmit_license(self, obj):
+        return self._can_resubmit(getattr(obj, 'license_expiry_date', None))
+
+    def get_can_resubmit_id_card(self, obj):
+        return self._can_resubmit(getattr(obj, 'id_card_expiry_date', None))
+
+    def get_can_resubmit_insurance(self, obj):
+        vehicle = obj.driver.vehicles.first()
+        if vehicle and vehicle.insurance_expiry:
+            return self._can_resubmit(vehicle.insurance_expiry)
+        return True
+
+    def get_can_resubmit_roadworthy(self, obj):
+        vehicle = obj.driver.vehicles.first()
+        if vehicle and vehicle.roadworthy_expiry:
+            return self._can_resubmit(vehicle.roadworthy_expiry)
+        return True
 
 
 class ProfileSerializer(serializers.ModelSerializer):

@@ -48,3 +48,90 @@ def send_campaign_task(campaign_id):
             campaign.save()
         except:
             pass
+
+@shared_task
+def check_document_expirations():
+    """
+    Daily task to scan driver verifications and vehicle records for expiring
+    documents in 1, 7, or dynamic threshold days, and dispatch push notifications.
+    """
+    import datetime
+    from django.utils import timezone
+    from profiles.models import DriverVerification
+    from vehicles.models import Vehicle
+    from notification.utils import send_notification
+    from core_settings.models import SiteSetting
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
+    today = timezone.localdate()
+
+    threshold_days = 7
+    try:
+        setting = SiteSetting.objects.filter(key="DOCUMENT_RENEWAL_THRESHOLD_DAYS").first()
+        if setting and setting.value.strip().isdigit():
+            threshold_days = int(setting.value.strip())
+        else:
+            threshold_days = getattr(settings, 'DOCUMENT_RENEWAL_THRESHOLD_DAYS', 7)
+    except Exception:
+        threshold_days = getattr(settings, 'DOCUMENT_RENEWAL_THRESHOLD_DAYS', 7)
+
+    thresholds = sorted(list(set([1, 7, threshold_days])))
+
+    logger.info(f"Starting check_document_expirations task with thresholds {thresholds}...")
+
+    for days in thresholds:
+        target_date = today + datetime.timedelta(days=days)
+        label = "TOMORROW" if days == 1 else f"in {days} days"
+
+        # 1. Driver Verification Documents (License & ID Card)
+        # We only check drivers whose status is VERIFIED
+        verifications = DriverVerification.objects.filter(is_verified=True)
+        
+        # License Expiration
+        license_expiring = verifications.filter(license_expiry_date=target_date)
+        for ver in license_expiring:
+            try:
+                title = "⚠️ Driver's License Expiring Soon"
+                body = f"Your driver's license expires {label}. Please update it to avoid service interruption."
+                send_notification(ver.driver.user, title, body, type='PUSH')
+                logger.info(f"Sent license expiry notification ({days} days) to user {ver.driver.user.email}")
+            except Exception as e:
+                logger.error(f"Error notifying license expiry for {ver.driver}: {e}")
+
+        # ID Card Expiration
+        id_card_expiring = verifications.filter(id_card_expiry_date=target_date)
+        for ver in id_card_expiring:
+            try:
+                title = "⚠️ ID Card Expiring Soon"
+                body = f"Your identity document expires {label}. Please update it to avoid service interruption."
+                send_notification(ver.driver.user, title, body, type='PUSH')
+                logger.info(f"Sent ID card expiry notification ({days} days) to user {ver.driver.user.email}")
+            except Exception as e:
+                logger.error(f"Error notifying ID card expiry for {ver.driver}: {e}")
+
+        # 2. Vehicle Documents (Insurance & Roadworthy)
+        vehicles = Vehicle.objects.filter(is_verified=True, is_active=True)
+
+        # Insurance Expiration
+        insurance_expiring = vehicles.filter(insurance_expiry=target_date)
+        for veh in insurance_expiring:
+            try:
+                title = "⚠️ Vehicle Insurance Expiring Soon"
+                body = f"The insurance for your vehicle ({veh.make} {veh.model}) expires {label}. Please upload your new document to stay active."
+                send_notification(veh.driver.user, title, body, type='PUSH')
+                logger.info(f"Sent insurance expiry notification ({days} days) to user {veh.driver.user.email}")
+            except Exception as e:
+                logger.error(f"Error notifying insurance expiry for vehicle {veh}: {e}")
+
+        # Roadworthy Expiration
+        roadworthy_expiring = vehicles.filter(roadworthy_expiry=target_date)
+        for veh in roadworthy_expiring:
+            try:
+                title = "⚠️ Roadworthy Certificate Expiring Soon"
+                body = f"The roadworthy certificate for your vehicle ({veh.make} {veh.model}) expires {label}. Please upload your new certificate to stay active."
+                send_notification(veh.driver.user, title, body, type='PUSH')
+                logger.info(f"Sent roadworthy expiry notification ({days} days) to user {veh.driver.user.email}")
+            except Exception as e:
+                logger.error(f"Error notifying roadworthy expiry for vehicle {veh}: {e}")

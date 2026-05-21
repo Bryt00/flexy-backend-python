@@ -80,15 +80,32 @@ class ProfileViewSet(viewsets.ModelViewSet):
         # Prevent tampering once verified.
         # Allow re-submission if status is PENDING, SUBMITTED (to fix mistakes), or REJECTED.
         if not created and verification.status == 'VERIFIED':
-            return Response({
-                'error': 'Verification already approved.',
-                'detail': 'Your account is already verified. Please contact support to update your documents.',
-                'verification_status': verification.status,
-            }, status=status.HTTP_400_BAD_REQUEST)
+            from .serializers import DriverVerificationSerializer
+            serializer = DriverVerificationSerializer(verification)
+            can_update = False
+            
+            # If they are trying to update a specific document and it's allowed
+            if request.data.get('license_url') and serializer.data.get('can_resubmit_license'):
+                can_update = True
+            if request.data.get('id_card_url') and serializer.data.get('can_resubmit_id_card'):
+                can_update = True
+            if request.data.get('insurance_url') and serializer.data.get('can_resubmit_insurance'):
+                can_update = True
+            if request.data.get('roadworthy_url') and serializer.data.get('can_resubmit_roadworthy'):
+                can_update = True
+                
+            if not can_update:
+                return Response({
+                    'error': 'Verification already approved.',
+                    'detail': 'Your account is already verified. You can only update documents that are nearing expiry.',
+                    'verification_status': verification.status,
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         # Mapping frontend keys to backend fields
         license_url = request.data.get('license_url', verification.license_url)
+        license_expiry_date = request.data.get('license_expiry_date', verification.license_expiry_date)
         id_card_url = request.data.get('id_card_url', verification.id_card_url)
+        id_card_expiry_date = request.data.get('id_card_expiry_date', verification.id_card_expiry_date)
         insurance_url = request.data.get('insurance_url', verification.insurance_url)
         roadworthy_url = request.data.get('roadworthy_url', verification.roadworthy_url)
         vehicle_video_url = request.data.get('vehicle_video_url', verification.vehicle_video_url)
@@ -109,7 +126,9 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
         verification.license_url = license_url
+        verification.license_expiry_date = license_expiry_date
         verification.id_card_url = id_card_url
+        verification.id_card_expiry_date = id_card_expiry_date
         verification.insurance_url = insurance_url
         verification.roadworthy_url = roadworthy_url
         verification.vehicle_video_url = vehicle_video_url

@@ -162,10 +162,36 @@ class AdAnalytics(models.Model):
     def __str__(self):
         return f"Analytics for {self.ad_booking.business_name}"
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 @receiver(post_save, sender=AdBooking)
 def create_ad_analytics(sender, instance, created, **kwargs):
     if created:
         AdAnalytics.objects.create(ad_booking=instance)
+
+@receiver(pre_save, sender=AdBooking)
+def handle_ad_status_change(sender, instance, **kwargs):
+    if instance.id:
+        try:
+            old_instance = AdBooking.objects.get(id=instance.id)
+            if old_instance.status != instance.status:
+                from integrations.email_service import EmailService
+                
+                if instance.status == 'APPROVED':
+                    EmailService.send_ad_status_email(
+                        contact_email=instance.contact_email,
+                        business_name=instance.business_name,
+                        is_approved=True,
+                        dashboard_token=instance.dashboard_token
+                    )
+                elif instance.status == 'REJECTED':
+                    reason = instance.rejection_reason or "Creative does not meet our guidelines."
+                    EmailService.send_ad_status_email(
+                        contact_email=instance.contact_email,
+                        business_name=instance.business_name,
+                        is_approved=False,
+                        reason=reason
+                    )
+        except AdBooking.DoesNotExist:
+            pass

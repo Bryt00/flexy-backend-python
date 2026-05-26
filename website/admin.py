@@ -41,6 +41,7 @@ class SafetyFeatureAdmin(ModelAdmin):
 class LegalDocumentAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('title', 'document_type', 'last_updated')
+    list_filter = ('document_type', 'last_updated')
     prepopulated_fields = {'slug': ('title',)}
 
 @admin.register(HeroBanner)
@@ -52,7 +53,7 @@ class HeroBannerAdmin(ModelAdmin):
 class BlogPostAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('title', 'author_name', 'category', 'is_published', 'published_at', 'created_at')
-    list_filter = ('is_published', 'category', 'created_at')
+    list_filter = ('is_published', 'category', 'created_at', 'published_at', 'updated_at')
     search_fields = ('title', 'author_name', 'content')
     prepopulated_fields = {'slug': ('title',)}
     date_hierarchy = 'created_at'
@@ -61,7 +62,7 @@ class BlogPostAdmin(ModelAdmin):
 class TestimonialAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('name', 'role', 'rating', 'created_at')
-    list_filter = ('role', 'rating')
+    list_filter = ('role', 'rating', 'created_at')
     search_fields = ('name', 'quote')
 
 
@@ -78,7 +79,7 @@ class ContactInquiryAdmin(ModelAdmin):
 class CityAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('name', 'region', 'is_active', 'driver_count')
-    list_filter = ('is_active', 'region')
+    list_filter = ('is_active', 'region', 'launch_date')
     search_fields = ('name', 'region')
     list_editable = ('is_active', 'driver_count')
 
@@ -94,7 +95,7 @@ class FAQItemAdmin(ModelAdmin):
 class JobOpeningAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('title', 'department', 'location', 'job_type', 'is_active', 'created_at')
-    list_filter = ('department', 'job_type', 'is_active')
+    list_filter = ('department', 'job_type', 'is_active', 'created_at')
     search_fields = ('title', 'description')
     list_editable = ('is_active',)
     prepopulated_fields = {'slug': ('title',)}

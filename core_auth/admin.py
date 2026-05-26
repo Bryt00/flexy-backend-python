@@ -6,7 +6,7 @@ from .models import User, DeletionRequest
 class UserAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('email', 'role', 'is_active', 'created_at')
-    list_filter = ('role', 'is_active')
+    list_filter = ('role', 'is_active', 'created_at', 'updated_at')
     search_fields = ('email',)
     
     # Secure the form by excluding sensitive fields
@@ -23,6 +23,6 @@ class UserAdmin(ModelAdmin):
 class DeletionRequestAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('user', 'status', 'requested_at', 'processed_at')
-    list_filter = ('status',)
+    list_filter = ('status', 'requested_at', 'processed_at')
     search_fields = ('user__email',)
     list_editable = ('status',)

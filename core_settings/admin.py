@@ -6,18 +6,20 @@ from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, Di
 class SiteSettingAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('key', 'value', 'updated_at')
+    list_filter = ('updated_at',)
     search_fields = ('key', 'value')
 
 @admin.register(LegalDocument)
 class LegalDocumentAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('title', 'version', 'is_active', 'created_at')
-    list_filter = ('is_active',)
+    list_filter = ('is_active', 'created_at')
 
 @admin.register(PricingRule)
 class PricingRuleAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('city', 'base_fare', 'surge_multiplier', 'enable_weather_surge', 'enable_traffic_surge', 'is_active')
+    list_filter = ('created_at',)
     list_editable = ('surge_multiplier', 'enable_weather_surge', 'enable_traffic_surge', 'is_active')
     fieldsets = (
         ('Standard Pricing', {
@@ -33,6 +35,7 @@ class PricingRuleAdmin(ModelAdmin):
 class VehicleCategoryAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('display_name', 'slug', 'base_fare', 'multiplier', 'image', 'is_active')
+    list_filter = ('created_at',)
     list_editable = ('base_fare', 'multiplier', 'is_active')
     search_fields = ('display_name', 'slug')
 

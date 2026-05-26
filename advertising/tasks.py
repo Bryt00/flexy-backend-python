@@ -24,13 +24,13 @@ def expire_completed_ads():
     # We'll just transition anything that was supposed to end yesterday or before
     import datetime
     
-    # We find ads where week_start_date + 7 days <= today
+    # We find ads where week_start_date + 14 days <= today
     # To do this in the database, we can iterate or use database functions.
     # For simplicity, we iterate if the dataset isn't massive.
     count = 0
     live_ads = AdBooking.objects.filter(status='LIVE')
     for ad in live_ads:
-        end_date = ad.week_start_date + datetime.timedelta(days=7)
+        end_date = ad.week_start_date + datetime.timedelta(days=14)
         if today >= end_date:
             ad.status = 'COMPLETED'
             ad.save()
@@ -53,7 +53,16 @@ def send_ad_confirmation_email(booking_id):
 @shared_task
 def send_weekly_ad_reports():
     """Runs Sunday night — fetches all LIVE or recently COMPLETED ads to send stats."""
-    live_ads = AdBooking.objects.filter(status__in=['LIVE', 'COMPLETED'])
+    from django.db.models import Q
+    import datetime
+    
+    # Ads display for 14 days. A completed ad should only receive its final report and stop.
+    # We query LIVE ads, and COMPLETED ads that transitioned within the last 14 days.
+    fourteen_days_ago = timezone.localdate() - datetime.timedelta(days=14)
+    live_ads = AdBooking.objects.filter(
+        Q(status='LIVE') |
+        Q(status='COMPLETED', updated_at__date__gte=fourteen_days_ago)
+    )
     
     for ad in live_ads:
         try:

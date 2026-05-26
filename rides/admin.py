@@ -16,7 +16,7 @@ class RideAdmin(ModelAdmin):
     list_per_page = 20
     inlines = [RideStopInline]
     list_display = ('short_id', 'rider', 'driver', 'status_badge', 'type', 'fare_display', 'has_incidents', 'created_at')
-    list_filter = ('status', 'type', 'is_scheduled', 'preferred_vehicle_type')
+    list_filter = ('status', 'type', 'is_scheduled', 'preferred_vehicle_type', 'created_at', 'updated_at', 'scheduled_for')
     search_fields = ('id', 'rider__email', 'driver__user__email', 'pickup_address', 'dropoff_address')
     readonly_fields = ('id', 'created_at', 'updated_at', 'dispatch_metadata', 'has_incidents')
     list_per_page = 30
@@ -87,13 +87,15 @@ class RideAdmin(ModelAdmin):
 class IncidentAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('type', 'ride', 'reporter', 'status', 'created_at')
-    list_filter = ('type', 'status')
+    list_filter = ('type', 'status', 'created_at', 'resolved_at')
     search_fields = ('ride__id', 'reporter__email', 'description')
     list_editable = ('status',)
+
 @admin.register(RideReceipt)
 class RideReceiptAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('receipt_no', 'ride', 'total_fare', 'generated_at')
+    list_filter = ('generated_at',)
     search_fields = ('receipt_no', 'ride__id')
     readonly_fields = ('generated_at',)
     

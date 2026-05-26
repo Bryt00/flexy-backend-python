@@ -6,13 +6,13 @@ from .models import AuditLog, FraudFlag
 class AuditLogAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('user', 'action', 'entity_type', 'created_at')
-    list_filter = ('action', 'entity_type')
+    list_filter = ('action', 'entity_type', 'created_at')
     search_fields = ('user__email', 'action', 'entity_id')
 
 @admin.register(FraudFlag)
 class FraudFlagAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('type', 'user', 'severity', 'status', 'created_at')
-    list_filter = ('type', 'severity', 'status')
+    list_filter = ('type', 'severity', 'status', 'created_at')
     search_fields = ('user__email', 'details')
     list_editable = ('status', 'severity')

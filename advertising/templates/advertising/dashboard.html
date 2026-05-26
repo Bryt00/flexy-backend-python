@@ -158,16 +158,50 @@
 
 {% block extra_js %}
 <script>
-    function payWithPaystack(bookingId, email, amount) {
+    function payWithPaystack(bookingId, email, amount, extensionId = null) {
+        const payload = {
+            reference: '',
+        };
+        if (extensionId) {
+            payload.extension_id = extensionId;
+        } else {
+            payload.ad_id = bookingId;
+        }
+
         let handler = PaystackPop.setup({
             key: '{{ paystack_public_key|default:"pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }}', 
             email: email,
             amount: amount * 100,
             currency: 'GHS',
-            ref: 'AD_' + bookingId + '_' + Math.floor((Math.random() * 1000000000) + 1),
+            ref: (extensionId ? 'EXT_' : 'AD_') + bookingId + '_' + Math.floor((Math.random() * 1000000000) + 1),
             callback: function(response){
-                alert('Payment complete! Reference: ' + response.reference + '. Your dashboard will update shortly.');
-                setTimeout(() => window.location.reload(), 2000);
+                payload.reference = response.reference;
+                
+                // Show instant verification feedback
+                console.log('Payment complete! Verifying transaction with reference: ' + response.reference);
+                
+                fetch('/api/advertising/verify-payment/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Verification Failed: ' + (data.error || 'Please contact support.'));
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('An error occurred during verification. Reloading to check status...');
+                    window.location.reload();
+                });
             },
             onClose: function(){
                 console.log('Payment modal closed');

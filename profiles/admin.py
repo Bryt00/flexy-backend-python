@@ -10,7 +10,7 @@ class ProfileAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('user', 'full_name', 'phone_number', 'city', 'rating', 'online_status')
     search_fields = ('user__email', 'full_name', 'phone_number')
-    list_filter = ('city', 'is_online')
+    list_filter = ('city', 'is_online', 'created_at', 'updated_at')
     readonly_fields = ('online_status', 'last_location_update')
 
     def online_status(self, obj):
@@ -28,7 +28,7 @@ class ProfileAdmin(ModelAdmin):
 class DriverVerificationAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('driver', 'assigned_category', 'status', 'is_verified', 'license_number', 'updated_at_display')
-    list_filter = ('assigned_category', 'status', 'is_verified')
+    list_filter = ('assigned_category', 'status', 'is_verified', 'verified_at', 'license_expiry_date', 'id_card_expiry_date')
     search_fields = ('driver__user__email', 'driver__full_name', 'license_number')
     readonly_fields = ('license_preview', 'id_card_preview', 'insurance_preview', 'roadworthy_preview', 'video_link', 'verified_at')
     

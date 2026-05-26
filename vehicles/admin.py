@@ -7,7 +7,7 @@ from .models import Vehicle
 class VehicleAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('license_plate', 'make', 'model', 'type', 'status', 'is_active', 'is_verified', 'driver')
-    list_filter = ('type', 'status', 'is_active', 'is_verified')
+    list_filter = ('type', 'status', 'is_active', 'is_verified', 'created_at', 'updated_at')
     search_fields = ('license_plate', 'make', 'model', 'driver__user__email', 'driver__full_name')
     list_editable = ('is_active', 'is_verified', 'status')
     list_per_page = 25

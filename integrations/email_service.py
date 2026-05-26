@@ -149,28 +149,49 @@ class EmailService:
             logger.error(f"Failed to send admin ad notification: {str(e)}")
 
     @staticmethod
-    def send_ad_status_email(contact_email, business_name, is_approved, reason=None):
+    def send_ad_status_email(contact_email, business_name, is_approved, reason=None, dashboard_token=None):
         """
-        Sends an email to the business informing them of the ad approval/rejection.
+        Sends an HTML and plaintext email informing the client of ad status updates.
         """
         subject = f'Your Ad Booking for {business_name} was Approved!' if is_approved else f'Action Required: Your Ad Booking for {business_name}'
         
-        if is_approved:
-            message = f"Congratulations! Your ad for {business_name} has been approved.\n\nYou can now proceed to payment in your ad dashboard to go live.\n\nThank you for choosing FlexyRide."
-        else:
-            message = f"Your ad for {business_name} was not approved.\n\nReason: {reason if reason else 'Creative does not meet our guidelines.'}\n\nPlease update your creative in the dashboard and resubmit."
+        site_url = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+        dashboard_url = f"{site_url}/advertise/dashboard/?token={dashboard_token}" if dashboard_token else f"{site_url}/advertise/dashboard/"
+        
+        from django.utils import timezone
+        context = {
+            'business_name': business_name,
+            'is_approved': is_approved,
+            'reason': reason,
+            'dashboard_url': dashboard_url,
+            'app_name': 'FlexyRide',
+            'now': timezone.now()
+        }
 
-        try:
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [contact_email],
-                fail_silently=False,
-            )
-            logger.info(f"Ad status email sent to {contact_email} (Approved: {is_approved})")
-        except Exception as e:
-            logger.error(f"Failed to send ad status email to {contact_email}: {str(e)}")
+        html_message = render_to_string('emails/ad_status.html', context)
+        if is_approved:
+            plain_message = f"Congratulations! Your ad for {business_name} has been approved.\n\nYou can now proceed to payment in your ad dashboard to go live:\n{dashboard_url}\n\nThank you for choosing FlexyRide."
+        else:
+            plain_message = f"Your ad for {business_name} was not approved.\n\nReason: {reason if reason else 'Creative does not meet our guidelines.'}\n\nPlease update your creative in the dashboard and resubmit."
+
+        import threading
+
+        def send_email_bg():
+            try:
+                send_mail(
+                    subject,
+                    plain_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [contact_email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                logger.info(f"Ad status email sent to {contact_email} (Approved: {is_approved})")
+            except Exception as e:
+                logger.error(f"Failed to send ad status email to {contact_email}: {str(e)}")
+
+        # Dispatch the SMTP connection process immediately to a background thread
+        threading.Thread(target=send_email_bg, daemon=True).start()
 
     @staticmethod
     def send_ad_report_email(business_name, contact_email, stats_dict):

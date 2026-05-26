@@ -6,7 +6,7 @@ from .models import SubscriptionPlan, DriverSubscription, SubscriptionPayment
 class SubscriptionPlanAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('name', 'category', 'price', 'duration_days', 'is_active', 'created_at')
-    list_filter = ('category', 'is_active')
+    list_filter = ('category', 'is_active', 'created_at', 'updated_at')
     search_fields = ('name',)
     ordering = ('category', 'price')
 
@@ -14,7 +14,7 @@ class SubscriptionPlanAdmin(ModelAdmin):
 class DriverSubscriptionAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('profile', 'plan', 'status', 'trial_end_date', 'expiry_date', 'is_in_trial', 'is_currently_active')
-    list_filter = ('status', 'is_trial_used', 'plan__category')
+    list_filter = ('status', 'is_trial_used', 'plan__category', 'created_at', 'updated_at', 'start_date', 'expiry_date')
     search_fields = ('profile__user__email', 'profile__full_name')
     readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
@@ -36,6 +36,6 @@ class DriverSubscriptionAdmin(ModelAdmin):
 class SubscriptionPaymentAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('paystack_reference', 'subscription', 'amount', 'status', 'payment_date')
-    list_filter = ('status',)
+    list_filter = ('status', 'created_at', 'payment_date')
     search_fields = ('paystack_reference', 'subscription__profile__user__email')
     readonly_fields = ('created_at',)

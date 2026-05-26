@@ -6,3 +6,4 @@ from .models import Delivery
 class DeliveryAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('id', 'status', 'item_category')
+    list_filter = ('status', 'item_category', 'created_at', 'updated_at')

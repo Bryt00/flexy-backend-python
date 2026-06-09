@@ -14,6 +14,20 @@ class RideConsumer(AsyncWebsocketConsumer):
 
         self.ride_id = self.scope['url_route']['kwargs'].get('ride_id')
         if self.ride_id:
+            from asgiref.sync import sync_to_async
+            from .models import Ride
+            from courier.models import Delivery
+            
+            @sync_to_async
+            def cache_ride_type():
+                self.is_ride = Ride.objects.filter(id=self.ride_id).exists()
+                if not self.is_ride:
+                    self.is_delivery = Delivery.objects.filter(id=self.ride_id).exists()
+                else:
+                    self.is_delivery = False
+            
+            await cache_ride_type()
+            
             self.room_group_name = f'ride_{self.ride_id}'
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
@@ -81,19 +95,12 @@ class RideConsumer(AsyncWebsocketConsumer):
 
                 @sync_to_async
                 def save_message_db():
-                    ride = None
-                    delivery = None
-                    try:
-                        ride = Ride.objects.get(id=self.ride_id)
-                    except Ride.DoesNotExist:
-                        try:
-                            delivery = Delivery.objects.get(id=self.ride_id)
-                        except Delivery.DoesNotExist:
-                            pass
-                    
+                    if not getattr(self, 'is_ride', False) and not getattr(self, 'is_delivery', False):
+                        return None
+                        
                     message = ChatMessage.objects.create(
-                        ride=ride,
-                        delivery=delivery,
+                        ride_id=self.ride_id if self.is_ride else None,
+                        delivery_id=self.ride_id if self.is_delivery else None,
                         sender=self.user,
                         content=encrypted_content
                     )

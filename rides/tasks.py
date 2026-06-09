@@ -24,12 +24,14 @@ def broadcast_heatmap_snapshot():
         last_lng__isnull=False
     ).values('user_id', 'last_lat', 'last_lng'))
 
+    # Compress payload by reducing float precision to 4 decimal places (11m accuracy)
+    # and capping the max markers to 500 to prevent WebSocket bloat.
     data = [
         {
             'driver_id': str(loc['user_id']),
-            'latitude': loc['last_lat'],
-            'longitude': loc['last_lng']
-        } for loc in locations
+            'latitude': round(loc['last_lat'], 4),
+            'longitude': round(loc['last_lng'], 4)
+        } for loc in locations[:500]
     ]
 
     try:
@@ -93,6 +95,21 @@ def cancel_stale_rides():
         status='pending', 
         created_at__lt=limit
     ).update(status='cancelled')
+
+@shared_task
+def cancel_abandoned_rides():
+    """
+    Cancels rides that have been stuck in an active state for over 3 minutes.
+    This prevents users from resuming ancient rides upon login.
+    """
+    limit = timezone.now() - timezone.timedelta(minutes=3)
+    abandoned_rides = Ride.objects.filter(
+        status__in=['accepted', 'arrived', 'in_progress'],
+        updated_at__lt=limit
+    )
+    count = abandoned_rides.update(status='cancelled')
+    if count > 0:
+        logger.info(f"Cleanup: Cancelled {count} abandoned active rides older than 3 minutes.")
 
 @shared_task
 def cancel_stale_deliveries():
@@ -168,18 +185,23 @@ def activate_scheduled_rides():
         logger.info(f"Triggered dispatch for {count} scheduled rides.")
 
 @shared_task
+def check_single_ride_anomaly(ride_id):
+    from .services.safety_service import SafetyService
+    if SafetyService.check_ride_anomaly(ride_id):
+        logger.info(f"Safety: Anomaly detected for ride {ride_id}.")
+
+@shared_task
 def monitor_active_rides_safety():
     """
-    Scans all 'in_progress' rides and checks for route anomalies.
+    Scans all 'in_progress' rides and dispatches anomaly checks.
     Runs every 60s via celery-beat.
     """
-    from .services.safety_service import SafetyService
-    active_rides = Ride.objects.filter(status='in_progress')
+    active_ride_ids = Ride.objects.filter(status='in_progress').values_list('id', flat=True)
     count = 0
-    for ride in active_rides:
-        if SafetyService.check_ride_anomaly(ride.id):
-            count += 1
+    for ride_id in active_ride_ids:
+        check_single_ride_anomaly.delay(str(ride_id))
+        count += 1
     
     if count > 0:
-        logger.info(f"Safety: Detected {count} anomalies in active rides.")
+        logger.info(f"Safety: Dispatched anomaly checks for {count} active rides.")
 

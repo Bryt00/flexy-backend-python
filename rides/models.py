@@ -38,12 +38,12 @@ class Ride(models.Model):
         pickup_point = models.TextField(null=True, blank=True)
         dropoff_point = models.TextField(null=True, blank=True)
     
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='requested', db_index=True)
     fare = models.FloatField(blank=True, null=True)
     distance = models.FloatField(default=0.0)
     
     # New Fields for Feature Parity & Analytics
-    is_scheduled = models.BooleanField(default=False, null=True)
+    is_scheduled = models.BooleanField(default=False, null=True, db_index=True)
     scheduled_for = models.DateTimeField(blank=True, null=True)
     payment_method = models.CharField(max_length=50, default='cash', null=True)
     preferred_vehicle_type = models.CharField(max_length=50, default='go', null=True)

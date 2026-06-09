@@ -39,10 +39,23 @@ class SafetyService:
             # 1. Check distance to destination
             dist_to_dest = cls.calculate_distance(curr_lat, curr_lng, ride.dropoff_lat, ride.dropoff_lng)
             
-            # 2. Logic: If the driver is moving AWAY from the destination significantly
-            # Or if they are stuck for too long (TODO)
-            # For now, we use a simple 'Maximum Distance from Path' or 'Moving Away' check
-            
+            # 2. Check if driver is "stuck" or disconnected
+            # If we haven't received a location update in over 15 minutes during an active ride,
+            # this indicates the driver's device is dead or they are intentionally blocking tracking.
+            if profile.last_location_update:
+                time_since_update = (timezone.now() - profile.last_location_update).total_seconds()
+                if time_since_update > 900: # 15 minutes
+                    logger.warning(f"Safety: Ride {ride_id} detected as anomaly. Driver stuck/offline for {time_since_update}s.")
+                    Incident.objects.get_or_create(
+                        ride=ride,
+                        reporter=ride.rider,
+                        type='SOS',
+                        status='ACTIVE',
+                        description=f"Automated Anomaly Detection: Driver location has been stuck/offline for over 15 minutes."
+                    )
+                    return True
+
+            # 3. Logic: If the driver is moving AWAY from the destination significantly
             # Implementation: If distance is > 20% further than original estimated distance, 
             # and they are not near the dropoff, trigger alert.
             # This is a simplified fallback for the OSRM gap.

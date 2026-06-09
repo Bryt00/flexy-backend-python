@@ -16,6 +16,17 @@ class RideViewSet(viewsets.ModelViewSet):
     serializer_class = RideSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        return Ride.objects.select_related(
+            'driver__profile', 
+            'rider__profile', 
+            'receipt'
+        ).prefetch_related(
+            'incidents', 
+            'stops',
+            'driver__profile__vehicles'
+        )
+
     def _broadcast_ride_update(self, ride, event_type, data=None):
         try:
             from channels.layers import get_channel_layer
@@ -84,7 +95,16 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def history(self, request):
-        rides = Ride.objects.filter(rider=request.user).order_by('-created_at')
+        from rest_framework.pagination import PageNumberPagination
+        paginator = PageNumberPagination()
+        paginator.page_size = 20
+        
+        rides = self.get_queryset().filter(rider=request.user).order_by('-created_at')
+        page = paginator.paginate_queryset(rides, request)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+            
         return Response(self.get_serializer(rides, many=True).data)
 
     @action(detail=False, methods=['get'])
@@ -92,7 +112,7 @@ class RideViewSet(viewsets.ModelViewSet):
         five_mins_ago = timezone.now() - timezone.timedelta(minutes=5)
         
         # Base filter: participant in the ride AND (active status OR recently completed)
-        qs = Ride.objects.filter(
+        qs = self.get_queryset().filter(
             (Q(rider=request.user) | Q(driver=request.user)),
             Q(status__in=['pending', 'accepted', 'arrived', 'in_progress']) |
             Q(status='completed', updated_at__gte=five_mins_ago)
@@ -112,7 +132,7 @@ class RideViewSet(viewsets.ModelViewSet):
     def scheduled(self, request):
         # Only show rides that are in the future OR are already accepted/active.
         # If a ride is still 'pending' or 'requested' but the time has passed, it's considered overdue/expired.
-        rides = Ride.objects.filter(
+        rides = self.get_queryset().filter(
             (Q(rider=request.user) | Q(driver=request.user)),
             (Q(is_scheduled=True) | Q(scheduled_for__isnull=False)),
             Q(status__in=['accepted', 'arrived', 'in_progress']) | 
@@ -125,7 +145,7 @@ class RideViewSet(viewsets.ModelViewSet):
         """
         Returns scheduled rides that are in 'pending' status for drivers to accept.
         """
-        rides = Ride.objects.filter(
+        rides = self.get_queryset().filter(
             is_scheduled=True, 
             status='pending',
             driver__isnull=True,
@@ -781,7 +801,12 @@ class SystemSettingsView(APIView):
     def get(self, request):
         from core_settings.models import SiteSetting
         from website.models import LegalDocument
+        from django.core.cache import cache
         
+        cached_settings = cache.get('system_settings')
+        if cached_settings:
+            return Response(cached_settings)
+
         privacy = LegalDocument.objects.filter(document_type='privacy').order_by('-last_updated').first()
         terms = LegalDocument.objects.filter(document_type='terms').order_by('-last_updated').first()
         about = LegalDocument.objects.filter(document_type='about').order_by('-last_updated').first()
@@ -789,10 +814,13 @@ class SystemSettingsView(APIView):
         support_email = SiteSetting.objects.filter(key='support_email').first()
         support_phone = SiteSetting.objects.filter(key='support_phone').first()
         
-        return Response({
-            'about_us': about.content if about else "Welcome to FlexyRide. We are transforming mobility in Ghana.",
-            'privacy_policy': privacy.content if privacy else "Privacy policy coming soon.",
-            'terms_conditions': terms.content if terms else "Terms and conditions coming soon.",
-            'support_email': support_email.value if support_email else "support@flexyride.com",
-            'support_phone': support_phone.value if support_phone else "+1234567890"
-        })
+        settings_data = {
+            "privacy_policy": privacy.content if privacy else "",
+            "terms_of_service": terms.content if terms else "",
+            "about_us": about.content if about else "",
+            "support_email": support_email.value if support_email else "support@flexyridegh.com",
+            "support_phone": support_phone.value if support_phone else "+233 20 000 0000"
+        }
+        
+        cache.set('system_settings', settings_data, timeout=86400) # Cache for 24 hours
+        return Response(settings_data)

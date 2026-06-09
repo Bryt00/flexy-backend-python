@@ -79,6 +79,7 @@ class RideSerializer(serializers.ModelSerializer):
     receipt_no = serializers.CharField(source='receipt.receipt_no', read_only=True)
     
     # Financial Voids: Clear Payout info for drivers
+    driver_payout_amount = serializers.SerializerMethodField()
     matching_attempts = serializers.SerializerMethodField()
     
     class Meta:
@@ -138,3 +139,9 @@ class RideSerializer(serializers.ModelSerializer):
         if obj.dispatch_metadata:
             return obj.dispatch_metadata.get('attempt_count', 0)
         return 0
+
+    def get_driver_payout_amount(self, obj):
+        request = self.context.get('request')
+        if request and request.user == obj.driver:
+            return obj.driver_payout_amount
+        return 0.0

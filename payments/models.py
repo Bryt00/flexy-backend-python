@@ -28,3 +28,18 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"Transaction {self.id} - {self.amount}"
+
+class DriverEarningsSummary(models.Model):
+    """
+    Cached earnings aggregates to prevent heavy Sum() queries on every dashboard load.
+    Updated asynchronously via celery when rides are completed.
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='earnings_summary')
+    today_sales = models.FloatField(default=0.0)
+    weekly_sales = models.FloatField(default=0.0)
+    total_sales = models.FloatField(default=0.0)
+    ride_count = models.IntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Earnings Summary for {self.user.email}"

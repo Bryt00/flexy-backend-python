@@ -1,58 +1,13 @@
 services:
-  db:
-    image: postgis/postgis:15-3.3-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=ravendb
-      - POSTGRES_DB=flexyride_db
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
-
-  web:
-    build: .
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    command: python manage.py runserver 0.0.0.0:8000
-    environment:
-      - DEBUG=True
-      - DATABASE_URL=postgres://postgres:ravendb@db:5432/flexyride_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    depends_on:
-      - db
-      - redis
-      - rabbitmq
-
-  celery_worker:
-    build: .
-    command: celery -A flexy_backend worker -l info --pool=solo
-    volumes:
-      - .:/app
-    environment:
-      - DATABASE_URL=postgres://postgres:ravendb@db:5432/flexyride_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    depends_on:
-      - db
-      - redis
-      - rabbitmq
-
-volumes:
-  postgres_data:
+    restart: unless-stopped

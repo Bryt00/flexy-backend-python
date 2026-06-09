@@ -256,11 +256,15 @@ class RideViewSet(viewsets.ModelViewSet):
                     c_pos = category_availability[category_slug]
                     # ETA from driver [lng, lat] to pickup [p_lat, p_lng]
                     try:
-                        _, eta_seconds, _ = GoogleMapsService.get_trip_metrics(c_pos[1], c_pos[0], p_lat, p_lng)
-                        eta_minutes = max(1, int(eta_seconds // 60))
+                        from .services.geo_service import GeoService
+                        driver_lat = float(c_pos[1])
+                        driver_lng = float(c_pos[0])
+                        distance_km = GeoService.calculate_haversine_distance(driver_lat, driver_lng, float(p_lat), float(p_lng))
+                        # Assume avg city speed of 30 km/h (0.5 km/min)
+                        eta_minutes = max(1, int(distance_km / 0.5))
                     except Exception:
-                        # Fallback to a very rough distance-based estimate if Maps fails for ETA
-                        eta_minutes = 5 
+                        # Fallback to a very rough distance-based estimate if calculation fails
+                        eta_minutes = 5
                 
                 final_estimates[category_slug] = {
                     "fare": fare,

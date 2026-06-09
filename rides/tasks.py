@@ -85,8 +85,14 @@ def process_ride_matching(self, ride_id):
 
 @shared_task
 def cancel_stale_rides():
+    from django.db.models import Q
     limit = timezone.now() - timezone.timedelta(minutes=2)
-    Ride.objects.filter(status='pending', created_at__lt=limit).update(status='cancelled')
+    # Ensure we don't accidentally cancel scheduled rides that are waiting for their scheduled time
+    Ride.objects.filter(
+        Q(is_scheduled=False) | Q(is_scheduled__isnull=True),
+        status='pending', 
+        created_at__lt=limit
+    ).update(status='cancelled')
 
 @shared_task
 def cancel_stale_deliveries():

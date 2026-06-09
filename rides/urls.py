@@ -24,6 +24,7 @@ urlpatterns = [
     path('<uuid:pk>/sos/', RideViewSet.as_view({'post': 'sos'})),
     path('<uuid:pk>/rate/', RideViewSet.as_view({'post': 'rate'})),
     path('<uuid:pk>/chat/', RideViewSet.as_view({'get': 'chat_history'})),
+    path('<uuid:pk>/share/', RideViewSet.as_view({'post': 'share'})),
     
     path('operations/settings/', SystemSettingsView.as_view(), name='system-settings'),
     path('', include(router.urls)),

@@ -4,9 +4,10 @@ from .models import DeletionRequest
 
 User = get_user_model()
 
+
 class UserSerializer(serializers.ModelSerializer):
     phone = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
         fields = ('id', 'email', 'role', 'phone', 'is_email_verified', 'google_id', 'apple_id', 'created_at')
@@ -19,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             return None
         except Exception:
             return None
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -34,12 +36,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         value = value.lower()
         if value == 'passenger':
             return 'rider'
-        
+
         # Check if the value is a valid choice key
         valid_choices = [choice[0] for choice in User.ROLE_CHOICES]
         if value not in valid_choices:
             raise serializers.ValidationError(f"Invalid role. Choose from: {', '.join(valid_choices)}")
-        
+
         return value
 
     def validate_referral_code(self, value):
@@ -55,13 +57,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password'],
             role=validated_data.get('role', 'rider'),
-            is_active=False # Deactivate until email is verified
+            is_active=False  # Deactivate until email is verified
         )
-        
+
         # Create Profile immediately to handle referral logic
         from profiles.models import Profile
         profile = Profile.objects.create(user=user)
-        
+
         if referral_code:
             try:
                 referrer_profile = Profile.objects.get(referral_code=referral_code)
@@ -74,7 +76,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 from rides.models import PromoCode
                 from django.utils import timezone
                 from datetime import timedelta
-                
+
                 welcome_code_str = f"WELCOME-{referrer_profile.referral_code}-{random.randint(100, 999)}"
                 PromoCode.objects.create(
                     user=user,
@@ -85,7 +87,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                     expires_at=timezone.now() + timedelta(days=30),
                     active=True
                 )
-                
+
                 # Try sending push notification for welcome reward
                 try:
                     from notification.utils import send_notification
@@ -99,9 +101,10 @@ class RegisterSerializer(serializers.ModelSerializer):
                     pass
 
             except Profile.DoesNotExist:
-                pass # Already handled by validate_referral_code, but keep try-except to be absolutely safe
+                pass  # Already handled by validate_referral_code, but keep try-except to be absolutely safe
 
         return user
+
 
 class DeletionRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -109,35 +112,43 @@ class DeletionRequestSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'user', 'requested_at', 'processed_at')
 
+
 class LoginRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
+
 
 class TokenResponseSerializer(serializers.Serializer):
     user = UserSerializer()
     token = serializers.CharField()
     refresh_token = serializers.CharField()
 
+
 class OTPRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     type = serializers.ChoiceField(choices=['email_verification', 'password_reset'])
+
 
 class OTPVerifySerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField()
     type = serializers.ChoiceField(choices=['email_verification', 'password_reset'])
 
+
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
 
+
 class RefreshTokenRequestSerializer(serializers.Serializer):
     refresh_token = serializers.CharField()
+
 
 class RefreshTokenResponseSerializer(serializers.Serializer):
     token = serializers.CharField()
     refresh_token = serializers.CharField()
+
 
 class SocialAuthSerializer(serializers.Serializer):
     provider = serializers.ChoiceField(choices=['google', 'apple'])

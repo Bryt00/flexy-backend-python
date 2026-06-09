@@ -35,7 +35,7 @@ class Profile(models.Model):
         last_location_point = models.TextField(null=True, blank=True)
 
     last_location_update = models.DateTimeField(blank=True, null=True)
-    is_online = models.BooleanField(default=False)
+    is_online = models.BooleanField(default=False, db_index=True)
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)

@@ -49,3 +49,18 @@ def cleanup_delivery_chat(sender, instance, **kwargs):
         if msg_count > 0:
             ChatMessage.objects.filter(delivery=instance).delete()
             print(f"Purged {msg_count} ephemeral messages for concluding Delivery {instance.id}")
+
+from .models import Rating
+from django.db.models import Avg
+
+@receiver(post_save, sender=Rating)
+def update_profile_rating(sender, instance, **kwargs):
+    """
+    Updates the ratee's Profile rating dynamically whenever a new rating is added.
+    """
+    ratee = instance.ratee
+    if hasattr(ratee, 'profile'):
+        avg_rating = Rating.objects.filter(ratee=ratee).aggregate(Avg('stars'))['stars__avg']
+        if avg_rating is not None:
+            ratee.profile.rating = round(avg_rating, 1)
+            ratee.profile.save(update_fields=['rating'])

@@ -125,5 +125,8 @@ class ProfileSerializer(serializers.ModelSerializer):
             return False
 
     def get_rating_count(self, obj):
-        """Placeholder until the ratings module exposes a per-driver count."""
-        return 0
+        try:
+            from rides.models import Rating
+            return Rating.objects.filter(ratee=obj.user).count()
+        except Exception:
+            return 0

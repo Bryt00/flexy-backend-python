@@ -161,8 +161,10 @@ class AdReviewView(View):
         if 'draft_ad_id' in request.session: del request.session['draft_ad_id']
         
         # Send confirmation email
+        site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com')
+        dashboard_url = f"{site_url}/advertise/dashboard/?token={ad.dashboard_token}"
         subject = f"Ad Request Received: {ad.headline}"
-        message = f"Hello {ad.business_name},\n\nWe have received your advertising request for the week of {ad.week_start_date}. Our team is currently reviewing your creative. Once approved, you will receive an email with instructions on how to pay GH₵ {ad.amount} to activate your ad.\n\nYou can track your ad status anytime here: {request.build_absolute_uri('/advertise/dashboard/')}?token={ad.dashboard_token}\n\nBest regards,\nFlexyRide Team"
+        message = f"Hello {ad.business_name},\n\nWe have received your advertising request for the week of {ad.week_start_date}. Our team is currently reviewing your creative. Once approved, you will receive an email with instructions on how to pay GH₵ {ad.amount} to activate your ad.\n\nYou can track your ad status anytime here: {dashboard_url}\n\nBest regards,\nFlexyRide Team"
         
         try:
             send_mail(

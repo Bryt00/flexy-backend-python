@@ -27,16 +27,20 @@ class ProfileAdmin(ModelAdmin):
 @admin.register(DriverVerification)
 class DriverVerificationAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('driver', 'assigned_category', 'status', 'is_verified', 'license_number', 'updated_at_display')
+    list_display = ('driver', 'driver_email', 'assigned_category', 'status', 'is_verified', 'license_number', 'updated_at_display')
     list_filter = ('assigned_category', 'status', 'is_verified', 'verified_at', 'license_expiry_date', 'id_card_expiry_date')
     search_fields = ('driver__user__email', 'driver__full_name', 'license_number')
-    readonly_fields = ('license_preview', 'id_card_preview', 'insurance_preview', 'roadworthy_preview', 'video_link', 'verified_at')
+    readonly_fields = ('driver_email', 'license_preview', 'id_card_preview', 'insurance_preview', 'roadworthy_preview', 'video_link', 'verified_at')
     
     actions = ['approve_verification', 'reject_verification']
 
     def updated_at_display(self, obj):
         return obj.driver.updated_at
     updated_at_display.short_description = 'Last Updated'
+
+    def driver_email(self, obj):
+        return obj.driver.user.email
+    driver_email.short_description = 'Driver Email'
 
     def license_preview(self, obj):
         if obj.license_url:

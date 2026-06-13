@@ -517,6 +517,7 @@ GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
 APPLE_OAUTH_CLIENT_ID = env('APPLE_OAUTH_CLIENT_ID', default='')
 
 # Email Configuration (SMTP Details)
+SITE_URL = env('SITE_URL', default='https://flexyride.com')
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = env('EMAIL_HOST', default='flexyridegh.com')
 EMAIL_PORT = env.int('EMAIL_PORT', default=465)

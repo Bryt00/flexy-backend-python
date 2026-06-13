@@ -152,8 +152,10 @@ class VerifyAdPaymentAPIView(APIView):
                     booking = extension.original_booking
                     
                     # Notify user of successful extension activation
+                    site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com')
+                    dashboard_url = f"{site_url}/advertise/dashboard/?token={booking.dashboard_token}"
                     subject = f"Ad Campaign Extension Activated: {booking.business_name}"
-                    message = f"Hello {booking.business_name},\n\nYour payment has been successfully verified! Your ad campaign '{booking.headline}' has been extended to the week of {extension.extended_week_start}.\n\nYou can track campaign performance in your dashboard:\n{request.build_absolute_uri('/advertise/dashboard/')}?token={booking.dashboard_token}\n\nBest regards,\nThe FlexyRide Team"
+                    message = f"Hello {booking.business_name},\n\nYour payment has been successfully verified! Your ad campaign '{booking.headline}' has been extended to the week of {extension.extended_week_start}.\n\nYou can track campaign performance in your dashboard:\n{dashboard_url}\n\nBest regards,\nThe FlexyRide Team"
                     
                     try:
                         send_mail(
@@ -183,8 +185,10 @@ class VerifyAdPaymentAPIView(APIView):
                     ad.paystack_reference = reference
                     ad.save()
                     
+                    site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com')
+                    dashboard_url = f"{site_url}/advertise/dashboard/?token={ad.dashboard_token}"
                     subject = f"Ad Campaign Activated: {ad.business_name}"
-                    message = f"Hello {ad.business_name},\n\nYour payment has been successfully verified! Your ad campaign '{ad.headline}' is now LIVE for the week of {ad.week_start_date}.\n\nYou can track real-time impressions and clicks in your advertising dashboard here:\n{request.build_absolute_uri('/advertise/dashboard/')}?token={ad.dashboard_token}\n\nBest regards,\nThe FlexyRide Team"
+                    message = f"Hello {ad.business_name},\n\nYour payment has been successfully verified! Your ad campaign '{ad.headline}' is now LIVE for the week of {ad.week_start_date}.\n\nYou can track real-time impressions and clicks in your advertising dashboard here:\n{dashboard_url}\n\nBest regards,\nThe FlexyRide Team"
                     
                     try:
                         send_mail(

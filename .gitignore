@@ -70,7 +70,8 @@ celerybeat.pid
 # Scratch / Temporary scripts
 scratch/
 logs/
-*.sqltest_smtp.py
+*.sql
+test_smtp.py
 test_django_smtp.py
 send_otp.py
 send_test.py

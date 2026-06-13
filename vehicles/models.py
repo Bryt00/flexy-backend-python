@@ -9,6 +9,14 @@ class Vehicle(models.Model):
         ('riding', 'Riding'),
     )
 
+    TYPE_CHOICES = (
+        ('go', 'Flexy Go'),
+        ('comfort', 'Flexy Comfort'),
+        ('xl', 'Flexy XL'),
+        ('exec', 'Flexy Executive'),
+        ('pragya', 'Flexy Pragya'),
+    )
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     driver = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='vehicles')
     make = models.CharField(max_length=50, blank=True, null=True)
@@ -16,7 +24,7 @@ class Vehicle(models.Model):
     year = models.IntegerField(blank=True, null=True)
     license_plate = models.CharField(max_length=20, blank=True, null=True)
     color = models.CharField(max_length=50, blank=True, null=True)
-    type = models.CharField(max_length=50, default='go') # go, comfort, xl, exec, pragya
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='go')
     
     # Document URLs
     license_url = models.URLField(max_length=1000, blank=True, null=True)

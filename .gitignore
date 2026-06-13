@@ -72,3 +72,8 @@ scratch/
 logs/
 *.sqltest_smtp.py
 test_django_smtp.py
+send_otp.py
+send_test.py
+send_test_25.py
+send_test_tls.py
+test_panel_host.py

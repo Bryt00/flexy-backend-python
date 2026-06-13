@@ -331,6 +331,11 @@ UNFOLD = {
                         "link": "/admin/rides/ride/",
                     },
                     {
+                        "title": "Ride Receipts",
+                        "icon": "receipt",
+                        "link": "/admin/rides/ridereceipt/",
+                    },
+                    {
                         "title": "Delivery Hub",
                         "icon": "local_shipping",
                         "link": "/admin/courier/delivery/",
@@ -341,8 +346,18 @@ UNFOLD = {
                         "link": "/admin/vehicles/vehicle/",
                     },
                     {
-                        "title": "Wallets & Payments",
+                        "title": "Profiles",
+                        "icon": "person",
+                        "link": "/admin/profiles/profile/",
+                    },
+                    {
+                        "title": "Wallets",
                         "icon": "account_balance_wallet",
+                        "link": "/admin/payments/wallet/",
+                    },
+                    {
+                        "title": "Transactions",
+                        "icon": "receipt_long",
                         "link": "/admin/payments/transaction/",
                     },
                 ],
@@ -354,6 +369,16 @@ UNFOLD = {
                         "title": "Subscription Plans",
                         "icon": "card_membership",
                         "link": "/admin/subscriptions/subscriptionplan/",
+                    },
+                    {
+                        "title": "Driver Subscriptions",
+                        "icon": "subscriptions",
+                        "link": "/admin/subscriptions/driversubscription/",
+                    },
+                    {
+                        "title": "Subscription Payments",
+                        "icon": "payment",
+                        "link": "/admin/subscriptions/subscriptionpayment/",
                     },
                     {
                         "title": "Marketing Campaigns",
@@ -369,6 +394,16 @@ UNFOLD = {
                         "title": "Ad Management",
                         "icon": "ads_click",
                         "link": "/admin/advertising/adbooking/",
+                    },
+                    {
+                        "title": "Ad Slot Capacity",
+                        "icon": "inventory_2",
+                        "link": "/admin/advertising/adslotcapacity/",
+                    },
+                    {
+                        "title": "Ad Extensions",
+                        "icon": "extension",
+                        "link": "/admin/advertising/adextension/",
                     },
                     {
                         "title": "Ad Analytics",
@@ -396,9 +431,19 @@ UNFOLD = {
                         "link": "/admin/core_auth/user/",
                     },
                     {
+                        "title": "Deletion Requests",
+                        "icon": "person_remove",
+                        "link": "/admin/core_auth/deletionrequest/",
+                    },
+                    {
                         "title": "Driver Verifications",
                         "icon": "verified_user",
                         "link": "/admin/profiles/driververification/",
+                    },
+                    {
+                        "title": "Notifications",
+                        "icon": "notifications",
+                        "link": "/admin/notification/notification/",
                     },
                     {
                         "title": "API Keys / Integrations",
@@ -434,6 +479,11 @@ UNFOLD = {
                         "title": "Service Categories",
                         "icon": "directions_car",
                         "link": "/admin/website/servicecategory/",
+                    },
+                    {
+                        "title": "Safety Features",
+                        "icon": "security",
+                        "link": "/admin/website/safetyfeature/",
                     },
                     {
                         "title": "FAQ Items",

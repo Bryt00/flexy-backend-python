@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from .models import Vehicle
 from .serializers import VehicleSerializer
 from profiles.models import Profile
+from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
 class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
@@ -15,10 +16,19 @@ class VehicleViewSet(viewsets.ModelViewSet):
             return Vehicle.objects.all()
         return Vehicle.objects.filter(driver__user=self.request.user)
 
+    def list(self, request, *args, **kwargs):
+        """Cache vehicles list per user."""
+        def fetch_vehicles():
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        return cached_api_response(request, 'vehicles', timeout=300, fetcher=fetch_vehicles)
+
     def perform_create(self, serializer):
         # Automatically link the vehicle to the logged-in user's profile
         profile = Profile.objects.get(user=self.request.user)
         serializer.save(driver=profile)
+        invalidate_user_cache(self.request.user.id, 'vehicles')
 
     def perform_update(self, serializer):
         # Prevent going online if subscription is due or expired
@@ -39,6 +49,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
                     raise ValidationError({"status": msg})
         
         serializer.save()
+        invalidate_user_cache(self.request.user.id, 'vehicles')
 
     def create(self, request, *args, **kwargs):
         # The mobile app sends 'driverId' in the JSON, but our model uses 'driver' (FK)
@@ -53,3 +64,4 @@ class VehicleViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+

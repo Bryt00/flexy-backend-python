@@ -1,0 +1,132 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Support & Verifications - FlexyRide{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-end">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Support Center</h2>
+        <p class="text-white/50 mt-1">Review driver documents and active trips.</p>
+    </div>
+    <div>
+        <button onclick="window.location.reload();" class="cyber-button text-sm px-4 py-2">Refresh Data</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="lg:col-span-2 glass-panel rounded-2xl overflow-hidden h-[400px] relative">
+        <div id="live-map-loader" class="h-full w-full bg-black/40 flex flex-col items-center justify-center absolute z-10 top-0 left-0">
+            <div class="w-10 h-10 border-4 border-white/10 border-t-brand-green rounded-full animate-spin mb-4"></div>
+            <p class="text-white/50 font-mono text-xs uppercase tracking-widest animate-pulse">Initializing Live View...</p>
+        </div>
+        <div id="liveMap" class="w-full h-full bg-slate-800"></div>
+    </div>
+    <div class="glass-panel p-6 rounded-2xl">
+        <h3 class="text-lg font-outfit font-bold mb-4">Active Rides</h3>
+        <ul id="activeRidesList" class="space-y-3 max-h-[300px] overflow-y-auto">
+            <!-- Populated via JS -->
+        </ul>
+    </div>
+</div>
+
+<!-- Verifications Table -->
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10">
+        <h3 class="text-lg font-outfit font-bold">Pending Driver Verifications</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Driver Name</th>
+                    <th class="px-6 py-4 font-bold">Email</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold">Date Submitted</th>
+                    <th class="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for verification in pending_verifications %}
+                <tr class="hover:bg-white/5 transition-colors group">
+                    <td class="px-6 py-4 font-bold text-white">{{ verification.driver.full_name|default:"Unnamed Driver" }}</td>
+                    <td class="px-6 py-4 text-white/70">{{ verification.driver.user.email }}</td>
+                    <td class="px-6 py-4">
+                        <span class="status-pill status-pill-warning">{{ verification.status }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-white/50">Pending Review</td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'staff_portal:review_document' verification.id %}" class="text-primary hover:text-primary-light font-bold text-xs uppercase tracking-widest transition-colors">
+                            Review Docs &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-white/50">No pending verifications at this time.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const activeRides = {{ active_rides_json|safe }};
+    
+    // Initialize Leaflet Map
+    const map = L.map('liveMap').setView([5.6037, -0.1870], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    }).addTo(map);
+
+    const listContainer = document.getElementById('activeRidesList');
+    
+    // Hide loader after a short simulated network delay
+    setTimeout(() => {
+        document.getElementById('live-map-loader').style.display = 'none';
+        
+        if (activeRides.length === 0) {
+        listContainer.innerHTML = '<li class="text-white/50 text-sm">No active rides at the moment.</li>';
+    } else {
+        activeRides.forEach(ride => {
+            const lat = ride.last_lat_update || ride.pickup_lat;
+            const lng = ride.last_lng_update || ride.pickup_lng;
+            const name = ride.rider_name || 'Rider';
+
+            if (lat && lng) {
+                // Add Marker
+                const icon = L.divIcon({
+                    html: '<div style="background-color: #A3E635; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
+                    className: '',
+                    iconSize: [16, 16],
+                    iconAnchor: [8, 8]
+                });
+                L.marker([lat, lng], {icon: icon}).addTo(map).bindPopup(`<b>${name}</b><br>Ride ID: ${ride.id}`);
+                
+                // Add to list
+                const li = document.createElement('li');
+                li.className = 'flex items-center justify-between p-3 bg-white/5 rounded-lg';
+                li.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-brand-green/20 text-brand-green flex items-center justify-center font-bold text-xs mr-3">
+                            ${name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold">${name}</p>
+                            <p class="text-xs text-white/50">ID: ${ride.id.substring(0, 8)}...</p>
+                        </div>
+                    </div>
+                    <span class="status-pill status-pill-success">Live</span>
+                `;
+                listContainer.appendChild(li);
+            }
+        });
+    }
+    }, 800);
+</script>
+{% endblock %}

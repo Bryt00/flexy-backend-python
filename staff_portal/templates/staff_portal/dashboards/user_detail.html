@@ -1,0 +1,138 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}User Detail: {{ target_user.email }} - FlexyRide{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <a href="{% url 'staff_portal:global_users' %}" class="text-primary hover:text-primary-light text-sm font-bold uppercase tracking-widest mb-4 inline-block">&larr; Back to Users</a>
+    <h2 class="text-3xl font-outfit font-bold tracking-tight">User Profile</h2>
+    <p class="text-white/50 mt-1">Manage account status and roles.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left Column: Core Identity & Suspension -->
+    <div class="lg:col-span-1 space-y-6">
+        
+        <!-- Identity Card -->
+        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+            
+            <div class="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-2xl border border-primary/30 mb-4">
+                {{ target_user.email|make_list|first|upper }}
+            </div>
+            
+            <h3 class="font-outfit font-bold text-xl">{{ target_user.email }}</h3>
+            <p class="text-white/50 text-xs mt-1 uppercase tracking-widest">{{ target_user.id }}</p>
+            
+            <div class="mt-6 space-y-3">
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+                    <span class="text-white/50 text-xs font-bold uppercase">Status</span>
+                    {% if target_user.is_active %}
+                        <span class="status-pill status-pill-success">Active</span>
+                    {% else %}
+                        <span class="status-pill status-pill-error">Suspended</span>
+                    {% endif %}
+                </div>
+                
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+                    <span class="text-white/50 text-xs font-bold uppercase">Role</span>
+                    <span class="text-primary font-mono text-sm capitalize">{{ target_user.role }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+                    <span class="text-white/50 text-xs font-bold uppercase">Verified</span>
+                    {% if target_user.is_email_verified %}
+                        <span class="text-brand-green font-bold text-sm">Yes</span>
+                    {% else %}
+                        <span class="text-orange-500 font-bold text-sm">No</span>
+                    {% endif %}
+                </div>
+                
+                <div class="flex justify-between items-center bg-white/5 p-3 rounded-lg">
+                    <span class="text-white/50 text-xs font-bold uppercase">Joined</span>
+                    <span class="text-white font-mono text-sm">{{ target_user.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+            
+            <!-- Standard Admin: Suspend Toggle -->
+            <form method="POST" class="mt-6">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_suspension">
+                {% if target_user.is_active %}
+                    <button type="submit" class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-500 font-bold py-3 rounded-xl transition-colors border border-red-500/50 uppercase tracking-widest text-xs">
+                        Suspend User
+                    </button>
+                {% else %}
+                    <button type="submit" class="w-full bg-brand-green/20 hover:bg-brand-green/40 text-brand-green font-bold py-3 rounded-xl transition-colors border border-brand-green/50 uppercase tracking-widest text-xs">
+                        Activate User
+                    </button>
+                {% endif %}
+            </form>
+            <p class="text-[10px] text-white/30 text-center mt-3">Admins can toggle active status.</p>
+        </div>
+    </div>
+    
+    <!-- Right Column: Super Admin Editing -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- Super Admin Panel -->
+        <div class="glass-panel rounded-2xl overflow-hidden relative">
+            <div class="p-6 border-b border-white/10 bg-black/20 flex items-center justify-between">
+                <h3 class="text-lg font-outfit font-bold">God Mode: Identity Overrides</h3>
+                {% if request.user.role == 'super_admin' %}
+                    <span class="status-pill status-pill-success animate-pulse">Super Admin Access</span>
+                {% else %}
+                    <span class="status-pill status-pill-warning">View Only</span>
+                {% endif %}
+            </div>
+            
+            <div class="p-6 relative">
+                {% if request.user.role != 'super_admin' %}
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center z-10">
+                        <div class="text-center">
+                            <svg class="w-8 h-8 text-orange-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <p class="text-white font-bold tracking-widest uppercase text-sm">Super Admin Restricted</p>
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_profile">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Email Address</label>
+                            <input type="email" name="email" value="{{ target_user.email }}" class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Platform Role</label>
+                            <select name="role" class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none">
+                                <option value="rider" {% if target_user.role == 'rider' %}selected{% endif %}>Rider</option>
+                                <option value="driver" {% if target_user.role == 'driver' %}selected{% endif %}>Driver</option>
+                                <option value="support" {% if target_user.role == 'support' %}selected{% endif %}>Customer Support</option>
+                                <option value="finance" {% if target_user.role == 'finance' %}selected{% endif %}>Finance</option>
+                                <option value="admin" {% if target_user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="super_admin" {% if target_user.role == 'super_admin' %}selected{% endif %}>Super Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 bg-white/5 p-4 rounded-xl border border-white/10">
+                        <input type="checkbox" name="is_email_verified" id="verify_email" class="w-5 h-5 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-0" {% if target_user.is_email_verified %}checked{% endif %}>
+                        <label for="verify_email" class="text-sm font-bold text-white cursor-pointer">Force Email Verification</label>
+                    </div>
+                    
+                    <div class="flex justify-end pt-4 border-t border-white/10">
+                        <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-3 px-8 rounded-xl transition-colors uppercase tracking-widest text-xs">
+                            Save Overrides
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

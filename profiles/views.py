@@ -6,6 +6,7 @@ from .serializers import ProfileSerializer, DriverVerificationSerializer
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 from django.utils import timezone
 from integrations.email_service import EmailService
+from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
@@ -25,17 +26,21 @@ class ProfileViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'post', 'put', 'patch'])
     def me(self, request):
         if request.method == 'GET':
-            try:
-                profile = Profile.objects.get(user=request.user)
-                serializer = self.get_serializer(profile)
-                return Response(serializer.data)
-            except Profile.DoesNotExist:
-                return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+            def fetch_profile():
+                try:
+                    profile = Profile.objects.get(user=request.user)
+                    serializer = self.get_serializer(profile)
+                    return Response(serializer.data)
+                except Profile.DoesNotExist:
+                    return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+            return cached_api_response(request, 'profile', timeout=300, fetcher=fetch_profile)
         
         profile, created = Profile.objects.get_or_create(user=request.user)
         serializer = self.get_serializer(profile, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        # Invalidate profile cache on mutation
+        invalidate_user_cache(request.user.id, 'profile')
         return Response(serializer.data)
 
     @extend_schema(responses={200: ProfileSerializer})
@@ -58,14 +63,15 @@ class ProfileViewSet(viewsets.ModelViewSet):
     @extend_schema(responses={200: DriverVerificationSerializer})
     @action(detail=False, methods=['get'], url_path='verification')
     def verification_status(self, request):
-        try:
-            profile = Profile.objects.get(user=request.user)
-        except Profile.DoesNotExist:
-            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-        verification, created = DriverVerification.objects.get_or_create(driver=profile)
-        serializer = DriverVerificationSerializer(verification)
-        return Response(serializer.data)
+        def fetch_verification():
+            try:
+                profile = Profile.objects.get(user=request.user)
+            except Profile.DoesNotExist:
+                return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+            verification, created = DriverVerification.objects.get_or_create(driver=profile)
+            serializer = DriverVerificationSerializer(verification)
+            return Response(serializer.data)
+        return cached_api_response(request, 'verification', timeout=300, fetcher=fetch_verification)
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=['post'], url_path='verification/initiate')
     def initiate_verification(self, request):
@@ -151,26 +157,28 @@ class ProfileViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='tier-definitions')
     def tier_definitions(self, request):
         """Returns the available driver tiers and their required points."""
-        return Response([
-            {
-                "name": "Silver",
-                "min_points": 0,
-                "description": "Welcome to FlexyPro! Earn points by completing rides and maintaining high ratings.",
-                "benefits": []
-            },
-            {
-                "name": "Gold",
-                "min_points": 500,
-                "description": "Consistent performer! You are among our top drivers.",
-                "benefits": []
-            },
-            {
-                "name": "Platinum",
-                "min_points": 1500,
-                "description": "Elite Status! You provide exceptional service to our riders.",
-                "benefits": []
-            }
-        ])
+        def fetch_tiers():
+            return Response([
+                {
+                    "name": "Silver",
+                    "min_points": 0,
+                    "description": "Welcome to FlexyPro! Earn points by completing rides and maintaining high ratings.",
+                    "benefits": []
+                },
+                {
+                    "name": "Gold",
+                    "min_points": 500,
+                    "description": "Consistent performer! You are among our top drivers.",
+                    "benefits": []
+                },
+                {
+                    "name": "Platinum",
+                    "min_points": 1500,
+                    "description": "Elite Status! You provide exceptional service to our riders.",
+                    "benefits": []
+                }
+            ])
+        return cached_api_response(request, 'tier_definitions', timeout=900, fetcher=fetch_tiers, global_cache=True)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=['post'], url_path='location')

@@ -1,0 +1,87 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Finance - FlexyRide{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-outfit font-bold tracking-tight">Finance Operations</h2>
+    <p class="text-white/50 mt-1">Manage payouts, revenue, and reconciliations.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="glass-panel p-6 rounded-2xl">
+        <h3 class="text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Revenue Today</h3>
+        <p class="text-4xl font-outfit font-bold text-primary">GHS {{ revenue_today|floatformat:2 }}</p>
+    </div>
+    <div class="glass-panel p-6 rounded-2xl flex items-center justify-between">
+        <div>
+            <h3 class="text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Pending Payouts</h3>
+            <p class="text-4xl font-outfit font-bold">{{ pending_payouts }}</p>
+        </div>
+        <a href="{% url 'staff_portal:payout_queue' %}" class="cyber-button text-sm px-6 py-3 inline-block text-center">Execute Payouts</a>
+    </div>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+        <h3 class="text-lg font-outfit font-bold">Recent Transactions</h3>
+        <form method="GET" class="flex items-center">
+            <input type="search" name="q" value="{{ query }}" placeholder="Search ID, type..." class="cyber-input py-2 px-4 rounded-l-lg text-sm bg-black/50 border border-white/10 text-white focus:outline-none w-64">
+            <button type="submit" class="cyber-button py-2 px-4 rounded-r-lg text-sm bg-white/10 border border-white/10 hover:bg-white/20 transition-colors">Search</button>
+        </form>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Tx ID</th>
+                    <th class="px-6 py-4 font-bold">Amount</th>
+                    <th class="px-6 py-4 font-bold">Type</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold text-right">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for tx in transactions %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-mono text-xs text-white/70">{{ tx.id|stringformat:"s"|slice:":8" }}...</td>
+                    <td class="px-6 py-4 font-bold text-white">GHS {{ tx.amount|floatformat:2 }}</td>
+                    <td class="px-6 py-4 text-white/70 capitalize">{{ tx.type|default:"Transfer" }}</td>
+                    <td class="px-6 py-4">
+                        {% if tx.payment_status == 'success' %}
+                            <span class="status-pill status-pill-success">Success</span>
+                        {% elif tx.payment_status == 'failed' %}
+                            <span class="status-pill status-pill-error">Failed</span>
+                        {% else %}
+                            <span class="status-pill status-pill-warning">{{ tx.payment_status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-white/50 text-right">{{ tx.created_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-white/50">No transactions found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if transactions.has_other_pages %}
+    <div class="p-6 border-t border-white/10 flex justify-between items-center bg-black/20">
+        <span class="text-sm text-white/50">Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+        <div class="flex space-x-2">
+            {% if transactions.has_previous %}
+                <a href="?page={{ transactions.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">&laquo; Prev</a>
+            {% endif %}
+            
+            {% if transactions.has_next %}
+                <a href="?page={{ transactions.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

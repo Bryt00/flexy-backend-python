@@ -1,0 +1,69 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Global Users</h2>
+        <p class="text-white/50 mt-1">Manage all accounts registered on the platform.</p>
+    </div>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+        <h3 class="text-lg font-outfit font-bold">User Directory</h3>
+        <form method="GET" class="flex items-center">
+            <input type="search" name="q" value="{{ query }}" placeholder="Search email, role..." class="cyber-input py-2 px-4 rounded-l-lg text-sm bg-black/50 border border-white/10 text-white focus:outline-none w-64">
+            <button type="submit" class="cyber-button py-2 px-4 rounded-r-lg text-sm bg-white/10 border border-white/10 hover:bg-white/20 transition-colors">Search</button>
+        </form>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Email</th>
+                    <th class="px-6 py-4 font-bold">Role</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold text-right">Joined</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for user in users %}
+                <tr onclick="window.location='{% url 'staff_portal:user_detail' user.id %}'" class="hover:bg-white/5 transition-colors cursor-pointer group">
+                    <td class="px-6 py-4 font-bold text-white">{{ user.email }}</td>
+                    <td class="px-6 py-4 text-white/70 capitalize">{{ user.role }}</td>
+                    <td class="px-6 py-4">
+                        {% if user.is_active %}
+                            <span class="status-pill status-pill-success">Active</span>
+                        {% else %}
+                            <span class="status-pill status-pill-error">Suspended</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-white/50 text-right">{{ user.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-white/50">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if users.has_other_pages %}
+    <div class="p-6 border-t border-white/10 flex justify-between items-center bg-black/20">
+        <span class="text-sm text-white/50">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+        <div class="flex space-x-2">
+            {% if users.has_previous %}
+                <a href="?page={{ users.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">&laquo; Prev</a>
+            {% endif %}
+            
+            {% if users.has_next %}
+                <a href="?page={{ users.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,20 +1,39 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+import importlib
+from django.conf import settings
 from .models import Notification
 
-def send_notification(user, title, body, type='PUSH', ref_id=None):
+def get_push_provider():
+    provider_path = getattr(settings, 'ACTIVE_PUSH_PROVIDER', None)
+    if provider_path:
+        module_name, class_name = provider_path.rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        provider_class = getattr(module, class_name)
+        return provider_class()
+    return None
+
+def send_notification(user, title, body, type='PUSH', ref_id=None, android_channel_id=None, android_sound=None, ios_sound=None):
     """
     Sends a notification to a specific user.
     1. Saves the notification to the database.
     2. Broadcasts the notification via WebSockets for real-time delivery.
+    3. If type='PUSH', sends a remote push via the active Push Provider.
     """
     # 1. Create database record
     notification = Notification.objects.create(
         user=user,
-        title=title,
-        body=body,
+        title=title if isinstance(title, str) else title.get('en', 'Notification'),
+        body=body if isinstance(body, str) else body.get('en', 'You have a new notification.'),
         type=type
     )
+
+    # 2. Remote Push via Provider
+    if type == 'PUSH':
+        provider = get_push_provider()
+        if provider:
+            data = {'ref_id': str(ref_id)} if ref_id else {}
+            provider.send_push(user_id=str(user.id), title=title, message=body, data=data, android_channel_id=android_channel_id, android_sound=android_sound, ios_sound=ios_sound)
 
     # 2. Broadcast via WebSockets
     channel_layer = get_channel_layer()

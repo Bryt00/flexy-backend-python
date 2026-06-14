@@ -8,6 +8,7 @@ from .serializers import WalletSerializer, TransactionSerializer
 from integrations.paystack import PaystackService
 
 from drf_spectacular.utils import extend_schema, OpenApiTypes
+from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
 class PaymentViewSet(viewsets.GenericViewSet):
     serializer_class = TransactionSerializer
@@ -15,9 +16,11 @@ class PaymentViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['get'])
     def wallet(self, request):
-        wallet, created = Wallet.objects.get_or_create(user=request.user)
-        serializer = WalletSerializer(wallet)
-        return Response(serializer.data)
+        def fetch_wallet():
+            wallet, created = Wallet.objects.get_or_create(user=request.user)
+            serializer = WalletSerializer(wallet)
+            return Response(serializer.data)
+        return cached_api_response(request, 'wallet', timeout=120, fetcher=fetch_wallet)
 
     @action(detail=False, methods=['get'])
     def transactions(self, request):
@@ -39,54 +42,54 @@ class PaymentViewSet(viewsets.GenericViewSet):
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=['get'])
     def earnings(self, request):
-        from .models import DriverEarningsSummary
-        
-        wallet, _ = Wallet.objects.get_or_create(user=request.user)
-        summary, _ = DriverEarningsSummary.objects.get_or_create(user=request.user)
-        
-        return Response({
-            "daily": {
-                "total_earnings": summary.today_sales,
-                "ride_count": summary.ride_count,
-                "delivery_count": 0
-            },
-            "weekly": {
-                "total_earnings": summary.weekly_sales,
-                "ride_count": summary.ride_count,
-                "delivery_count": 0
-            },
-            "monthly": { # Keep fallback for monthly if not tracked in summary yet
-                "total_earnings": summary.weekly_sales * 4, 
-                "ride_count": summary.ride_count,
-                "delivery_count": 0
-            },
-            "stats": {
-                "total_distance": float(summary.total_sales) * 0.8, # Mock distance
-                "rating": 4.9,
-                "cancelled_rides": 0,
-                "online_hours": "12h 30m"
-            },
-            "peak_hours": {
-                "8": 4, "12": 6, "17": 8, "20": 3
-            },
-            "balance": float(wallet.balance),
-            "currency": wallet.currency
-        })
+        def fetch_earnings():
+            from .models import DriverEarningsSummary
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
+            summary, _ = DriverEarningsSummary.objects.get_or_create(user=request.user)
+            return Response({
+                "daily": {
+                    "total_earnings": summary.today_sales,
+                    "ride_count": summary.ride_count,
+                    "delivery_count": 0
+                },
+                "weekly": {
+                    "total_earnings": summary.weekly_sales,
+                    "ride_count": summary.ride_count,
+                    "delivery_count": 0
+                },
+                "monthly": {
+                    "total_earnings": summary.weekly_sales * 4, 
+                    "ride_count": summary.ride_count,
+                    "delivery_count": 0
+                },
+                "stats": {
+                    "total_distance": float(summary.total_sales) * 0.8,
+                    "rating": 4.9,
+                    "cancelled_rides": 0,
+                    "online_hours": "12h 30m"
+                },
+                "peak_hours": {
+                    "8": 4, "12": 6, "17": 8, "20": 3
+                },
+                "balance": float(wallet.balance),
+                "currency": wallet.currency
+            })
+        return cached_api_response(request, 'earnings', timeout=300, fetcher=fetch_earnings)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        from .models import DriverEarningsSummary
-        
-        wallet, _ = Wallet.objects.get_or_create(user=request.user)
-        summary, _ = DriverEarningsSummary.objects.get_or_create(user=request.user)
-
-        return Response({
-            "today_sales": summary.today_sales,
-            "weekly_sales": summary.weekly_sales,
-            "total_sales": summary.total_sales,
-            "currency": wallet.currency
-        })
+        def fetch_stats():
+            from .models import DriverEarningsSummary
+            wallet, _ = Wallet.objects.get_or_create(user=request.user)
+            summary, _ = DriverEarningsSummary.objects.get_or_create(user=request.user)
+            return Response({
+                "today_sales": summary.today_sales,
+                "weekly_sales": summary.weekly_sales,
+                "total_sales": summary.total_sales,
+                "currency": wallet.currency
+            })
+        return cached_api_response(request, 'pay_stats', timeout=300, fetcher=fetch_stats)
 
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=['post'])
@@ -173,6 +176,10 @@ class PaymentViewSet(viewsets.GenericViewSet):
                 "new_balance": wallet.balance,
                 "status": "success"
             })
+            # Invalidate wallet/earnings caches after funding
+            invalidate_user_cache(request.user.id, 'wallet')
+            invalidate_user_cache(request.user.id, 'earnings')
+            invalidate_user_cache(request.user.id, 'pay_stats')
             
         return Response({
             "error": "Payment verification failed",

@@ -1,0 +1,87 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Document Review</h2>
+        <p class="text-white/50 mt-1">Reviewing verification for Driver Profile ID: {{ verification.driver_id }}</p>
+    </div>
+    <a href="{% url 'staff_portal:support_dashboard' %}" class="cyber-button px-4 py-2 text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-white">
+        &larr; Back to Dashboard
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Documents Panel -->
+    <div class="lg:col-span-2 space-y-6">
+        <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-lg font-outfit font-bold mb-4">Driver's License</h3>
+            {% if verification.license_url %}
+            <div class="bg-black/30 rounded-lg p-2 border border-white/5 mb-2">
+                <img src="{{ verification.license_url }}" alt="License" class="w-full max-h-[300px] object-contain rounded">
+            </div>
+            {% else %}
+            <div class="bg-black/30 rounded-lg p-12 text-center border border-white/5 mb-2">
+                <p class="text-white/50">No license uploaded</p>
+            </div>
+            {% endif %}
+            <p class="text-sm text-white/70">Number: <span class="font-bold text-white">{{ verification.license_number|default:"N/A" }}</span></p>
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-lg font-outfit font-bold mb-4">ID Card</h3>
+            {% if verification.id_card_url %}
+            <div class="bg-black/30 rounded-lg p-2 border border-white/5 mb-2">
+                <img src="{{ verification.id_card_url }}" alt="ID Card" class="w-full max-h-[300px] object-contain rounded">
+            </div>
+            {% else %}
+            <div class="bg-black/30 rounded-lg p-12 text-center border border-white/5 mb-2">
+                <p class="text-white/50">No ID Card uploaded</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="space-y-6">
+        <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-lg font-outfit font-bold mb-4">Decision Controls</h3>
+            
+            <div class="mb-6">
+                <p class="text-xs text-white/50 uppercase tracking-widest font-bold mb-1">Current Status</p>
+                {% if verification.status == 'approved' %}
+                    <span class="status-pill status-pill-success text-lg px-4 py-2">Approved</span>
+                {% elif verification.status == 'rejected' %}
+                    <span class="status-pill status-pill-error text-lg px-4 py-2">Rejected</span>
+                {% else %}
+                    <span class="status-pill status-pill-warning text-lg px-4 py-2">{{ verification.status|title }}</span>
+                {% endif %}
+            </div>
+
+            {% if verification.status == 'pending' %}
+            <form method="POST" action="{% url 'staff_portal:review_document' verification.id %}" class="space-y-4">
+                {% csrf_token %}
+                <button type="submit" name="action" value="approve" class="w-full bg-brand-green hover:bg-brand-green/80 text-black font-bold py-3 rounded-lg transition-colors">
+                    Approve Driver
+                </button>
+                
+                <div class="pt-4 border-t border-white/10 mt-4">
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Rejection Reason</label>
+                    <textarea name="rejected_reason" rows="3" class="cyber-input w-full p-3 mb-3" placeholder="Explain why the documents were rejected..."></textarea>
+                    <button type="submit" name="action" value="reject" class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-500 border border-red-500/50 font-bold py-3 rounded-lg transition-colors">
+                        Reject Documents
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="bg-black/20 p-4 rounded-lg border border-white/5">
+                <p class="text-sm text-white/70">This verification has already been processed.</p>
+                {% if verification.rejected_reason %}
+                <p class="text-xs text-red-400 mt-2"><strong>Reason:</strong> {{ verification.rejected_reason }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

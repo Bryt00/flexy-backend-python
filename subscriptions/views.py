@@ -8,6 +8,7 @@ from django.db import transaction
 from .models import SubscriptionPlan, DriverSubscription, SubscriptionPayment
 from .serializers import SubscriptionPlanSerializer, DriverSubscriptionSerializer, SubscriptionPaymentSerializer
 from .services import PaystackService
+from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     serializer_class = SubscriptionPlanSerializer
@@ -25,14 +26,23 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         # Drivers only see plans after verification and category assignment
         return qs.none()
 
+    def list(self, request, *args, **kwargs):
+        """Cache the plans list (rarely changes)."""
+        def fetch_plans():
+            queryset = self.filter_queryset(self.get_queryset())
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+        return cached_api_response(request, 'sub_plans', timeout=900, fetcher=fetch_plans)
+
     @action(detail=False, methods=['get'])
     def status(self, request):
-        if not hasattr(request.user, 'profile'):
-            return Response({"error": "User has no profile"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        subscription, created = DriverSubscription.objects.get_or_create(profile=request.user.profile)
-        serializer = DriverSubscriptionSerializer(subscription)
-        return Response(serializer.data)
+        def fetch_status():
+            if not hasattr(request.user, 'profile'):
+                return Response({"error": "User has no profile"}, status=status.HTTP_400_BAD_REQUEST)
+            subscription, created = DriverSubscription.objects.get_or_create(profile=request.user.profile)
+            serializer = DriverSubscriptionSerializer(subscription)
+            return Response(serializer.data)
+        return cached_api_response(request, 'sub_status', timeout=300, fetcher=fetch_status)
 
     @action(detail=False, methods=['post'])
     def pay(self, request):
@@ -134,6 +144,10 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 subscription.expiry_date = start_from + timedelta(days=payment.plan.duration_days)
                 subscription.status = 'active'
                 subscription.save()
+                
+            # Invalidate subscription cache after successful payment
+            invalidate_user_cache(request.user.id, 'sub_status')
+            invalidate_user_cache(request.user.id, 'sub_plans')
                 
             return Response({
                 "message": "Subscription activated successfully",

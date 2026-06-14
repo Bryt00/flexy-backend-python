@@ -1,0 +1,115 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Master Overview - FlexyRide{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-outfit font-bold tracking-tight">Command Center</h2>
+    <p class="text-white/50 mt-1">High-level platform metrics.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Stat Card 1 -->
+    <a href="{% url 'staff_portal:global_users' %}" class="block glass-panel p-6 rounded-2xl relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-primary/20"></div>
+        <h3 class="text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Total Users</h3>
+        <p class="text-4xl font-outfit font-bold">{{ total_users }}</p>
+        <div class="mt-4 flex items-center text-brand-green text-sm font-bold">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            +12% this week
+        </div>
+    </a>
+
+    <!-- Stat Card 2 -->
+    <a href="{% url 'staff_portal:global_users' %}" class="block glass-panel p-6 rounded-2xl relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-green/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-brand-green/20"></div>
+        <h3 class="text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Active Drivers</h3>
+        <p class="text-4xl font-outfit font-bold">{{ total_drivers }}</p>
+        <div class="mt-4 flex items-center text-primary text-sm font-bold">
+            <span class="status-pill status-pill-success">Live Now</span>
+        </div>
+    </a>
+
+    <!-- Stat Card 3 -->
+    <a href="{% url 'staff_portal:support_dashboard' %}" class="block glass-panel p-6 rounded-2xl relative overflow-hidden group hover:scale-[1.02] transition-transform cursor-pointer">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:bg-orange-500/20"></div>
+        <h3 class="text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Pending Verifications</h3>
+        <p class="text-4xl font-outfit font-bold">{{ pending_verifications }}</p>
+        <div class="mt-4 flex items-center text-white/50 text-sm font-bold">
+            Needs attention
+        </div>
+    </a>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="glass-panel p-6 rounded-2xl">
+        <h3 class="text-lg font-outfit font-bold mb-4">Revenue (Last 7 Days)</h3>
+        <canvas id="revenueChart" height="200"></canvas>
+    </div>
+    
+    <div class="glass-panel p-6 rounded-2xl">
+        <h3 class="text-lg font-outfit font-bold mb-4">Ride Volume</h3>
+        <canvas id="ridesChart" height="200"></canvas>
+    </div>
+</div>
+
+<script>
+    // Chart Defaults
+    Chart.defaults.color = 'rgba(255, 255, 255, 0.5)';
+    Chart.defaults.font.family = 'Inter';
+
+    // Revenue Chart
+    const revCtx = document.getElementById('revenueChart').getContext('2d');
+    
+    // Create Gradient
+    const gradient = revCtx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 180, 255, 0.5)');
+    gradient.addColorStop(1, 'rgba(0, 180, 255, 0.0)');
+
+    new Chart(revCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Revenue ($)',
+                data: {{ revenue_data|safe }},
+                borderColor: '#00B4FF',
+                backgroundColor: gradient,
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, beginAtZero: true },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Rides Chart
+    const ridesCtx = document.getElementById('ridesChart').getContext('2d');
+    new Chart(ridesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Total Rides',
+                data: {{ rides_data|safe }},
+                backgroundColor: '#A3E635',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, beginAtZero: true },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}

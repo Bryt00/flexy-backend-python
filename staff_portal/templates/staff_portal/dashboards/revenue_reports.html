@@ -1,0 +1,65 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Revenue Reports</h2>
+        <p class="text-white/50 mt-1">Export financial ledgers and view successful transactions.</p>
+    </div>
+    <a href="?export=csv" class="cyber-button px-4 py-2 text-sm bg-brand-green text-black hover:bg-brand-green/80 font-bold flex items-center shadow-[0_0_15px_rgba(163,230,53,0.3)]">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        Export Full Ledger (CSV)
+    </a>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+        <h3 class="text-lg font-outfit font-bold">Successful Transactions</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Tx ID</th>
+                    <th class="px-6 py-4 font-bold">Amount</th>
+                    <th class="px-6 py-4 font-bold">Type</th>
+                    <th class="px-6 py-4 font-bold">Method</th>
+                    <th class="px-6 py-4 font-bold text-right">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for tx in transactions %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-mono text-xs text-white/70">{{ tx.id|stringformat:"s"|slice:":8" }}...</td>
+                    <td class="px-6 py-4 font-bold text-brand-green">GHS {{ tx.amount|floatformat:2 }}</td>
+                    <td class="px-6 py-4 text-white/70 capitalize">{{ tx.type|default:"N/A" }}</td>
+                    <td class="px-6 py-4 capitalize">{{ tx.payment_method|default:"Wallet" }}</td>
+                    <td class="px-6 py-4 text-white/50 text-right">{{ tx.created_at|date:"M d, H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-white/50">No successful transactions found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if transactions.has_other_pages %}
+    <div class="p-6 border-t border-white/10 flex justify-between items-center bg-black/20">
+        <span class="text-sm text-white/50">Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}</span>
+        <div class="flex space-x-2">
+            {% if transactions.has_previous %}
+                <a href="?page={{ transactions.previous_page_number }}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">&laquo; Prev</a>
+            {% endif %}
+            
+            {% if transactions.has_next %}
+                <a href="?page={{ transactions.next_page_number }}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

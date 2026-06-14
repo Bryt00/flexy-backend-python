@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Portal Login - FlexyRide</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#00B4FF',
+                            dark: '#005691',
+                        },
+                        background: '#030712',
+                        surface: {
+                            DEFAULT: '#0F172A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #030712;
+            color: white;
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .orbital-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -10;
+            background-color: #010409;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 180, 255, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(163, 230, 53, 0.1) 0px, transparent 50%);
+        }
+
+        .glass-panel {
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .cyber-button {
+            background: linear-gradient(135deg, #00B4FF 0%, #005691 100%);
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+            transition: all 0.3s;
+        }
+        .cyber-button:hover {
+            box-shadow: 0 0 25px rgba(0, 180, 255, 0.5);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="orbital-bg"></div>
+
+    <div class="glass-panel p-10 rounded-3xl w-full max-w-md">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-outfit text-white tracking-widest uppercase mb-2">
+                Flexy<span class="text-primary">Ride</span>
+            </h1>
+            <p class="text-white/50 text-sm tracking-wider uppercase font-bold">Staff Portal</p>
+        </div>
+
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-3 rounded-lg border bg-red-500/10 border-red-500/30 text-red-500 text-sm text-center">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'staff_portal:login' %}" class="space-y-6">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Email Address</label>
+                <input type="email" name="email" required 
+                       class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-white/50 uppercase tracking-widest mb-2">Password</label>
+                <input type="password" name="password" required 
+                       class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+            </div>
+
+            <button type="submit" class="cyber-button w-full py-4 rounded-xl text-white font-black tracking-widest uppercase mt-4">
+                Authenticate
+            </button>
+        </form>
+        
+        <div class="mt-8 text-center">
+            <p class="text-xs text-white/30">Unauthorized access is strictly prohibited.</p>
+        </div>
+    </div>
+</body>
+</html>

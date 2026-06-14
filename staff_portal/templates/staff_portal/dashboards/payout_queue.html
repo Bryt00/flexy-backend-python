@@ -1,0 +1,59 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Payout Queue</h2>
+        <p class="text-white/50 mt-1">Review and execute pending driver earnings transfers.</p>
+    </div>
+    <a href="{% url 'staff_portal:finance_dashboard' %}" class="cyber-button px-4 py-2 text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-white">
+        &larr; Back to Dashboard
+    </a>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center">
+        <h3 class="text-lg font-outfit font-bold">Pending Driver Wallets</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Driver ID</th>
+                    <th class="px-6 py-4 font-bold">Email</th>
+                    <th class="px-6 py-4 font-bold">Pending Balance</th>
+                    <th class="px-6 py-4 font-bold text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for wallet in wallets %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-mono text-xs text-white/70">{{ wallet.user.id|stringformat:"s"|slice:":8" }}...</td>
+                    <td class="px-6 py-4 font-bold text-white">{{ wallet.user.email }}</td>
+                    <td class="px-6 py-4 font-bold text-brand-green text-lg">GHS {{ wallet.balance|floatformat:2 }}</td>
+                    <td class="px-6 py-4 text-right">
+                        <form method="POST" action="{% url 'staff_portal:execute_payout' wallet.id %}" class="inline-block" onsubmit="return confirm('Are you sure you want to execute a payout of GHS {{ wallet.balance|floatformat:2 }} to {{ wallet.user.email }}?');">
+                            {% csrf_token %}
+                            <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest">
+                                Execute Payout &rarr;
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center text-white/50">
+                        <div class="w-12 h-12 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <p class="font-bold uppercase tracking-widest text-xs text-brand-green">All Caught Up!</p>
+                        <p class="mt-1">No pending payouts in the queue.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

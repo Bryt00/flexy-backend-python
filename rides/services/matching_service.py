@@ -262,6 +262,19 @@ class MatchingService:
                     }
                 )
                 
+                # Push Notification for New Ride
+                from notification.utils import send_notification
+                send_notification(
+                    user=next_driver.user,
+                    title="🚨 New Ride Request!",
+                    body=f"Pickup: {ride.pickup_address}",
+                    type='PUSH',
+                    ref_id=str(ride.id),
+                    android_channel_id='high_priority_rides',
+                    android_sound='alarm',
+                    ios_sound='alarm.wav'
+                )
+                
                 # 5. Update Metadata & Set Redis Lock (Point 5)
                 polled_ids.append(d_id)
                 poll_history[d_id] = now_ts

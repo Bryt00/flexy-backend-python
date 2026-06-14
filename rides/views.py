@@ -473,7 +473,25 @@ class RideViewSet(viewsets.ModelViewSet):
                         body = f"You've arrived! Your total is GH₵ {ride.fare:.2f}."
                     
                     if body:
-                        send_notification(ride.rider, title=title, body=body, type='PUSH', ref_id=ride.id)
+                        # Default settings
+                        channel_id = None
+                        sound = None
+                        
+                        # Use horn sound for arrival
+                        if new_status == 'arrived':
+                            channel_id = 'high_priority_rides'
+                            sound = 'horn'
+                            
+                        send_notification(
+                            ride.rider, 
+                            title=title, 
+                            body=body, 
+                            type='PUSH', 
+                            ref_id=ride.id,
+                            android_channel_id=channel_id,
+                            android_sound=sound,
+                            ios_sound=f'{sound}.wav' if sound else None
+                        )
             except Exception as e:
                 print(f"Notification error: {e}")
 

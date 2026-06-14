@@ -1,0 +1,51 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-outfit font-bold tracking-tight text-red-500">Active Disputes (SOS)</h2>
+    <p class="text-white/50 mt-1">Review and manage active emergency and dispute alerts.</p>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden border border-red-500/20">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-red-500/5">
+        <h3 class="text-lg font-outfit font-bold text-red-400">Critical Alerts</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Type</th>
+                    <th class="px-6 py-4 font-bold">Reporter</th>
+                    <th class="px-6 py-4 font-bold">Ride ID</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold text-right">Time</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for incident in incidents %}
+                <tr onclick="window.location='{% url 'staff_portal:dispute_detail' incident.id %}'" class="hover:bg-red-500/10 transition-colors cursor-pointer">
+                    <td class="px-6 py-4 font-bold text-red-500">{{ incident.type }}</td>
+                    <td class="px-6 py-4 font-bold text-white">{{ incident.reporter.email }}</td>
+                    <td class="px-6 py-4 text-white/70 font-mono text-xs">{{ incident.ride.id|stringformat:"s"|slice:":8" }}...</td>
+                    <td class="px-6 py-4">
+                        <span class="status-pill status-pill-error animate-pulse">Needs Action</span>
+                    </td>
+                    <td class="px-6 py-4 text-white/50 text-right">{{ incident.created_at|timesince }} ago</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-white/50">
+                        <div class="w-12 h-12 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </div>
+                        <p class="font-bold uppercase tracking-widest text-xs text-brand-green">All Clear</p>
+                        <p class="mt-1">No active disputes or SOS alerts.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

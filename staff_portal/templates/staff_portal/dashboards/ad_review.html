@@ -1,0 +1,219 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Review Ad Booking</h2>
+        <p class="text-white/50 mt-1">{{ ad.business_name }} &mdash; submitted {{ ad.created_at|timesince }} ago</p>
+    </div>
+    <a href="{% url 'staff_portal:ad_dashboard' %}" class="cyber-button px-4 py-2 text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-white shadow-none">
+        &larr; Back to Ad Ops
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left: Business Info + Status -->
+    <div class="lg:col-span-1 space-y-6">
+        <!-- Business Details Card -->
+        <div class="glass-panel rounded-2xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Business Details</h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Business Name</p>
+                    <p class="font-bold text-white">{{ ad.business_name }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Contact Email</p>
+                    <p class="text-white/70">{{ ad.contact_email }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Contact Phone</p>
+                    <p class="text-white/70">{{ ad.contact_phone }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Target URL</p>
+                    <p class="text-primary truncate">{{ ad.target_url|default:"None" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Details Card -->
+        <div class="glass-panel rounded-2xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Booking Info</h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Booked Week</p>
+                    <p class="font-bold text-white">{{ ad.week_start_date|date:"M d, Y" }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Target Audience</p>
+                    <p class="text-white/70">{{ ad.get_target_audience_display }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-white/40 uppercase tracking-widest">Amount</p>
+                    <p class="font-bold text-brand-green text-lg">GHS {{ ad.amount|floatformat:2 }}</p>
+                </div>
+                <div class="flex gap-4">
+                    <div>
+                        <p class="text-[10px] text-white/40 uppercase tracking-widest">Status</p>
+                        {% if ad.status == 'PENDING_REVIEW' %}
+                            <span class="status-pill bg-amber-400/10 text-amber-400 border-amber-400/30">Pending</span>
+                        {% elif ad.status == 'APPROVED' %}
+                            <span class="status-pill bg-primary/10 text-primary border-primary/30">Approved</span>
+                        {% elif ad.status == 'LIVE' %}
+                            <span class="status-pill status-pill-success">Live</span>
+                        {% elif ad.status == 'REJECTED' %}
+                            <span class="status-pill bg-red-500/10 text-red-400 border-red-500/30">Rejected</span>
+                        {% else %}
+                            <span class="status-pill bg-white/5 text-white/40 border-white/10">{{ ad.status }}</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-white/40 uppercase tracking-widest">Payment</p>
+                        {% if ad.payment_status == 'PAID' %}
+                            <span class="status-pill status-pill-success">Paid</span>
+                        {% elif ad.payment_status == 'PENDING' %}
+                            <span class="status-pill bg-amber-400/10 text-amber-400 border-amber-400/30">Pending</span>
+                        {% else %}
+                            <span class="status-pill bg-white/5 text-white/40 border-white/10">Unpaid</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Card (if available) -->
+        {% if analytics %}
+        <div class="glass-panel rounded-2xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Performance</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-black/30 p-3 rounded-lg">
+                    <p class="text-[10px] text-white/40 uppercase">Impressions A</p>
+                    <p class="text-xl font-bold">{{ analytics.impressions_a }}</p>
+                </div>
+                <div class="bg-black/30 p-3 rounded-lg">
+                    <p class="text-[10px] text-white/40 uppercase">Clicks A</p>
+                    <p class="text-xl font-bold text-primary">{{ analytics.clicks_a }}</p>
+                </div>
+                {% if ad.headline_b %}
+                <div class="bg-black/30 p-3 rounded-lg">
+                    <p class="text-[10px] text-white/40 uppercase">Impressions B</p>
+                    <p class="text-xl font-bold">{{ analytics.impressions_b }}</p>
+                </div>
+                <div class="bg-black/30 p-3 rounded-lg">
+                    <p class="text-[10px] text-white/40 uppercase">Clicks B</p>
+                    <p class="text-xl font-bold text-primary">{{ analytics.clicks_b }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Creative Preview + Actions -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Variant A Preview -->
+        <div class="glass-panel rounded-2xl overflow-hidden">
+            <div class="p-6 border-b border-white/10">
+                <h3 class="text-sm font-bold uppercase tracking-widest text-white/40">Creative Preview — Variant A</h3>
+            </div>
+            <div class="p-6">
+                {% if ad.image %}
+                <div class="rounded-xl overflow-hidden mb-4 border border-white/10">
+                    <img src="{{ ad.image.url }}" alt="Ad Creative A" class="w-full h-auto object-cover max-h-[400px]">
+                </div>
+                {% else %}
+                <div class="rounded-xl bg-white/5 border border-white/10 p-8 mb-4 text-center text-white/30">
+                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <p class="text-xs uppercase tracking-widest font-bold">No Image Uploaded</p>
+                </div>
+                {% endif %}
+                <h4 class="text-xl font-bold text-white mb-2">{{ ad.headline }}</h4>
+                <p class="text-white/60 text-sm leading-relaxed">{{ ad.body_text }}</p>
+            </div>
+        </div>
+
+        <!-- Variant B Preview (if exists) -->
+        {% if ad.headline_b %}
+        <div class="glass-panel rounded-2xl overflow-hidden">
+            <div class="p-6 border-b border-white/10">
+                <h3 class="text-sm font-bold uppercase tracking-widest text-white/40">Creative Preview — Variant B (A/B Test)</h3>
+            </div>
+            <div class="p-6">
+                {% if ad.image_b %}
+                <div class="rounded-xl overflow-hidden mb-4 border border-white/10">
+                    <img src="{{ ad.image_b.url }}" alt="Ad Creative B" class="w-full h-auto object-cover max-h-[400px]">
+                </div>
+                {% endif %}
+                <h4 class="text-xl font-bold text-white mb-2">{{ ad.headline_b }}</h4>
+                <p class="text-white/60 text-sm leading-relaxed">{{ ad.body_text_b }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Panel -->
+        <div class="glass-panel rounded-2xl p-6">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-white/40 mb-4">Actions</h3>
+            
+            {% if ad.status == 'PENDING_REVIEW' %}
+            <div class="flex flex-wrap gap-4">
+                <!-- Approve Button -->
+                <form method="POST" class="inline-block" onsubmit="return confirm('Approve this ad? An approval email with the payment link will be sent to {{ ad.contact_email }}.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="approve">
+                    <button type="submit" class="bg-brand-green hover:bg-brand-green/80 text-black font-bold py-3 px-6 rounded-xl transition-colors text-xs uppercase tracking-widest flex items-center shadow-[0_0_15px_rgba(163,230,53,0.3)]">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Approve Ad
+                    </button>
+                </form>
+
+                <!-- Reject Button + Reason -->
+                <form method="POST" class="flex-1 min-w-[300px]" onsubmit="return confirm('Reject this ad?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reject">
+                    <div class="flex gap-2">
+                        <input type="text" name="rejection_reason" placeholder="Rejection reason..." class="flex-1 py-3 px-4 rounded-xl text-sm bg-black/50 border border-white/10 text-white focus:outline-none focus:border-red-500/50">
+                        <button type="submit" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 font-bold py-3 px-6 rounded-xl transition-colors text-xs uppercase tracking-widest border border-red-500/30">
+                            Reject
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% elif ad.status == 'APPROVED' and ad.payment_status == 'PAID' %}
+            <form method="POST" class="inline-block" onsubmit="return confirm('Set this ad to LIVE? It will begin showing to users.');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="go_live">
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-3 px-6 rounded-xl transition-colors text-xs uppercase tracking-widest flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Go Live
+                </button>
+            </form>
+
+            {% elif ad.status == 'APPROVED' and ad.payment_status != 'PAID' %}
+            <div class="bg-amber-400/10 border border-amber-400/30 rounded-xl p-4">
+                <p class="text-amber-400 text-sm font-bold">Waiting for Payment</p>
+                <p class="text-white/50 text-xs mt-1">This ad has been approved. The business has been emailed with payment instructions. Once they pay via their dashboard, the payment status will update automatically.</p>
+            </div>
+
+            {% elif ad.status == 'LIVE' %}
+            <div class="bg-brand-green/10 border border-brand-green/30 rounded-xl p-4">
+                <p class="text-brand-green text-sm font-bold">Currently Live</p>
+                <p class="text-white/50 text-xs mt-1">This ad is currently being served to {{ ad.get_target_audience_display|lower }}.</p>
+            </div>
+
+            {% elif ad.status == 'REJECTED' %}
+            <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                <p class="text-red-400 text-sm font-bold">Rejected</p>
+                <p class="text-white/50 text-xs mt-1">Reason: {{ ad.rejection_reason|default:"No reason provided." }}</p>
+            </div>
+
+            {% else %}
+            <div class="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p class="text-white/50 text-sm">No actions available for status: {{ ad.status }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

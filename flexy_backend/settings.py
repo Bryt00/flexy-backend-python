@@ -21,6 +21,7 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure--2igbe1w0zqjl_(8w2)irn!e
 
 DEBUG = env('DEBUG', default=False)
 
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*', '192.168.1.76'])
 
 # Security Settings
@@ -92,6 +93,7 @@ INSTALLED_APPS += [
     'integrations',
     'website',
     'advertising',
+    'staff_portal',
     'django_ckeditor_5',
     'solo',
 ]
@@ -173,11 +175,33 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
-        'burst': '10/minute',
+        'anon': '500/day',
+        'user': '10000/day',
+        'burst': '60/minute',
     }
 }
+
+# --- Cache Configuration ---
+# Uses Redis on production (set REDIS_URL env var), falls back to LocMemCache for dev.
+REDIS_URL = env('REDIS_URL', default='')
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'TIMEOUT': 300,  # Default 5 minutes
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'flexyride-api-cache',
+        }
+    }
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'FlexyRide API',
@@ -229,9 +253,9 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5672//')
-CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6379/1')
-REDIS_URL = env('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5673//')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6380/1')
+REDIS_URL = env('REDIS_URL', default='redis://localhost:6380/0')
 CELERY_BEAT_SCHEDULE = {
     'activate-scheduled-rides-every-minute': {
         'task': 'rides.tasks.activate_scheduled_rides',
@@ -323,42 +347,42 @@ UNFOLD = {
                     {
                         "title": "Dashboard / Live Map",
                         "icon": "map",
-                        "link": "/admin/",
+                        "link": "/headquarters/",
                     },
                     {
                         "title": "Rides",
                         "icon": "commute",
-                        "link": "/admin/rides/ride/",
+                        "link": "/headquarters/rides/ride/",
                     },
                     {
                         "title": "Ride Receipts",
                         "icon": "receipt",
-                        "link": "/admin/rides/ridereceipt/",
+                        "link": "/headquarters/rides/ridereceipt/",
                     },
                     {
                         "title": "Delivery Hub",
                         "icon": "local_shipping",
-                        "link": "/admin/courier/delivery/",
+                        "link": "/headquarters/courier/delivery/",
                     },
                     {
                         "title": "Vehicle Fleet",
                         "icon": "directions_car",
-                        "link": "/admin/vehicles/vehicle/",
+                        "link": "/headquarters/vehicles/vehicle/",
                     },
                     {
                         "title": "Profiles",
                         "icon": "person",
-                        "link": "/admin/profiles/profile/",
+                        "link": "/headquarters/profiles/profile/",
                     },
                     {
                         "title": "Wallets",
                         "icon": "account_balance_wallet",
-                        "link": "/admin/payments/wallet/",
+                        "link": "/headquarters/payments/wallet/",
                     },
                     {
                         "title": "Transactions",
                         "icon": "receipt_long",
-                        "link": "/admin/payments/transaction/",
+                        "link": "/headquarters/payments/transaction/",
                     },
                 ],
             },
@@ -368,47 +392,47 @@ UNFOLD = {
                     {
                         "title": "Subscription Plans",
                         "icon": "card_membership",
-                        "link": "/admin/subscriptions/subscriptionplan/",
+                        "link": "/headquarters/subscriptions/subscriptionplan/",
                     },
                     {
                         "title": "Driver Subscriptions",
                         "icon": "subscriptions",
-                        "link": "/admin/subscriptions/driversubscription/",
+                        "link": "/headquarters/subscriptions/driversubscription/",
                     },
                     {
                         "title": "Subscription Payments",
                         "icon": "payment",
-                        "link": "/admin/subscriptions/subscriptionpayment/",
+                        "link": "/headquarters/subscriptions/subscriptionpayment/",
                     },
                     {
                         "title": "Marketing Campaigns",
                         "icon": "campaign",
-                        "link": "/admin/notification/campaign/",
+                        "link": "/headquarters/notification/campaign/",
                     },
                     {
                         "title": "Promos & Coupons",
                         "icon": "confirmation_number",
-                        "link": "/admin/marketing/promocode/",
+                        "link": "/headquarters/marketing/promocode/",
                     },
                     {
                         "title": "Ad Management",
                         "icon": "ads_click",
-                        "link": "/admin/advertising/adbooking/",
+                        "link": "/headquarters/advertising/adbooking/",
                     },
                     {
                         "title": "Ad Slot Capacity",
                         "icon": "inventory_2",
-                        "link": "/admin/advertising/adslotcapacity/",
+                        "link": "/headquarters/advertising/adslotcapacity/",
                     },
                     {
                         "title": "Ad Extensions",
                         "icon": "extension",
-                        "link": "/admin/advertising/adextension/",
+                        "link": "/headquarters/advertising/adextension/",
                     },
                     {
                         "title": "Ad Analytics",
                         "icon": "analytics",
-                        "link": "/admin/advertising/adanalytics/",
+                        "link": "/headquarters/advertising/adanalytics/",
                     },
                 ],
             },
@@ -418,37 +442,37 @@ UNFOLD = {
                     {
                         "title": "Incident Hub (SOS)",
                         "icon": "report_problem",
-                        "link": "/admin/rides/incident/",
+                        "link": "/headquarters/rides/incident/",
                     },
                     {
                         "title": "Fraud Flags",
                         "icon": "gpp_bad",
-                        "link": "/admin/audit/fraudflag/",
+                        "link": "/headquarters/audit/fraudflag/",
                     },
                     {
                         "title": "User Directory",
                         "icon": "group",
-                        "link": "/admin/core_auth/user/",
+                        "link": "/headquarters/core_auth/user/",
                     },
                     {
                         "title": "Deletion Requests",
                         "icon": "person_remove",
-                        "link": "/admin/core_auth/deletionrequest/",
+                        "link": "/headquarters/core_auth/deletionrequest/",
                     },
                     {
                         "title": "Driver Verifications",
                         "icon": "verified_user",
-                        "link": "/admin/profiles/driververification/",
+                        "link": "/headquarters/profiles/driververification/",
                     },
                     {
                         "title": "Notifications",
                         "icon": "notifications",
-                        "link": "/admin/notification/notification/",
+                        "link": "/headquarters/notification/notification/",
                     },
                     {
                         "title": "API Keys / Integrations",
                         "icon": "api",
-                        "link": "/admin/integrations/apikey/",
+                        "link": "/headquarters/integrations/apikey/",
                     },
                 ],
             },
@@ -458,92 +482,92 @@ UNFOLD = {
                     {
                         "title": "Pricing & Surge",
                         "icon": "payments",
-                        "link": "/admin/core_settings/pricingrule/",
+                        "link": "/headquarters/core_settings/pricingrule/",
                     },
                     {
                         "title": "Vehicle Categories",
                         "icon": "category",
-                        "link": "/admin/core_settings/vehiclecategory/",
+                        "link": "/headquarters/core_settings/vehiclecategory/",
                     },
                     {
                         "title": "Distance Tiers",
                         "icon": "straighten",
-                        "link": "/admin/core_settings/distancetier/",
+                        "link": "/headquarters/core_settings/distancetier/",
                     },
                     {
                         "title": "Blog Posts",
                         "icon": "article",
-                        "link": "/admin/website/blogpost/",
+                        "link": "/headquarters/website/blogpost/",
                     },
                     {
                         "title": "Service Categories",
                         "icon": "directions_car",
-                        "link": "/admin/website/servicecategory/",
+                        "link": "/headquarters/website/servicecategory/",
                     },
                     {
                         "title": "Safety Features",
                         "icon": "security",
-                        "link": "/admin/website/safetyfeature/",
+                        "link": "/headquarters/website/safetyfeature/",
                     },
                     {
                         "title": "FAQ Items",
                         "icon": "quiz",
-                        "link": "/admin/website/faqitem/",
+                        "link": "/headquarters/website/faqitem/",
                     },
                     {
                         "title": "Cities",
                         "icon": "location_city",
-                        "link": "/admin/website/city/",
+                        "link": "/headquarters/website/city/",
                     },
                     {
                         "title": "Testimonials",
                         "icon": "format_quote",
-                        "link": "/admin/website/testimonial/",
+                        "link": "/headquarters/website/testimonial/",
                     },
                     {
                         "title": "Hero Banners",
                         "icon": "panorama",
-                        "link": "/admin/website/herobanner/",
+                        "link": "/headquarters/website/herobanner/",
                     },
                     {
                         "title": "Job Openings",
                         "icon": "work",
-                        "link": "/admin/website/jobopening/",
+                        "link": "/headquarters/website/jobopening/",
                     },
                     {
                         "title": "Brand Features",
                         "icon": "star",
-                        "link": "/admin/website/brandfeature/",
+                        "link": "/headquarters/website/brandfeature/",
                     },
                     {
                         "title": "Website Settings",
                         "icon": "tune",
-                        "link": "/admin/website/websitesettings/",
+                        "link": "/headquarters/website/websitesettings/",
                     },
                     {
                         "title": "Contact Inquiries",
                         "icon": "mail",
-                        "link": "/admin/website/contactinquiry/",
+                        "link": "/headquarters/website/contactinquiry/",
                     },
                     {
                         "title": "Global Settings",
                         "icon": "settings",
-                        "link": "/admin/core_settings/sitesetting/",
+                        "link": "/headquarters/core_settings/sitesetting/",
                     },
                     {
                         "title": "Legal Documents",
                         "icon": "description",
-                        "link": "/admin/website/legaldocument/",
+                        "link": "/headquarters/website/legaldocument/",
                     },
                     {
                         "title": "System Audit Logs",
                         "icon": "history",
-                        "link": "/admin/audit/auditlog/",
+                        "link": "/headquarters/audit/auditlog/",
                     },
                     {
                         "title": "File Cloud",
                         "icon": "cloud",
-                        "link": "/admin/file_manager/filemetadata/",
+                        "link": "/headquarters/file_manager/filemetadata/",
                     },
                 ],
             },
@@ -675,3 +699,8 @@ CKEDITOR_5_CONFIGS = {
         }
     }
 }
+
+# --- PUSH NOTIFICATIONS ---
+ACTIVE_PUSH_PROVIDER = 'notification.providers.onesignal.OneSignalProvider'
+ONESIGNAL_APP_ID = env('ONESIGNAL_APP_ID', default=None)
+ONESIGNAL_REST_API_KEY = env('ONESIGNAL_REST_API_KEY', default=None)

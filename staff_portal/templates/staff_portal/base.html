@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FlexyRide Portal{% endblock %}</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (v3 CDN for immediate styling without build steps) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#00B4FF',
+                            dark: '#005691',
+                            light: '#7DD3FC'
+                        },
+                        brand: {
+                            green: '#A3E635',
+                            greendark: '#65A30D',
+                            deep: '#061B24'
+                        },
+                        background: '#030712',
+                        surface: {
+                            DEFAULT: '#0F172A',
+                            deep: '#020617',
+                            hover: '#1E293B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Styles inspired by Angular project -->
+    <style>
+        body {
+            background-color: #030712;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .orbital-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -10;
+            pointer-events: none;
+            background-color: #010409;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 180, 255, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(163, 230, 53, 0.06) 0px, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.4) 0%, #010409 100%);
+        }
+
+        .glass-panel {
+            background-color: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .cyber-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            transition: all 0.3s;
+            cursor: pointer;
+            color: white;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: linear-gradient(135deg, #00B4FF 0%, #005691 100%);
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+        }
+        .cyber-button:hover {
+            box-shadow: 0 0 25px rgba(0, 180, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .status-pill {
+            padding: 0.375rem 0.875rem;
+            border-radius: 0.75rem;
+            font-size: 0.625rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border: 1px solid;
+            display: inline-block;
+        }
+        .status-pill-success {
+            background-color: rgba(163, 230, 53, 0.1);
+            color: #A3E635;
+            border-color: rgba(163, 230, 53, 0.3);
+            box-shadow: 0 0 15px rgba(163, 230, 53, 0.1);
+        }
+        .status-pill-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        /* Sidebar Item Hover */
+        .sidebar-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-link:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #00B4FF;
+            border-left: 3px solid #00B4FF;
+        }
+    </style>
+</head>
+<body>
+    <div class="orbital-bg"></div>
+    <div class="flex h-screen bg-[#0A0F1C] text-white font-sans overflow-hidden">
+
+        <!-- Mobile Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-slate-900 border-r border-white/10 flex flex-col h-screen fixed md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="p-6">
+                <h1 class="text-2xl font-outfit text-white tracking-widest uppercase">
+                    Flexy<span class="text-primary">Ride</span>
+                </h1>
+                <p class="text-xs text-white/50 mt-1 uppercase tracking-widest font-bold">{{ request.user.role }} PORTAL</p>
+            </div>
+
+            <nav class="flex-1 mt-6 overflow-y-auto">
+                <ul class="space-y-6 pb-6">
+                    {% if request.user.role == 'super_admin' %}
+                    <li>
+                        <p class="px-6 text-[10px] font-black text-primary/50 tracking-[0.2em] uppercase mb-3">Master Controls</p>
+                        <a href="{% url 'staff_portal:master_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            Platform Overview
+                        </a>
+                        <a href="{% url 'staff_portal:global_users' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            Global Users
+                        </a>
+                        <a href="{% url 'staff_portal:platform_settings' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            Platform Settings
+                        </a>
+                        <a href="{% url 'staff_portal:ad_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
+                            Ad Operations
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if request.user.role == 'finance' or request.user.role == 'super_admin' %}
+                    <li>
+                        <p class="px-6 text-[10px] font-black text-primary/50 tracking-[0.2em] uppercase mb-3">Finance Department</p>
+                        <a href="{% url 'staff_portal:finance_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Finance Overview
+                        </a>
+                        <a href="{% url 'staff_portal:payout_queue' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            Payout Queue
+                        </a>
+                        <a href="{% url 'staff_portal:revenue_reports' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            Revenue Reports
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% if request.user.role == 'support' or request.user.role == 'admin' or request.user.role == 'super_admin' %}
+                    <li>
+                        <p class="px-6 text-[10px] font-black text-brand-green/50 tracking-[0.2em] uppercase mb-3">Support Center</p>
+                        <a href="{% url 'staff_portal:support_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            Live Map & Verifications
+                        </a>
+                        <a href="{% url 'staff_portal:disputes_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            Active Disputes
+                        </a>
+                        <a href="{% url 'staff_portal:ride_history' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Ride History
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+
+            <div class="p-6 border-t border-white/10">
+                <div class="flex items-center mb-4">
+                    <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                        {{ request.user.email|make_list|first|upper }}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-bold text-white">{{ request.user.email }}</p>
+                        <p class="text-xs text-white/50">{{ request.user.role|title }}</p>
+                    </div>
+                </div>
+                <a href="{% url 'staff_portal:logout' %}" class="text-xs text-error/80 hover:text-error flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Sign Out
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+            
+            <!-- Top Navbar -->
+            <header class="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-md z-30 relative">
+                <div class="flex items-center">
+                    <button id="mobileMenuBtn" class="md:hidden mr-4 text-white/70 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <h2 class="text-lg font-outfit font-bold tracking-widest text-white/70 hidden sm:block">FLEXY<span class="text-primary">RIDE</span> HEADQUARTERS</h2>
+                </div>
+                
+                <!-- Profile Dropdown -->
+                <div class="relative group">
+                    <button class="flex items-center space-x-3 text-white/70 hover:text-white focus:outline-none py-2">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-xs font-bold">{{ request.user.email }}</p>
+                            <p class="text-[10px] text-primary uppercase tracking-widest">{{ request.user.role }}</p>
+                        </div>
+                        <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold border border-primary/30">
+                            {{ request.user.email|make_list|first|upper }}
+                        </div>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div class="absolute right-0 mt-2 w-48 bg-[#0A0F1C] border border-white/10 rounded-lg shadow-xl overflow-hidden hidden group-hover:block transition-all z-50">
+                        <div class="p-4 border-b border-white/10 sm:hidden">
+                            <p class="text-xs font-bold text-white">{{ request.user.email }}</p>
+                            <p class="text-[10px] text-primary uppercase tracking-widest">{{ request.user.role }}</p>
+                        </div>
+                        <a href="{% url 'staff_portal:logout' %}" class="flex items-center px-4 py-3 text-sm text-error/80 hover:text-error hover:bg-white/5 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            Sign Out
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 p-8 overflow-y-auto">
+                {% if messages %}
+                    <div class="mb-6 space-y-2">
+                        {% for message in messages %}
+                        <div class="p-4 rounded-xl border {% if message.tags == 'error' %}bg-error/10 border-error/30 text-error{% else %}bg-brand-green/10 border-brand-green/30 text-brand-green{% endif %}">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+
+    <script>
+        // Mobile Sidebar Toggle
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const menuBtn = document.getElementById('mobileMenuBtn');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        menuBtn.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+    </script>
+</body>
+</html>

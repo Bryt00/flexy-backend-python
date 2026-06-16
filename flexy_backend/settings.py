@@ -702,6 +702,5 @@ CKEDITOR_5_CONFIGS = {
 }
 
 # --- PUSH NOTIFICATIONS ---
-ACTIVE_PUSH_PROVIDER = 'notification.providers.onesignal.OneSignalProvider'
-ONESIGNAL_APP_ID = env('ONESIGNAL_APP_ID', default=None)
-ONESIGNAL_REST_API_KEY = env('ONESIGNAL_REST_API_KEY', default=None)
+ACTIVE_PUSH_PROVIDER = 'notification.providers.fcm.FCMProvider'
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'flexyride-1995-firebase-adminsdk-fbsvc-b99ab182cc.json')

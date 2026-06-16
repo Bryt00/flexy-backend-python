@@ -8,6 +8,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 @shared_task
+def send_fcm_push_task(user_id, title, message, data=None):
+    """
+    Background task to send FCM push via Celery/RabbitMQ
+    """
+    try:
+        from django.conf import settings
+        from django.utils.module_loading import import_string
+        
+        provider_class = import_string(settings.ACTIVE_PUSH_PROVIDER)
+        provider = provider_class()
+        provider.send_push(user_id=user_id, title=title, message=message, data=data)
+    except Exception as e:
+        logger.error(f"Failed to execute FCM push task: {e}")
+
+@shared_task
 def send_campaign_task(campaign_id):
     """
     Background task to broadcast a marketing message to a target audience.

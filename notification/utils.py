@@ -30,10 +30,15 @@ def send_notification(user, title, body, type='PUSH', ref_id=None, android_chann
 
     # 2. Remote Push via Provider
     if type == 'PUSH':
-        provider = get_push_provider()
-        if provider:
-            data = {'ref_id': str(ref_id)} if ref_id else {}
-            provider.send_push(user_id=str(user.id), title=title, message=body, data=data, android_channel_id=android_channel_id, android_sound=android_sound, ios_sound=ios_sound)
+        data = {'ref_id': str(ref_id)} if ref_id else {}
+        from .tasks import send_fcm_push_task
+        # Dispatch via Celery
+        send_fcm_push_task.delay(
+            user_id=str(user.id),
+            title=title if isinstance(title, str) else title.get('en', 'Notification'),
+            message=body if isinstance(body, str) else body.get('en', 'You have a new notification.'),
+            data=data
+        )
 
     # 2. Broadcast via WebSockets
     channel_layer = get_channel_layer()

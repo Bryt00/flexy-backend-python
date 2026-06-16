@@ -1,6 +1,7 @@
 from rest_framework import serializers, viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 from .models import Notification
 
@@ -36,3 +37,26 @@ class NotificationViewSet(viewsets.ModelViewSet):
         notification.is_read = True
         notification.save()
         return Response(self.get_serializer(notification).data)
+
+class FCMDeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = __import__('notification').models.FCMDevice
+        fields = ['registration_id', 'device_id']
+
+class RegisterFCMTokenView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=FCMDeviceSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        registration_id = request.data.get('registration_id')
+        device_id = request.data.get('device_id')
+        
+        if not registration_id or not device_id:
+            return Response({"error": "registration_id and device_id are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        device, created = __import__('notification').models.FCMDevice.objects.update_or_create(
+            device_id=device_id,
+            defaults={'user': request.user, 'registration_id': registration_id}
+        )
+        
+        return Response({"status": "success", "message": "FCM token registered"})

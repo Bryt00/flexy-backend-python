@@ -371,6 +371,7 @@ def ride_detail(request, ride_id):
     return render(request, 'staff_portal/dashboards/ride_detail.html', context)
 
 from django.shortcuts import get_object_or_404
+from notification.providers.fcm import FCMProvider
 
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_support, login_url='staff_portal:login')
@@ -388,6 +389,16 @@ def review_document(request, pk):
             verification.status = 'rejected'
             verification.rejected_reason = request.POST.get('rejected_reason', 'Documents did not meet criteria.')
             verification.save()
+            
+            # Send Push Notification to Driver
+            fcm = FCMProvider()
+            fcm.send_push(
+                user_id=verification.driver.user.id,
+                title="Documents Rejected",
+                message=f"Your documents were rejected: {verification.rejected_reason}. Please re-upload.",
+                data={'type': 'document_rejected'}
+            )
+            
             messages.warning(request, f"Rejected documents for {verification.driver.email}")
             
         return redirect('staff_portal:support_dashboard')

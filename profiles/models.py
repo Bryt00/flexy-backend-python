@@ -110,11 +110,47 @@ class DriverVerification(models.Model):
     verified_at = models.DateTimeField(blank=True, null=True)
     rejected_reason = models.TextField(blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        was_verified = False
+        if not is_new:
+            try:
+                was_verified = DriverVerification.objects.get(pk=self.pk).is_verified
+            except DriverVerification.DoesNotExist:
+                pass
+        
+        is_becoming_verified = self.is_verified and (is_new or not was_verified)
+        
+        super().save(*args, **kwargs)
+        
+        if is_becoming_verified:
+            from django.apps import apps
+            
+            # 1. Sync Vehicles
+            Vehicle = apps.get_model('vehicles', 'Vehicle')
+            vehicles = Vehicle.objects.filter(driver=self.driver)
+            
+            # Determine the vehicle type based on assigned category
+            vehicle_type = self.assigned_category if self.assigned_category != 'none' else 'go'
+            
+            vehicles.update(
+                is_verified=True,
+                is_active=True,
+                type=vehicle_type
+            )
+            
+            # 2. Sync Subscription with 14-day Free Trial
+            DriverSubscription = apps.get_model('subscriptions', 'DriverSubscription')
+            sub, created = DriverSubscription.objects.get_or_create(profile=self.driver)
+            if not sub.is_trial_used:
+                sub.trial_end_date = timezone.now() + timezone.timedelta(days=14)
+                sub.is_trial_used = True
+                sub.save()
+
     def approve(self):
         """
         Approves the verification and synchronizes related models (Vehicles, Subscriptions).
         """
-        from django.apps import apps
         from django.utils import timezone
         
         self.status = 'VERIFIED'
@@ -123,28 +159,7 @@ class DriverVerification(models.Model):
         self.rejected_reason = None
         self.save()
 
-        # 1. Sync Vehicles
-        Vehicle = apps.get_model('vehicles', 'Vehicle')
-        vehicles = Vehicle.objects.filter(driver=self.driver)
-        
-        # Determine the vehicle type based on assigned category
-        vehicle_type = self.assigned_category if self.assigned_category != 'none' else 'go'
-        
-        vehicles.update(
-            is_verified=True,
-            is_active=True,
-            type=vehicle_type
-        )
-
-        # 2. Sync Subscription with 14-day Free Trial
-        DriverSubscription = apps.get_model('subscriptions', 'DriverSubscription')
-        sub, created = DriverSubscription.objects.get_or_create(profile=self.driver)
-        if not sub.is_trial_used:
-            sub.trial_end_date = timezone.now() + timezone.timedelta(days=14)
-            sub.is_trial_used = True
-            sub.save()
-
-        # 3. Notify the user
+        # Notify the user
         title = "Account Verified!"
         body = "Congratulations! Your driver account has been approved. You can now start earning."
         send_notification(self.driver.user, title, body, type='PUSH')

@@ -75,3 +75,4 @@ wcwidth==0.6.0
 zope.interface==8.3
 django-redis
 whitenoise>=6.6.0
+firebase-admin==7.4.0

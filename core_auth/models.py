@@ -52,6 +52,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
+        try:
+            if hasattr(self, 'profile') and self.profile.full_name:
+                return f"{self.profile.full_name} ({self.email})"
+        except Exception:
+            pass
         return self.email
 
 class OTPCode(models.Model):

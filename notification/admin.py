@@ -2,6 +2,8 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import Notification, Campaign
 from .tasks import send_campaign_task
+from .utils import send_notification
+from django.utils import timezone
 
 @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):
@@ -10,6 +12,22 @@ class NotificationAdmin(ModelAdmin):
     list_filter = ('type', 'is_read', 'created_at')
     search_fields = ('user__email', 'title', 'body')
     readonly_fields = ('created_at',)
+    actions = ['send_mass_notification']
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not change:
+            try:
+                send_notification(obj.user, obj.title, obj.body)
+                obj.sent_at = timezone.now()
+                obj.save()
+            except Exception as e:
+                self.message_user(request, f"Notification saved but push failed: {e}", level='error')
+
+    def send_mass_notification(self, request, queryset):
+        self.message_user(request, "Use the Campaigns section to send mass notifications to all users.", level='warning')
+    
+    send_mass_notification.short_description = "⚠️ To send to ALL users, use Campaigns instead"
 
 @admin.register(Campaign)
 class CampaignAdmin(ModelAdmin):

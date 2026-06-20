@@ -31,6 +31,12 @@ def send_notification(user, title, body, type='PUSH', ref_id=None, android_chann
     # 2. Remote Push via Provider
     if type == 'PUSH':
         data = {'ref_id': str(ref_id)} if ref_id else {}
+        if android_channel_id:
+            data['android_channel_id'] = android_channel_id
+        if android_sound:
+            data['android_sound'] = android_sound
+        if ios_sound:
+            data['ios_sound'] = ios_sound
         from .tasks import send_fcm_push_task
         
         celery_running = False

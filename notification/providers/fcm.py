@@ -18,6 +18,13 @@ class FCMProvider(PushNotificationProvider):
             'body': str(message),
         })
         
+        if android_channel_id:
+            payload_data['android_channel_id'] = str(android_channel_id)
+        if android_sound:
+            payload_data['android_sound'] = str(android_sound)
+        if ios_sound:
+            payload_data['ios_sound'] = str(ios_sound)
+            
         # All values in data payload must be strings for FCM
         payload_data = {str(k): str(v) for k, v in payload_data.items()}
 

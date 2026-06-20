@@ -198,8 +198,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 payload = data.get('data')
                 if payload:
                     await self.handle_chat_message(payload)
+            elif event_type == 'chat_ack':
+                message_ids = data.get('data', {}).get('message_ids', [])
+                if message_ids:
+                    await self.handle_chat_ack(message_ids)
         except Exception as e:
             print(f"Error in chat receive: {e}")
+
+    async def handle_chat_ack(self, message_ids):
+        @sync_to_async
+        def delete_acked_messages():
+            ChatMessage.objects.filter(id__in=message_ids, ride_id=self.ride_id).delete()
+            
+        try:
+            await delete_acked_messages()
+        except Exception as e:
+            print(f"Failed to delete acked messages: {e}")
 
     async def handle_chat_message(self, data):
         content = data.get('content')

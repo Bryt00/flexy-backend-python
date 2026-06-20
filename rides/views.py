@@ -147,7 +147,7 @@ class RideViewSet(viewsets.ModelViewSet):
         """
         rides = self.get_queryset().filter(
             is_scheduled=True, 
-            status='pending',
+            status__in=['pending', 'requested'],
             driver__isnull=True,
             scheduled_for__gt=timezone.now()
         ).order_by('scheduled_for')
@@ -198,9 +198,20 @@ class RideViewSet(viewsets.ModelViewSet):
             )
             
             # Explicitly set is_scheduled to True to ensure it wins over any data in the serializer
+            needs_update = False
+            update_fields = []
             if not ride.is_scheduled:
                 ride.is_scheduled = True
-                ride.save(update_fields=['is_scheduled'])
+                needs_update = True
+                update_fields.append('is_scheduled')
+            if ride.status != 'pending':
+                ride.status = 'pending'
+                needs_update = True
+                update_fields.append('status')
+                
+            if needs_update:
+                ride.save(update_fields=update_fields)
+                
             return Response(self.get_serializer(ride).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -648,21 +659,30 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post', 'put'])
     def accept(self, request, pk=None):
-        ride = self.get_object()
-        print(f"DEBUG: Driver {request.user.id} attempting to accept ride {ride.id}. Current status: {ride.status}")
+        from django.db import transaction
+        from .models import Ride
         
-        if ride.status != 'pending' and ride.status != 'requested':
-            print(f"DEBUG: Acceptance failed for ride {ride.id}. Status is {ride.status}")
-            return Response({"error": "Ride already accepted or cancelled"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Profile check for driver name extraction
-        if not hasattr(request.user, 'profile'):
-             print(f"DEBUG: Acceptance failed for ride {ride.id}. Driver {request.user.id} has no profile.")
-             return Response({"error": "User has no profile"}, status=status.HTTP_400_BAD_REQUEST)
-             
-        ride.driver = request.user
-        ride.status = 'accepted'
-        ride.save()
+        with transaction.atomic():
+            try:
+                ride = Ride.objects.select_for_update().get(pk=pk)
+            except Ride.DoesNotExist:
+                return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            self.check_object_permissions(request, ride)
+            print(f"DEBUG: Driver {request.user.id} attempting to accept ride {ride.id}. Current status: {ride.status}")
+            
+            if ride.status != 'pending' and ride.status != 'requested':
+                print(f"DEBUG: Acceptance failed for ride {ride.id}. Status is {ride.status}")
+                return Response({"error": "Ride already accepted or cancelled"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Profile check for driver name extraction
+            if not hasattr(request.user, 'profile'):
+                 print(f"DEBUG: Acceptance failed for ride {ride.id}. Driver {request.user.id} has no profile.")
+                 return Response({"error": "User has no profile"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            ride.driver = request.user
+            ride.status = 'accepted'
+            ride.save()
         
         # Sync Vehicle Status to 'riding'
         from profiles.services.tracking_service import TrackingService

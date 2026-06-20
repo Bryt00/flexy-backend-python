@@ -18,7 +18,20 @@ def send_fcm_push_task(user_id, title, message, data=None):
         
         provider_class = import_string(settings.ACTIVE_PUSH_PROVIDER)
         provider = provider_class()
-        provider.send_push(user_id=user_id, title=title, message=message, data=data)
+        
+        android_channel_id = data.pop('android_channel_id', None) if data else None
+        android_sound = data.pop('android_sound', None) if data else None
+        ios_sound = data.pop('ios_sound', None) if data else None
+
+        provider.send_push(
+            user_id=user_id, 
+            title=title, 
+            message=message, 
+            data=data,
+            android_channel_id=android_channel_id,
+            android_sound=android_sound,
+            ios_sound=ios_sound
+        )
     except Exception as e:
         logger.error(f"Failed to execute FCM push task: {e}")
 
@@ -27,6 +40,8 @@ def send_campaign_task(campaign_id):
     """
     Background task to broadcast a marketing message to a target audience.
     """
+    from django.db import close_old_connections
+    close_old_connections()
     try:
         campaign = Campaign.objects.get(id=campaign_id)
         campaign.status = 'SENDING'
@@ -84,6 +99,8 @@ def send_campaign_task(campaign_id):
             campaign.save()
         except:
             pass
+    finally:
+        close_old_connections()
 
 @shared_task
 def check_document_expirations():

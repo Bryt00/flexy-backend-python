@@ -15,12 +15,36 @@ class RideStopInline(admin.TabularInline):
 class RideAdmin(ModelAdmin):
     list_per_page = 20
     inlines = [RideStopInline]
-    list_display = ('short_id', 'rider', 'driver', 'status_badge', 'type', 'fare_display', 'has_incidents', 'created_at')
+    list_display = ('short_id', 'rider_display', 'driver_display', 'status_badge', 'type', 'fare_display', 'has_incidents', 'created_at')
     list_filter = ('status', 'type', 'is_scheduled', 'preferred_vehicle_type', 'created_at', 'updated_at', 'scheduled_for')
     search_fields = ('id', 'rider__email', 'driver__user__email', 'pickup_address', 'dropoff_address')
     readonly_fields = ('id', 'created_at', 'updated_at', 'dispatch_metadata', 'has_incidents')
     list_per_page = 30
     ordering = ('-created_at',)
+
+    def rider_display(self, obj):
+        if not obj.rider:
+            return "—"
+        try:
+            full_name = obj.rider.profile.full_name
+            if full_name:
+                return f"{full_name} ({obj.rider.email})"
+        except Exception:
+            pass
+        return obj.rider.email
+    rider_display.short_description = 'Rider'
+
+    def driver_display(self, obj):
+        if not obj.driver:
+            return "—"
+        try:
+            full_name = obj.driver.profile.full_name
+            if full_name:
+                return f"{full_name} ({obj.driver.email})"
+        except Exception:
+            pass
+        return obj.driver.email
+    driver_display.short_description = 'Driver'
 
     fieldsets = (
         ('Ride Identity', {

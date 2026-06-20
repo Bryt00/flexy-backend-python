@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header { background-color: #1e293b; padding: 40px; color: white; text-align: center; }
+        .receipt-no { font-size: 14px; opacity: 1.0; margin-top: 10px; color: #94a3b8; }
+        .fare-total { font-size: 48px; font-weight: 700; margin: 20px 0; color: #00B4FF; }
+        .section { padding: 30px 40px; border-bottom: 1px solid #f1f5f9; }
+        .item-row { display: flex; justify-content: space-between; margin-bottom: 15px; color: #334155; font-size: 15px; }
+        .item-label { font-weight: 500; }
+        .item-value { text-align: right; }
+        .total-row { display: flex; justify-content: space-between; padding: 20px 40px; background: #f8fafc; font-size: 18px; font-weight: 700; color: #1e293b; }
+        .footer { padding: 30px; text-align: center; color: #94a3b8; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h3>Subscription Payment Completed</h3>
+            <div class="fare-total">GHS {{ payment.amount|floatformat:2 }}</div>
+            <div class="receipt-no">Receipt Ref: {{ payment.paystack_reference }}</div>
+        </div>
+
+        <div class="section">
+            <h4 style="margin-top: 0; color: #64748b; font-size: 12px; text-transform: uppercase;">Plan Details</h4>
+            <div class="item-row">
+                <span class="item-label">Plan Name</span>
+                <span class="item-value">{{ payment.plan.name }}</span>
+            </div>
+            <div class="item-row">
+                <span class="item-label">Category</span>
+                <span class="item-value">{{ payment.plan.get_category_display }}</span>
+            </div>
+            <div class="item-row">
+                <span class="item-label">Duration</span>
+                <span class="item-value">{{ payment.plan.duration_days }} Days</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h4 style="margin-top: 0; color: #64748b; font-size: 12px; text-transform: uppercase;">Duration & Validity</h4>
+            <div class="item-row">
+                <span class="item-label">Start Date</span>
+                <span class="item-value">{{ subscription.start_date|date:"Y-m-d H:i" }}</span>
+            </div>
+            <div class="item-row">
+                <span class="item-label">Expiry Date</span>
+                <span class="item-value">{{ subscription.expiry_date|date:"Y-m-d H:i" }}</span>
+            </div>
+        </div>
+
+        <div class="total-row">
+            <span>Total Charged</span>
+            <span>GHS {{ payment.amount|floatformat:2 }}</span>
+        </div>
+
+        <div class="footer">
+            <p>User: {{ user.email }}</p>
+            <p>Thank you for choosing {{ app_name }}!</p>
+        </div>
+    </div>
+</body>
+</html>

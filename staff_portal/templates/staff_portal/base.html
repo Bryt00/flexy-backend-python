@@ -63,17 +63,12 @@
             inset: 0;
             z-index: -10;
             pointer-events: none;
-            background-color: #010409;
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(0, 180, 255, 0.08) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(163, 230, 53, 0.06) 0px, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.4) 0%, #010409 100%);
+            background-color: #030712;
         }
 
         .glass-panel {
-            background-color: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: #0F172A;
+            border: 1px solid #1E293B;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
@@ -89,7 +84,7 @@
             transition: all 0.3s;
             cursor: pointer;
             color: white;
-            border: 1px solid rgba(0, 180, 255, 0.2);
+            border: 1px solid #005691;
             background: linear-gradient(135deg, #00B4FF 0%, #005691 100%);
             box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
         }
@@ -109,15 +104,14 @@
             display: inline-block;
         }
         .status-pill-success {
-            background-color: rgba(163, 230, 53, 0.1);
+            background-color: #14532D;
             color: #A3E635;
-            border-color: rgba(163, 230, 53, 0.3);
-            box-shadow: 0 0 15px rgba(163, 230, 53, 0.1);
+            border-color: #15803D;
         }
         .status-pill-warning {
-            background-color: rgba(245, 158, 11, 0.1);
+            background-color: #78350F;
             color: #F59E0B;
-            border-color: rgba(245, 158, 11, 0.3);
+            border-color: #B45309;
         }
 
         /* Sidebar Item Hover */
@@ -125,9 +119,15 @@
             transition: all 0.2s ease-in-out;
         }
         .sidebar-link:hover {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: #1E293B;
             color: #00B4FF;
             border-left: 3px solid #00B4FF;
+        }
+
+        /* Solid Input Overrides */
+        .cyber-input {
+            background-color: #020617 !important;
+            border-color: #1E293B !important;
         }
     </style>
 </head>
@@ -139,7 +139,7 @@
         <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-slate-900 border-r border-white/10 flex flex-col h-screen fixed md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen fixed md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6">
                 <h1 class="text-2xl font-outfit text-white tracking-widest uppercase">
                     Flexy<span class="text-primary">Ride</span>
@@ -209,9 +209,9 @@
                 </ul>
             </nav>
 
-            <div class="p-6 border-t border-white/10">
+            <div class="p-6 border-t border-slate-800">
                 <div class="flex items-center mb-4">
-                    <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">
+                    <div class="w-8 h-8 rounded-full bg-[#002f4a] text-primary flex items-center justify-center font-bold border border-primary/30">
                         {{ request.user.email|make_list|first|upper }}
                     </div>
                     <div class="ml-3">
@@ -230,7 +230,7 @@
         <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
             
             <!-- Top Navbar -->
-            <header class="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-md z-30 relative">
+            <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900 z-30 relative">
                 <div class="flex items-center">
                     <button id="mobileMenuBtn" class="md:hidden mr-4 text-white/70 hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -245,19 +245,19 @@
                             <p class="text-xs font-bold">{{ request.user.email }}</p>
                             <p class="text-[10px] text-primary uppercase tracking-widest">{{ request.user.role }}</p>
                         </div>
-                        <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold border border-primary/30">
+                        <div class="w-8 h-8 rounded-full bg-[#002f4a] text-primary flex items-center justify-center font-bold border border-primary/30">
                             {{ request.user.email|make_list|first|upper }}
                         </div>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     
                     <!-- Dropdown Menu -->
-                    <div class="absolute right-0 mt-2 w-48 bg-[#0A0F1C] border border-white/10 rounded-lg shadow-xl overflow-hidden hidden group-hover:block transition-all z-50">
-                        <div class="p-4 border-b border-white/10 sm:hidden">
+                    <div class="absolute right-0 mt-2 w-48 bg-[#0A0F1C] border border-slate-800 rounded-lg shadow-xl overflow-hidden hidden group-hover:block transition-all z-50">
+                        <div class="p-4 border-b border-slate-800 sm:hidden">
                             <p class="text-xs font-bold text-white">{{ request.user.email }}</p>
                             <p class="text-[10px] text-primary uppercase tracking-widest">{{ request.user.role }}</p>
                         </div>
-                        <a href="{% url 'staff_portal:logout' %}" class="flex items-center px-4 py-3 text-sm text-error/80 hover:text-error hover:bg-white/5 transition-colors">
+                        <a href="{% url 'staff_portal:logout' %}" class="flex items-center px-4 py-3 text-sm text-error/80 hover:text-error hover:bg-slate-800 transition-colors">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                             Sign Out
                         </a>

@@ -32,13 +32,35 @@ def send_notification(user, title, body, type='PUSH', ref_id=None, android_chann
     if type == 'PUSH':
         data = {'ref_id': str(ref_id)} if ref_id else {}
         from .tasks import send_fcm_push_task
-        # Dispatch via Celery
-        send_fcm_push_task.delay(
-            user_id=str(user.id),
-            title=title if isinstance(title, str) else title.get('en', 'Notification'),
-            message=body if isinstance(body, str) else body.get('en', 'You have a new notification.'),
-            data=data
-        )
+        
+        celery_running = False
+        try:
+            from celery import current_app
+            insp = current_app.control.inspect()
+            if insp and insp.stats():
+                celery_running = True
+        except Exception:
+            pass
+
+        if celery_running:
+            send_fcm_push_task.delay(
+                user_id=str(user.id),
+                title=title if isinstance(title, str) else title.get('en', 'Notification'),
+                message=body if isinstance(body, str) else body.get('en', 'You have a new notification.'),
+                data=data
+            )
+        else:
+            import threading
+            threading.Thread(
+                target=send_fcm_push_task,
+                args=(
+                    str(user.id),
+                    title if isinstance(title, str) else title.get('en', 'Notification'),
+                    body if isinstance(body, str) else body.get('en', 'You have a new notification.'),
+                    data
+                ),
+                daemon=True
+            ).start()
 
     # 2. Broadcast via WebSockets
     channel_layer = get_channel_layer()

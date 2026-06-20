@@ -406,7 +406,12 @@ UNFOLD = {
                         "link": "/headquarters/subscriptions/subscriptionpayment/",
                     },
                     {
-                        "title": "Marketing Campaigns",
+                        "title": "App Banners",
+                        "icon": "view_carousel",
+                        "link": "/headquarters/marketing/campaign/",
+                    },
+                    {
+                        "title": "Push Campaigns",
                         "icon": "campaign",
                         "link": "/headquarters/notification/campaign/",
                     },
@@ -703,4 +708,9 @@ CKEDITOR_5_CONFIGS = {
 
 # --- PUSH NOTIFICATIONS ---
 ACTIVE_PUSH_PROVIDER = 'notification.providers.fcm.FCMProvider'
-FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'flexyride-1995-firebase-adminsdk-fbsvc-b99ab182cc.json')
+FIREBASE_CREDENTIALS_RELATIVE_PATH = env('FIREBASE_CREDENTIALS_PATH', default='firebase-service-account.json')
+if os.path.isabs(FIREBASE_CREDENTIALS_RELATIVE_PATH):
+    FIREBASE_CREDENTIALS_PATH = FIREBASE_CREDENTIALS_RELATIVE_PATH
+else:
+    FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, FIREBASE_CREDENTIALS_RELATIVE_PATH)
+

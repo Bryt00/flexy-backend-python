@@ -5,9 +5,16 @@ from .models import User, DeletionRequest
 @admin.register(User)
 class UserAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('email', 'role', 'is_active', 'created_at')
+    list_display = ('email', 'full_name', 'role', 'is_active', 'created_at')
     list_filter = ('role', 'is_active', 'created_at', 'updated_at')
     search_fields = ('email',)
+    
+    def full_name(self, obj):
+        try:
+            return obj.profile.full_name or "—"
+        except Exception:
+            return "—"
+    full_name.short_description = 'Full Name'
     
     # Secure the form by excluding sensitive fields
     exclude = ('password',)

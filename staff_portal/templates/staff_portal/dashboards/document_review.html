@@ -6,7 +6,7 @@
         <h2 class="text-3xl font-outfit font-bold tracking-tight">Document Review</h2>
         <p class="text-white/50 mt-1">Reviewing verification for Driver Profile ID: {{ verification.driver_id }}</p>
     </div>
-    <a href="{% url 'staff_portal:support_dashboard' %}" class="cyber-button px-4 py-2 text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-white">
+    <a href="{% url 'staff_portal:support_dashboard' %}" class="cyber-button px-4 py-2 text-sm bg-slate-800 border border-slate-700 hover:bg-slate-750 text-white">
         &larr; Back to Dashboard
     </a>
 </div>
@@ -17,11 +17,11 @@
         <div class="glass-panel p-6 rounded-2xl">
             <h3 class="text-lg font-outfit font-bold mb-4">Driver's License</h3>
             {% if verification.license_url %}
-            <div class="bg-black/30 rounded-lg p-2 border border-white/5 mb-2">
+            <div class="bg-slate-950 rounded-lg p-2 border border-slate-800 mb-2">
                 <img src="{{ verification.license_url }}" alt="License" class="w-full max-h-[300px] object-contain rounded">
             </div>
             {% else %}
-            <div class="bg-black/30 rounded-lg p-12 text-center border border-white/5 mb-2">
+            <div class="bg-slate-950 rounded-lg p-12 text-center border border-slate-800 mb-2">
                 <p class="text-white/50">No license uploaded</p>
             </div>
             {% endif %}
@@ -31,11 +31,11 @@
         <div class="glass-panel p-6 rounded-2xl">
             <h3 class="text-lg font-outfit font-bold mb-4">ID Card</h3>
             {% if verification.id_card_url %}
-            <div class="bg-black/30 rounded-lg p-2 border border-white/5 mb-2">
+            <div class="bg-slate-950 rounded-lg p-2 border border-slate-800 mb-2">
                 <img src="{{ verification.id_card_url }}" alt="ID Card" class="w-full max-h-[300px] object-contain rounded">
             </div>
             {% else %}
-            <div class="bg-black/30 rounded-lg p-12 text-center border border-white/5 mb-2">
+            <div class="bg-slate-950 rounded-lg p-12 text-center border border-slate-800 mb-2">
                 <p class="text-white/50">No ID Card uploaded</p>
             </div>
             {% endif %}
@@ -65,16 +65,44 @@
                     Approve Driver
                 </button>
                 
-                <div class="pt-4 border-t border-white/10 mt-4">
-                    <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Rejection Reason</label>
-                    <textarea name="rejected_reason" rows="3" class="cyber-input w-full p-3 mb-3" placeholder="Explain why the documents were rejected..."></textarea>
+                <div class="pt-4 border-t border-slate-800 mt-4">
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Granular Rejection Checklist</label>
+                    <div class="space-y-2 mb-4 text-sm text-white/70">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="reason-check rounded bg-slate-950 border-slate-800 text-primary focus:ring-0" value="Driver's license is blurry or unreadable.">
+                            <span>License Blurry</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="reason-check rounded bg-slate-950 border-slate-800 text-primary focus:ring-0" value="Driver's license is expired.">
+                            <span>License Expired</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="reason-check rounded bg-slate-950 border-slate-800 text-primary focus:ring-0" value="ID card is blurry or unreadable.">
+                            <span>ID Card Blurry</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="reason-check rounded bg-slate-950 border-slate-800 text-primary focus:ring-0" value="ID card is expired or nearing expiry.">
+                            <span>ID Card Expired</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="reason-check rounded bg-slate-950 border-slate-800 text-primary focus:ring-0" value="Insurance document is invalid or expired.">
+                            <span>Insurance Invalid</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" class="reason-check rounded bg-slate-950 border-slate-800 text-primary focus:ring-0" value="Roadworthy certificate is invalid or expired.">
+                            <span>Roadworthy Invalid</span>
+                        </label>
+                    </div>
+
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Detailed Reason</label>
+                    <textarea name="rejected_reason" rows="3" class="cyber-input w-full p-3 mb-3" placeholder="Select checkboxes above or explain manually..."></textarea>
                     <button type="submit" name="action" value="reject" class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-500 border border-red-500/50 font-bold py-3 rounded-lg transition-colors">
                         Reject Documents
                     </button>
                 </div>
             </form>
             {% else %}
-            <div class="bg-black/20 p-4 rounded-lg border border-white/5">
+            <div class="bg-slate-950 p-4 rounded-lg border border-slate-800">
                 <p class="text-sm text-white/70">This verification has already been processed.</p>
                 {% if verification.rejected_reason %}
                 <p class="text-xs text-red-400 mt-2"><strong>Reason:</strong> {{ verification.rejected_reason }}</p>
@@ -85,3 +113,23 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+    const reasonChecks = document.querySelectorAll('.reason-check');
+    const textarea = document.querySelector('textarea[name="rejected_reason"]');
+
+    reasonChecks.forEach(check => {
+        check.addEventListener('change', () => {
+            const selectedReasons = [];
+            reasonChecks.forEach(c => {
+                if (c.checked) {
+                    selectedReasons.push(c.value);
+                }
+            });
+            textarea.value = selectedReasons.join('\n');
+        });
+    });
+</script>
+{% endblock %}
+

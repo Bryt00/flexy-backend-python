@@ -41,12 +41,33 @@ def send_campaign_task(campaign_id):
             users = User.objects.filter(is_active=True, role='passenger')
 
         count = 0
+        from django.core.mail import send_mail
+        from django.template.loader import render_to_string
+        from django.conf import settings
+
         for user in users:
             try:
+                # 1. Send push notification
                 send_notification(user, campaign.title, campaign.body)
+                
+                # 2. Send email
+                context = {
+                    'title': campaign.title,
+                    'body': campaign.body,
+                    'user': user
+                }
+                html_message = render_to_string('emails/campaign.html', context)
+                send_mail(
+                    campaign.title,
+                    campaign.body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    html_message=html_message,
+                    fail_silently=True,
+                )
                 count += 1
             except Exception as e:
-                logger.error(f"Failed to send campaign notification to {user.email}: {e}")
+                logger.error(f"Failed to send campaign notification/email to {user.email}: {e}")
 
         campaign.status = 'SENT'
         campaign.sent_at = timezone.now()

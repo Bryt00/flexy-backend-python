@@ -21,11 +21,11 @@ class ActiveAdsAPIView(APIView):
         today = timezone.localdate()
         app_type = request.query_params.get('app_type', '').upper()
         
-        # Enforce 14 days display limit dynamically
+        # Enforce 7 days display limit dynamically
         live_ads = AdBooking.objects.filter(
             status='LIVE',
             week_start_date__lte=today,
-            week_start_date__gte=today - datetime.timedelta(days=14)
+            week_start_date__gte=today - datetime.timedelta(days=7)
         ).order_by('-amount')
         
         if app_type in ['PASSENGER', 'DRIVER']:

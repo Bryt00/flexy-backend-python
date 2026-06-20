@@ -153,6 +153,30 @@ class RideViewSet(viewsets.ModelViewSet):
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
+    @action(detail=True, methods=['post'], url_path='schedule/accept')
+    def schedule_accept(self, request, pk=None):
+        ride = self.get_object()
+        if ride.status not in ['pending', 'requested']:
+            return Response({"error": "Ride is not in pending status"}, status=status.HTTP_400_BAD_REQUEST)
+        ride.driver = request.user
+        ride.status = 'accepted'
+        ride.save()
+        self._broadcast_ride_update(ride, 'status_updated')
+        return Response(self.get_serializer(ride).data)
+
+    @action(detail=True, methods=['post'], url_path='schedule/start')
+    def schedule_start(self, request, pk=None):
+        ride = self.get_object()
+        ride.status = 'accepted'
+        ride.save()
+        
+        # Sync Vehicle Status to 'riding'
+        from profiles.services.tracking_service import TrackingService
+        TrackingService.set_driver_ride_status(str(request.user.id), is_riding=True)
+        
+        self._broadcast_ride_update(ride, 'status_updated')
+        return Response(self.get_serializer(ride).data)
+
     @action(detail=False, methods=['post'])
     def schedule(self, request):
         """

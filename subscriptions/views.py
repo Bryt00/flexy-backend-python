@@ -148,6 +148,25 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             # Invalidate subscription cache after successful payment
             invalidate_user_cache(request.user.id, 'sub_status')
             invalidate_user_cache(request.user.id, 'sub_plans')
+            
+            # Send Email Receipt and In-app Notification
+            try:
+                from integrations.email_service import EmailService
+                EmailService.send_subscription_receipt_email(subscription, payment)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send email receipt in verify subscription: {e}")
+                
+            try:
+                from notification.utils import send_notification
+                title = "Subscription Activated! 🚀"
+                body = f"Your subscription for '{payment.plan.name}' has been successfully completed. Expiring on {subscription.expiry_date.strftime('%Y-%m-%d %H:%M')}."
+                send_notification(request.user, title, body, type='PUSH')
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send in-app notification in verify subscription: {e}")
                 
             return Response({
                 "message": "Subscription activated successfully",
@@ -159,3 +178,4 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             "error": "Payment verification failed",
             "message": response.get('message', 'Transaction was not successful')
         }, status=status.HTTP_400_BAD_REQUEST)
+

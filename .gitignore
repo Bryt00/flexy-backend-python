@@ -78,3 +78,6 @@ send_test.py
 send_test_25.py
 send_test_tls.py
 test_panel_host.py
+.secret/
+firebase_service_account.json
+firebase-service-account.json

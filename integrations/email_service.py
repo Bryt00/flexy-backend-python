@@ -257,3 +257,38 @@ class EmailService:
             logger.info(f"SOS Alert email sent for incident {incident.id}")
         except Exception as e:
             logger.error(f"Failed to send SOS Alert email: {str(e)}")
+
+    @staticmethod
+    def send_subscription_receipt_email(subscription, payment):
+        """
+        Sends an email receipt to the driver after completing a subscription.
+        """
+        import threading
+        subject = f'Your FlexyRide Subscription Receipt - {payment.paystack_reference}'
+        context = {
+            'subscription': subscription,
+            'payment': payment,
+            'user': subscription.profile.user,
+            'app_name': 'FlexyRide'
+        }
+        
+        html_message = render_to_string('emails/subscription_receipt.html', context)
+        plain_message = f"Thank you! Your subscription for {payment.plan.name} has been completed.\n\nAmount: GHS {payment.amount}\nReference: {payment.paystack_reference}\nExpiry: {subscription.expiry_date.strftime('%Y-%m-%d %H:%M')}"
+
+        def send_email_bg():
+            try:
+                send_mail(
+                    subject,
+                    plain_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [subscription.profile.user.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                logger.info(f"Subscription receipt email sent to {subscription.profile.user.email}")
+            except Exception as e:
+                logger.error(f"Failed to send subscription receipt email: {str(e)}")
+
+        # Dispatch the SMTP connection process in a background thread
+        threading.Thread(target=send_email_bg, daemon=True).start()
+

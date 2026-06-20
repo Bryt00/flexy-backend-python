@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Outfit', 'Inter', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { background-color: #00B4FF; padding: 40px; text-align: center; color: white; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .content { padding: 40px; color: #333333; line-height: 1.6; }
+        .content p { font-size: 16px; margin: 0 0 16px 0; }
+        .footer { padding: 20px; text-align: center; color: #999999; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ title }}</h1>
+        </div>
+        <div class="content">
+            <p>Hi {{ user.profile.full_name|default:"Member" }},</p>
+            <p>{{ body|linebreaksbr }}</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 FlexyRide Ltd. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

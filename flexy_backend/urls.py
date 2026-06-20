@@ -34,6 +34,7 @@ urlpatterns = [
     path('v1/website/', include('website.api_urls')),
     path('v1/settings/', include('core_settings.api_urls')),
     path('v1/admin/subscriptions/', include('subscriptions.api_urls')),
+    path('v1/marketing/', include('marketing.urls')),
     path('', include('marketing.urls')), # To match /campaigns/active
     
     # Generic API Auth (Standard DRF)

@@ -25,8 +25,21 @@ class CampaignAdmin(ModelAdmin):
                 self.message_user(request, f"Campaign '{campaign.title}' was already sent.", level='warning')
                 continue
             
-            # Trigger background task
-            send_campaign_task.delay(str(campaign.id))
+            # Trigger background task with Celery fallback
+            celery_running = False
+            try:
+                from celery import current_app
+                insp = current_app.control.inspect()
+                if insp and insp.stats():
+                    celery_running = True
+            except Exception:
+                pass
+
+            if celery_running:
+                send_campaign_task.delay(str(campaign.id))
+            else:
+                import threading
+                threading.Thread(target=send_campaign_task, args=(str(campaign.id),), daemon=True).start()
             
         self.message_user(request, f"Started sending {queryset.count()} campaign(s) in the background.")
     

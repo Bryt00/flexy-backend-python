@@ -91,7 +91,13 @@ class RegisterFCMTokenView(APIView):
             # Check if they have already received a welcome message
             has_welcomed = Notification.objects.filter(user=request.user, title__icontains="Welcome").exists()
             if not has_welcomed:
-                first_name = request.user.first_name or "there"
+                # Safely extract the first name from the user's profile
+                first_name = "there"
+                try:
+                    if hasattr(request.user, 'profile') and request.user.profile.full_name:
+                        first_name = request.user.profile.full_name.split()[0]
+                except Exception:
+                    pass
                 
                 title_setting = SiteSetting.objects.filter(key="WELCOME_PUSH_TITLE").first()
                 body_setting = SiteSetting.objects.filter(key="WELCOME_PUSH_BODY").first()

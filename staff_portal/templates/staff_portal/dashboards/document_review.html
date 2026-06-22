@@ -6,7 +6,7 @@
         <h2 class="text-3xl font-outfit font-bold tracking-tight">Document Review</h2>
         <p class="text-white/50 mt-1">Reviewing verification for Driver Profile ID: {{ verification.driver_id }}</p>
     </div>
-    <a href="{% url 'staff_portal:support_dashboard' %}" class="cyber-button px-4 py-2 text-sm bg-slate-800 border border-slate-700 hover:bg-slate-750 text-white">
+    <a href="{% url 'staff_portal:driver_verifications' %}" class="cyber-button px-4 py-2 text-sm bg-slate-800 border border-slate-700 hover:bg-slate-750 text-white">
         &larr; Back to Dashboard
     </a>
 </div>
@@ -40,6 +40,32 @@
             </div>
             {% endif %}
         </div>
+
+        <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-lg font-outfit font-bold mb-4">Insurance Certificate</h3>
+            {% if verification.insurance_url %}
+            <div class="bg-slate-950 rounded-lg p-2 border border-slate-800 mb-2">
+                <img src="{{ verification.insurance_url }}" alt="Insurance" class="w-full max-h-[300px] object-contain rounded">
+            </div>
+            {% else %}
+            <div class="bg-slate-950 rounded-lg p-12 text-center border border-slate-800 mb-2">
+                <p class="text-white/50">No insurance document uploaded</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-lg font-outfit font-bold mb-4">Roadworthy Certificate</h3>
+            {% if verification.roadworthy_url %}
+            <div class="bg-slate-950 rounded-lg p-2 border border-slate-800 mb-2">
+                <img src="{{ verification.roadworthy_url }}" alt="Roadworthy" class="w-full max-h-[300px] object-contain rounded">
+            </div>
+            {% else %}
+            <div class="bg-slate-950 rounded-lg p-12 text-center border border-slate-800 mb-2">
+                <p class="text-white/50">No roadworthy certificate uploaded</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Controls Panel -->
@@ -61,6 +87,16 @@
             {% if verification.status == 'pending' %}
             <form method="POST" action="{% url 'staff_portal:review_document' verification.id %}" class="space-y-4">
                 {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Assign Ride Category</label>
+                    <select name="assigned_category" class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none">
+                        <option value="go">Flexy Go</option>
+                        <option value="comfort">Flexy Comfort</option>
+                        <option value="xl">Flexy XL</option>
+                        <option value="exec">Flexy Executive</option>
+                        <option value="pragya">Flexy Pragya</option>
+                    </select>
+                </div>
                 <button type="submit" name="action" value="approve" class="w-full bg-brand-green hover:bg-brand-green/80 text-black font-bold py-3 rounded-lg transition-colors">
                     Approve Driver
                 </button>
@@ -95,7 +131,7 @@
                     </div>
 
                     <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Detailed Reason</label>
-                    <textarea name="rejected_reason" rows="3" class="cyber-input w-full p-3 mb-3" placeholder="Select checkboxes above or explain manually..."></textarea>
+                    <textarea name="rejected_reason" rows="3" class="cyber-input w-full p-3 mb-3 text-sm bg-black/50 border border-white/10 text-white rounded-lg focus:outline-none focus:border-primary" placeholder="Select checkboxes above or explain manually..."></textarea>
                     <button type="submit" name="action" value="reject" class="w-full bg-red-500/20 hover:bg-red-500/40 text-red-500 border border-red-500/50 font-bold py-3 rounded-lg transition-colors">
                         Reject Documents
                     </button>
@@ -108,6 +144,39 @@
                 <p class="text-xs text-red-400 mt-2"><strong>Reason:</strong> {{ verification.rejected_reason }}</p>
                 {% endif %}
             </div>
+            {% endif %}
+        </div>
+
+        <!-- Vehicle Information -->
+        <div class="glass-panel p-6 rounded-2xl">
+            <h3 class="text-lg font-outfit font-bold mb-4">Vehicle Information</h3>
+            {% if vehicles %}
+                {% for vehicle in vehicles %}
+                <div class="bg-white/5 p-4 rounded-xl border border-white/10 space-y-3 {% if not forloop.first %}mt-4{% endif %}">
+                    <div class="flex justify-between items-center">
+                        <span class="text-white font-bold">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.color }})</span>
+                        <span class="status-pill {% if vehicle.is_verified %}status-pill-success{% else %}status-pill-warning{% endif %}">
+                            {% if vehicle.is_verified %}Verified{% else %}Unverified{% endif %}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-white/70">
+                        <div><span class="text-white/40">Year:</span> {{ vehicle.year|default:"N/A" }}</div>
+                        <div><span class="text-white/40">Plate:</span> {{ vehicle.license_plate }}</div>
+                        <div><span class="text-white/40">Type:</span> {{ vehicle.get_type_display }}</div>
+                        <div><span class="text-white/40">Status:</span> {{ vehicle.status|title }}</div>
+                    </div>
+                    {% if vehicle.video_url %}
+                    <div class="pt-2 border-t border-white/5">
+                        <a href="{{ vehicle.video_url }}" target="_blank" class="text-xs text-primary hover:underline flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            View Vehicle Inspection Video
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-white/50 text-sm">No vehicles registered for this driver profile.</p>
             {% endif %}
         </div>
     </div>

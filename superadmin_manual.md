@@ -90,6 +90,9 @@ Fine-tuning the platform's behavior and marketing presence.
 *   **Key Features**:
     *   **`maps_country_restriction`**: Comma-separated list (e.g., `gh, ng`) to lock search to specific countries.
     *   **`surge_enabled`**: Global toggle for real-time demand-based pricing.
+    *   **Automated Push Notifications**: Customize the text for system-generated pushes:
+        *   `WELCOME_PUSH_TITLE` & `WELCOME_PUSH_BODY`: Sent when a user registers their first device (supports `{first_name}`).
+        *   `BIRTHDAY_PUSH_TITLE` & `BIRTHDAY_PUSH_BODY`: Sent to drivers annually on their birthday (supports `{first_name}`).
 
 ### 💰 Pricing Rules (`core_settings.PricingRule`)
 *   **Purpose**: Define how much a ride costs.

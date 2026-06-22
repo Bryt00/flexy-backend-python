@@ -19,19 +19,46 @@
                 <p class="text-xs text-white/50 uppercase tracking-widest font-bold mb-1">{{ setting.key }}</p>
                 
                 {% if request.user.role == 'super_admin' %}
-                <form method="POST" class="flex items-start space-x-2">
+                <form method="POST" class="flex items-center space-x-4">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="update_site_setting">
                     <input type="hidden" name="setting_id" value="{{ setting.id }}">
                     <div class="flex-1">
+                        {% if setting.is_boolean %}
+                        <div class="flex items-center space-x-3 my-2">
+                            <input type="checkbox" name="value" id="setting_{{ setting.id }}" class="w-5 h-5 rounded border-white/20 bg-black/50 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer" {% if setting.boolean_value %}checked{% endif %} onchange="this.form.submit()">
+                            <label for="setting_{{ setting.id }}" class="text-sm font-bold text-white cursor-pointer">
+                                {% if setting.boolean_value %}Enabled{% else %}Disabled{% endif %}
+                            </label>
+                        </div>
+                        {% elif setting.is_email %}
+                        <input type="email" name="value" value="{{ setting.value }}" class="cyber-input w-full py-2 px-3 rounded-lg bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors text-sm font-mono" required>
+                        {% elif setting.is_phone %}
+                        <input type="tel" name="value" value="{{ setting.value }}" class="cyber-input w-full py-2 px-3 rounded-lg bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors text-sm font-mono" required>
+                        {% elif setting.is_number %}
+                        <input type="number" name="value" value="{{ setting.value }}" class="cyber-input w-full py-2 px-3 rounded-lg bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors text-sm font-mono" required>
+                        {% else %}
                         <textarea name="value" rows="2" class="cyber-input w-full py-2 px-3 rounded-lg bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors text-sm font-mono">{{ setting.value }}</textarea>
+                        {% endif %}
                         <p class="text-[10px] text-white/40 mt-1">{{ setting.description }}</p>
                     </div>
+                    {% if not setting.is_boolean %}
                     <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest h-fit">Save</button>
+                    {% endif %}
                 </form>
                 {% else %}
-                <p class="font-bold text-white mb-2 font-mono break-all">{{ setting.value }}</p>
-                <p class="text-xs text-white/40">{{ setting.description }}</p>
+                <div class="mb-2">
+                    {% if setting.is_boolean %}
+                        {% if setting.boolean_value %}
+                            <span class="status-pill status-pill-success">Enabled</span>
+                        {% else %}
+                            <span class="status-pill bg-white/10 text-white/60 border-white/20">Disabled</span>
+                        {% endif %}
+                    {% else %}
+                        <p class="font-bold text-white font-mono break-all">{{ setting.value }}</p>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-white/40 mt-1">{{ setting.description }}</p>
                 {% endif %}
             </div>
             {% empty %}
@@ -83,6 +110,25 @@
                             <input type="number" step="0.1" name="surge_multiplier" value="{{ rule.surge_multiplier }}" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm">
                         </div>
                     </div>
+                    
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-white/5">
+                        <div class="flex items-center space-x-2 h-full">
+                            <input type="checkbox" name="enable_weather_surge" id="weather_active_{{ rule.id }}" class="rounded bg-black border-white/20 text-primary" {% if rule.enable_weather_surge %}checked{% endif %}>
+                            <label for="weather_active_{{ rule.id }}" class="text-xs text-white/70">Weather Surge</label>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-white/40 uppercase mb-1">Max Weather Surge</label>
+                            <input type="number" step="0.1" name="max_weather_surge" value="{{ rule.max_weather_surge }}" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm">
+                        </div>
+                        <div class="flex items-center space-x-2 h-full">
+                            <input type="checkbox" name="enable_traffic_surge" id="traffic_active_{{ rule.id }}" class="rounded bg-black border-white/20 text-primary" {% if rule.enable_traffic_surge %}checked{% endif %}>
+                            <label for="traffic_active_{{ rule.id }}" class="text-xs text-white/70">Traffic Surge</label>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-white/40 uppercase mb-1">Max Traffic Surge</label>
+                            <input type="number" step="0.1" name="max_traffic_surge" value="{{ rule.max_traffic_surge }}" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm">
+                        </div>
+                    </div>
                 </form>
                 {% else %}
                 <!-- Admin View Only -->
@@ -110,6 +156,17 @@
                     <div class="bg-black/30 p-2 rounded">
                         <p class="text-[10px] text-white/40 uppercase">Surge</p>
                         <p class="font-bold text-sm">{{ rule.surge_multiplier }}x</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4 pt-4 border-t border-white/5 text-xs text-white/70">
+                    <div>
+                        <span class="text-white/40 text-[10px] uppercase block mb-0.5">Weather Surge</span>
+                        <span class="font-bold text-white">{% if rule.enable_weather_surge %}Enabled ({{ rule.max_weather_surge }}x max){% else %}Disabled{% endif %}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 text-[10px] uppercase block mb-0.5">Traffic Surge</span>
+                        <span class="font-bold text-white">{% if rule.enable_traffic_surge %}Enabled ({{ rule.max_traffic_surge }}x max){% else %}Disabled{% endif %}</span>
                     </div>
                 </div>
                 {% endif %}

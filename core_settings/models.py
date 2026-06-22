@@ -8,8 +8,64 @@ class SiteSetting(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def field_type(self):
+        val = self.value.strip().lower()
+        key_lower = self.key.lower()
+        if val in ['true', 'false']:
+            return 'boolean'
+        elif 'email' in key_lower:
+            return 'email'
+        elif 'phone' in key_lower:
+            return 'phone'
+        elif val.isdigit():
+            return 'number'
+        else:
+            return 'text'
+
+    @property
+    def is_boolean(self):
+        return self.field_type == 'boolean'
+
+    @property
+    def is_email(self):
+        return self.field_type == 'email'
+
+    @property
+    def is_phone(self):
+        return self.field_type == 'phone'
+
+    @property
+    def is_number(self):
+        return self.field_type == 'number'
+
+    @property
+    def is_text(self):
+        return self.field_type == 'text'
+        
+    @property
+    def boolean_value(self):
+        return self.value.strip().lower() == 'true'
+
     def __str__(self):
         return self.key
+
+    @classmethod
+    def get_cached_value(cls, key, default=None):
+        from django.core.cache import cache
+        cache_key = f"site_setting_{key}"
+        val = cache.get(cache_key)
+        if val is None:
+            setting = cls.objects.filter(key=key).first()
+            val = setting.value if setting else default
+            cache.set(cache_key, val, timeout=900)
+        return val
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache_key = f"site_setting_{self.key}"
+        cache.delete(cache_key)
+        super().save(*args, **kwargs)
 
 class LegalDocument(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

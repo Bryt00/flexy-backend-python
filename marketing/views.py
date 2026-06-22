@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from core_auth.cache_utils import conditional_api_response
 from .models import Campaign, PromoCode
 from .serializers import CampaignSerializer, PromoCodeSerializer
 
@@ -9,11 +10,14 @@ class CampaignViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CampaignSerializer
     permission_classes = [permissions.AllowAny]
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        return conditional_api_response(request, queryset, self.serializer_class)
+
     @action(detail=False, methods=['get'])
     def active(self, request):
-        campaigns = Campaign.objects.filter(status='ACTIVE')
-        serializer = self.get_serializer(campaigns, many=True)
-        return Response(serializer.data)
+        queryset = Campaign.objects.filter(status='ACTIVE')
+        return conditional_api_response(request, queryset, self.serializer_class)
 
 class PromoCodeViewSet(viewsets.ModelViewSet):
     queryset = PromoCode.objects.all()

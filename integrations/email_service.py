@@ -1,4 +1,4 @@
-from django.core.mail import send_mail
+from django.core.mail import send_mail, get_connection, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 import logging
@@ -6,6 +6,38 @@ import logging
 logger = logging.getLogger(__name__)
 
 class EmailService:
+    @staticmethod
+    def send_bulk_campaign_email(campaign, users):
+        """
+        Sends a bulk email to a list of users using a single SMTP connection.
+        """
+        messages = []
+        for user in users:
+            context = {
+                'title': campaign.title,
+                'body': campaign.body,
+                'user': user,
+                'app_name': 'FlexyRide'
+            }
+            html_message = render_to_string('emails/campaign.html', context)
+            
+            email = EmailMultiAlternatives(
+                subject=campaign.title,
+                body=campaign.body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email],
+            )
+            email.attach_alternative(html_message, "text/html")
+            messages.append(email)
+
+        if messages:
+            try:
+                connection = get_connection()
+                connection.send_messages(messages)
+                logger.info(f"Bulk campaign email '{campaign.title}' sent to {len(messages)} users.")
+            except Exception as e:
+                logger.error(f"Failed to send bulk campaign emails: {e}")
+
     @staticmethod
     def send_welcome_email(user):
         """

@@ -36,8 +36,13 @@ class Campaign(models.Model):
     start_date = models.DateTimeField(auto_now_add=True, null=True)
     end_date = models.DateTimeField(blank=True, null=True)
     
-    target_audience = models.CharField(max_length=100, default='all')
-    message_payload = models.JSONField(default=dict, blank=True)
+    TARGET_CHOICES = (
+        ('all', 'All Users'),
+        ('driver', 'Drivers Only'),
+        ('passenger', 'Passengers Only'),
+    )
+    target_audience = models.CharField(max_length=100, choices=TARGET_CHOICES, default='all')
+    message_payload = models.JSONField(default=dict, blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 

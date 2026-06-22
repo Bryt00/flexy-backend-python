@@ -46,7 +46,7 @@ class QueryAuthMiddleware:
                 print(f"❌ QueryAuthMiddleware: Token validation failed: {str(e)}")
                 scope['user'] = AnonymousUser()
         else:
-            print("❌ QueryAuthMiddleware: No 'token' parameter found in query string.")
-            scope['user'] = AnonymousUser()
+            # No token parameter provided; let AuthMiddlewareStack resolve via session cookie.
+            pass
 
         return await self.inner(scope, receive, send)

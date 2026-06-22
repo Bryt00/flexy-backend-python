@@ -17,9 +17,10 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Passengers see their requested deliveries, drivers see assigned ones
         user = self.request.user
+        qs = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs')
         if user.role == 'driver':
-            return Delivery.objects.filter(driver=user.profile)
-        return Delivery.objects.filter(passenger=user)
+            return qs.filter(driver=user.profile)
+        return qs.filter(passenger=user)
 
     def perform_create(self, serializer):
         # 1. Calculate fare using coordinates
@@ -222,7 +223,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         Returns all deliveries that are currently PENDING and available for drivers to accept.
         """
         # In the future, we can filter by proximity here.
-        available_deliveries = Delivery.objects.filter(status='PENDING').order_by('-created_at')
+        available_deliveries = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs').filter(status='PENDING').order_by('-created_at')
         serializer = DeliverySerializer(available_deliveries, many=True)
         return Response(serializer.data)
 
@@ -232,10 +233,11 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         Returns the history of deliveries for the authenticated user (passenger or driver).
         """
         user = request.user
+        qs = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs')
         if user.role == 'driver':
-            queryset = Delivery.objects.filter(driver=user.profile)
+            queryset = qs.filter(driver=user.profile)
         else:
-            queryset = Delivery.objects.filter(passenger=user)
+            queryset = qs.filter(passenger=user)
         
         # Exclude currently active/pending ones for 'history' if desired, 
         # but matching queryset for consistency now.

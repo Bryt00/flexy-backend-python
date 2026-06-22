@@ -1,5 +1,6 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from core_auth.cache_utils import conditional_api_response
 from .models import BlogPost, City, Testimonial, FAQItem, JobOpening, ContactInquiry, LegalDocument
 from .serializers import (
     BlogPostSerializer, CitySerializer, TestimonialSerializer, 
@@ -22,6 +23,10 @@ class CityViewSet(viewsets.ModelViewSet):
     queryset = City.objects.all().order_by('name')
     serializer_class = CitySerializer
     permission_classes = [AdminOrReadOnly]
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        return conditional_api_response(request, queryset, self.serializer_class)
 
 class TestimonialViewSet(viewsets.ModelViewSet):
     queryset = Testimonial.objects.all().order_by('-created_at')

@@ -1,0 +1,69 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Driver Verifications - FlexyRide{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex justify-between items-center">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight">Driver Verifications</h2>
+        <p class="text-white/50 mt-1">Review driver documents, licenses, and inspection status.</p>
+    </div>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10">
+        <h3 class="text-lg font-outfit font-bold">Pending Driver Verifications</h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Driver Name</th>
+                    <th class="px-6 py-4 font-bold">Email</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold">Date Submitted</th>
+                    <th class="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for verification in verifications %}
+                <tr class="hover:bg-white/5 transition-colors group">
+                    <td class="px-6 py-4 font-bold text-white">{{ verification.driver.full_name|default:"Unnamed Driver" }}</td>
+                    <td class="px-6 py-4 text-white/70">{{ verification.driver.user.email }}</td>
+                    <td class="px-6 py-4">
+                        <span class="status-pill status-pill-warning">{{ verification.status }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-white/50">Pending Review</td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="{% url 'staff_portal:review_document' verification.id %}" class="text-primary hover:text-primary-light font-bold text-xs uppercase tracking-widest transition-colors">
+                            Review Docs &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-white/50">No pending verifications at this time.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if verifications.has_other_pages %}
+    <div class="p-6 border-t border-white/10 flex justify-between items-center bg-black/20">
+        <span class="text-sm text-white/50">Page {{ verifications.number }} of {{ verifications.paginator.num_pages }}</span>
+        <div class="flex space-x-2">
+            {% if verifications.has_previous %}
+                <a href="?page={{ verifications.previous_page_number }}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">&laquo; Prev</a>
+            {% endif %}
+            
+            {% if verifications.has_next %}
+                <a href="?page={{ verifications.next_page_number }}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-outfit font-bold tracking-tight">Driver Subscriptions</h2>
+    <p class="text-white/50 mt-1">Manage and cancel driver platform subscriptions.</p>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center space-x-2">
+            <a href="?status={% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors {% if not status_filter %}bg-primary text-black{% else %}bg-white/5 text-white/70 hover:bg-white/10{% endif %}">
+                All
+            </a>
+            <a href="?status=active{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors {% if status_filter == 'active' %}bg-primary text-black{% else %}bg-white/5 text-white/70 hover:bg-white/10{% endif %}">
+                Active
+            </a>
+            <a href="?status=expired{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors {% if status_filter == 'expired' %}bg-primary text-black{% else %}bg-white/5 text-white/70 hover:bg-white/10{% endif %}">
+                Expired
+            </a>
+            <a href="?status=cancelled{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors {% if status_filter == 'cancelled' %}bg-primary text-black{% else %}bg-white/5 text-white/70 hover:bg-white/10{% endif %}">
+                Cancelled
+            </a>
+        </div>
+        
+        <form method="GET" class="flex items-center">
+            {% if status_filter %}
+                <input type="hidden" name="status" value="{{ status_filter }}">
+            {% endif %}
+            <input type="search" name="q" value="{{ query }}" placeholder="Search driver email..." class="cyber-input py-2 px-4 rounded-l-lg text-sm bg-black/50 border border-white/10 text-white focus:outline-none w-64">
+            <button type="submit" class="cyber-button py-2 px-4 rounded-r-lg text-sm bg-white/10 border border-white/10 hover:bg-white/20 transition-colors">Search</button>
+        </form>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Driver</th>
+                    <th class="px-6 py-4 font-bold">Plan</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold">Trial Info</th>
+                    <th class="px-6 py-4 font-bold">Expiry Date</th>
+                    <th class="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for sub in subscriptions %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-bold text-white">
+                        <a href="{% url 'staff_portal:user_detail' sub.profile.user.id %}" class="hover:text-primary transition-colors">
+                            {{ sub.profile.user.email }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 text-white/70">
+                        {{ sub.plan.name|default:"No Plan Assigned" }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if sub.status == 'active' %}
+                            <span class="status-pill status-pill-success">Active</span>
+                        {% elif sub.status == 'cancelled' %}
+                            <span class="status-pill status-pill-error">Cancelled</span>
+                        {% elif sub.status == 'expired' %}
+                            <span class="status-pill status-pill-error">Expired</span>
+                        {% else %}
+                            <span class="status-pill status-pill-warning">{{ sub.status|title }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-white/70 text-xs">
+                        {% if sub.is_in_trial %}
+                            <span class="text-brand-green font-bold">Trial Active</span> ({{ sub.trial_days_remaining }}d remaining)
+                        {% elif sub.is_trial_used %}
+                            <span class="text-white/40">Trial Used</span>
+                        {% else %}
+                            <span class="text-primary">Trial Unused</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-white/50">
+                        {% if sub.expiry_date %}
+                            {{ sub.expiry_date|date:"Y-m-d H:i" }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        {% if sub.status == 'active' or sub.status == 'pending_payment' %}
+                            <form method="POST" action="{% url 'staff_portal:cancel_subscription' sub.id %}" onsubmit="return confirm('Are you sure you want to cancel this subscription? This will block the driver from going online.');" class="inline-block">
+                                {% csrf_token %}
+                                <button type="submit" class="text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg border border-red-500/30 transition-colors">
+                                    Cancel
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="text-xs text-white/30 italic">No actions available</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-white/50">No driver subscriptions found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if subscriptions.has_other_pages %}
+    <div class="p-6 border-t border-white/10 flex justify-between items-center bg-black/20">
+        <span class="text-sm text-white/50">Page {{ subscriptions.number }} of {{ subscriptions.paginator.num_pages }}</span>
+        <div class="flex space-x-2">
+            {% if subscriptions.has_previous %}
+                <a href="?page={{ subscriptions.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">&laquo; Prev</a>
+            {% endif %}
+            
+            {% if subscriptions.has_next %}
+                <a href="?page={{ subscriptions.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-3 py-1 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white/70 transition-colors text-sm">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

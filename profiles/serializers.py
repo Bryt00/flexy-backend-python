@@ -23,9 +23,9 @@ class DriverVerificationSerializer(serializers.ModelSerializer):
         
         threshold_days = 7
         try:
-            setting = SiteSetting.objects.filter(key="DOCUMENT_RENEWAL_THRESHOLD_DAYS").first()
-            if setting and setting.value.strip().isdigit():
-                threshold_days = int(setting.value.strip())
+            val = SiteSetting.get_cached_value("DOCUMENT_RENEWAL_THRESHOLD_DAYS")
+            if val and val.strip().isdigit():
+                threshold_days = int(val.strip())
             else:
                 threshold_days = getattr(settings, 'DOCUMENT_RENEWAL_THRESHOLD_DAYS', 7)
         except Exception:
@@ -58,21 +58,16 @@ class ProfileSerializer(serializers.ModelSerializer):
     email = serializers.ReadOnlyField(source='user.email')
     role = serializers.ReadOnlyField(source='user.role')
     user_id = serializers.ReadOnlyField(source='user.id')
-    # Use SerializerMethodField to ensure absolute URLs regardless of request context
-    profile_picture = serializers.SerializerMethodField()
+    # photo_url is a read-only field that ensures absolute URLs
     photo_url = serializers.SerializerMethodField()
 
-    def get_profile_picture(self, obj):
+    def get_photo_url(self, obj):
         if not obj.profile_picture:
-            return None
-        # Handle relative paths for Flutter compatibility
+            return ""
         request = self.context.get('request')
         if request:
             return request.build_absolute_uri(obj.profile_picture.url)
         return f"https://api.flexyridegh.com{obj.profile_picture.url}"
-
-    def get_photo_url(self, obj):
-        return self.get_profile_picture(obj)
 
     # Computed cross-model fields consumed by the Flutter app
     is_verified = serializers.SerializerMethodField()

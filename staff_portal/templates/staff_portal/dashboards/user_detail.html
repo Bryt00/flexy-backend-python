@@ -132,7 +132,242 @@
                 </form>
             </div>
         </div>
+
+        <!-- Send Notification Card (Feature 1) -->
+        <div class="glass-panel rounded-2xl overflow-hidden mt-6">
+            <div class="p-6 border-b border-white/10 bg-black/20">
+                <h3 class="text-lg font-outfit font-bold">Send Push Notification</h3>
+                <p class="text-white/50 text-xs mt-1">Directly notify the user via push notification.</p>
+            </div>
+            <div class="p-6">
+                <form method="POST" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="send_notification">
+                    <div>
+                        <label class="block text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Notification Title</label>
+                        <input type="text" name="title" placeholder="e.g. Warning: Account Alert" class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors" required>
+                    </div>
+                    <div>
+                        <label class="block text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Notification Body</label>
+                        <textarea name="body" rows="3" placeholder="Type notification content here..." class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors" required></textarea>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-3 px-8 rounded-xl transition-colors uppercase tracking-widest text-xs">
+                            Send Notification
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         
     </div>
 </div>
+
+<!-- Activity History Tabs (Feature 7) -->
+<div class="mt-8 glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 bg-black/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h3 class="text-lg font-outfit font-bold">Activity History</h3>
+        <div class="flex flex-wrap gap-2" id="activityTabs">
+            <button type="button" onclick="switchTab('rider_rides')" id="tab-rider_rides" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-primary text-black transition-colors">Rider Rides</button>
+            <button type="button" onclick="switchTab('driver_rides')" id="tab-driver_rides" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">Driver Rides</button>
+            <button type="button" onclick="switchTab('passenger_deliveries')" id="tab-passenger_deliveries" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">Passenger Deliveries</button>
+            <button type="button" onclick="switchTab('driver_deliveries')" id="tab-driver_deliveries" class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">Driver Deliveries</button>
+        </div>
+    </div>
+    
+    <div class="p-6">
+        <!-- Rider Rides Tab -->
+        <div id="content-rider_rides" class="tab-content">
+            {% if rides_as_rider %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-white/50 text-xs uppercase font-bold">
+                            <th class="pb-3">Ride ID</th>
+                            <th class="pb-3">Pickup & Dropoff</th>
+                            <th class="pb-3">Fare</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Date</th>
+                            <th class="pb-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm">
+                        {% for ride in rides_as_rider %}
+                        <tr>
+                            <td class="py-4 font-mono text-xs text-primary">{{ ride.id|stringformat:".8s" }}...</td>
+                            <td class="py-4">
+                                <div class="font-bold">{{ ride.pickup_address|truncatechars:35 }}</div>
+                                <div class="text-xs text-white/50">&rarr; {{ ride.dropoff_address|truncatechars:35 }}</div>
+                            </td>
+                            <td class="py-4 font-mono">GHS {{ ride.fare|default:"0.00" }}</td>
+                            <td class="py-4">
+                                <span class="status-pill {% if ride.status == 'completed' %}status-pill-success{% elif ride.status == 'cancelled' %}status-pill-error{% else %}status-pill-warning{% endif %}">{{ ride.status|title }}</span>
+                            </td>
+                            <td class="py-4 text-xs text-white/50">{{ ride.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="py-4">
+                                <a href="{% url 'staff_portal:ride_detail' ride.id %}" class="cyber-button text-xs px-3 py-1 bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 rounded-lg">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-white/50 text-center py-8">No rides requested as a passenger/rider.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Driver Rides Tab -->
+        <div id="content-driver_rides" class="tab-content hidden">
+            {% if rides_as_driver %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-white/50 text-xs uppercase font-bold">
+                            <th class="pb-3">Ride ID</th>
+                            <th class="pb-3">Pickup & Dropoff</th>
+                            <th class="pb-3">Fare</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Date</th>
+                            <th class="pb-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm">
+                        {% for ride in rides_as_driver %}
+                        <tr>
+                            <td class="py-4 font-mono text-xs text-primary">{{ ride.id|stringformat:".8s" }}...</td>
+                            <td class="py-4">
+                                <div class="font-bold">{{ ride.pickup_address|truncatechars:35 }}</div>
+                                <div class="text-xs text-white/50">&rarr; {{ ride.dropoff_address|truncatechars:35 }}</div>
+                            </td>
+                            <td class="py-4 font-mono">GHS {{ ride.fare|default:"0.00" }}</td>
+                            <td class="py-4">
+                                <span class="status-pill {% if ride.status == 'completed' %}status-pill-success{% elif ride.status == 'cancelled' %}status-pill-error{% else %}status-pill-warning{% endif %}">{{ ride.status|title }}</span>
+                            </td>
+                            <td class="py-4 text-xs text-white/50">{{ ride.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="py-4">
+                                <a href="{% url 'staff_portal:ride_detail' ride.id %}" class="cyber-button text-xs px-3 py-1 bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 rounded-lg">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-white/50 text-center py-8">No rides fulfilled as a driver.</p>
+            {% endif %}
+        </div>
+
+        <!-- Passenger Deliveries Tab -->
+        <div id="content-passenger_deliveries" class="tab-content hidden">
+            {% if deliveries_as_passenger %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-white/50 text-xs uppercase font-bold">
+                            <th class="pb-3">Delivery ID</th>
+                            <th class="pb-3">Recipient & Category</th>
+                            <th class="pb-3">Addresses</th>
+                            <th class="pb-3">Fare</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Date</th>
+                            <th class="pb-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm">
+                        {% for del in deliveries_as_passenger %}
+                        <tr>
+                            <td class="py-4 font-mono text-xs text-primary">{{ del.id|stringformat:".8s" }}...</td>
+                            <td class="py-4">
+                                <div class="font-bold">{{ del.recipient_name }}</div>
+                                <div class="text-xs text-white/50">{{ del.item_category|title }}</div>
+                            </td>
+                            <td class="py-4">
+                                <div class="font-bold text-xs">{{ del.pickup_address|truncatechars:25 }}</div>
+                                <div class="text-[10px] text-white/50">&rarr; {{ del.dropoff_address|truncatechars:25 }}</div>
+                            </td>
+                            <td class="py-4 font-mono">GHS {{ del.final_fare|default:del.estimated_fare|default:"0.00" }}</td>
+                            <td class="py-4">
+                                <span class="status-pill {% if del.status == 'DELIVERED' %}status-pill-success{% elif del.status == 'CANCELLED' %}status-pill-error{% else %}status-pill-warning{% endif %}">{{ del.status|title }}</span>
+                            </td>
+                            <td class="py-4 text-xs text-white/50">{{ del.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="py-4">
+                                <a href="{% url 'staff_portal:delivery_detail' del.id %}" class="cyber-button text-xs px-3 py-1 bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 rounded-lg">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-white/50 text-center py-8">No deliveries requested as a passenger.</p>
+            {% endif %}
+        </div>
+
+        <!-- Driver Deliveries Tab -->
+        <div id="content-driver_deliveries" class="tab-content hidden">
+            {% if deliveries_as_driver %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-white/10 text-white/50 text-xs uppercase font-bold">
+                            <th class="pb-3">Delivery ID</th>
+                            <th class="pb-3">Recipient & Category</th>
+                            <th class="pb-3">Addresses</th>
+                            <th class="pb-3">Fare</th>
+                            <th class="pb-3">Status</th>
+                            <th class="pb-3">Date</th>
+                            <th class="pb-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm">
+                        {% for del in deliveries_as_driver %}
+                        <tr>
+                            <td class="py-4 font-mono text-xs text-primary">{{ del.id|stringformat:".8s" }}...</td>
+                            <td class="py-4">
+                                <div class="font-bold">{{ del.recipient_name }}</div>
+                                <div class="text-xs text-white/50">{{ del.item_category|title }}</div>
+                            </td>
+                            <td class="py-4">
+                                <div class="font-bold text-xs">{{ del.pickup_address|truncatechars:25 }}</div>
+                                <div class="text-[10px] text-white/50">&rarr; {{ del.dropoff_address|truncatechars:25 }}</div>
+                            </td>
+                            <td class="py-4 font-mono">GHS {{ del.final_fare|default:del.estimated_fare|default:"0.00" }}</td>
+                            <td class="py-4">
+                                <span class="status-pill {% if del.status == 'DELIVERED' %}status-pill-success{% elif del.status == 'CANCELLED' %}status-pill-error{% else %}status-pill-warning{% endif %}">{{ del.status|title }}</span>
+                            </td>
+                            <td class="py-4 text-xs text-white/50">{{ del.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="py-4">
+                                <a href="{% url 'staff_portal:delivery_detail' del.id %}" class="cyber-button text-xs px-3 py-1 bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 rounded-lg">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-white/50 text-center py-8">No deliveries fulfilled as a driver.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(tabId) {
+    // Hide all contents
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    // Show selected content
+    document.getElementById('content-' + tabId).classList.remove('hidden');
+    
+    // Reset all buttons to inactive styling
+    document.querySelectorAll('#activityTabs button').forEach(btn => {
+        btn.className = 'px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-colors';
+    });
+    // Set selected button to active styling
+    const activeBtn = document.getElementById('tab-' + tabId);
+    activeBtn.className = 'px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest bg-primary text-black transition-colors';
+}
+</script>
 {% endblock %}

@@ -6,6 +6,17 @@ django.setup()
 
 from website.models import LegalDocument
 
+ABOUT_CONTENT = """
+<h2>Welcome to FlexyRide</h2>
+<p>FlexyRide is Ghana's leading ride-hailing and delivery platform, connecting thousands of passengers and drivers every day. We are committed to providing safe, reliable, and affordable transportation solutions across the country.</p>
+
+<h3>Our Mission</h3>
+<p>Our mission is to revolutionize urban mobility by creating a seamless, transparent, and empowering ecosystem for both riders and drivers.</p>
+
+<h3>Safety First</h3>
+<p>We prioritize your safety with features like live tracking, verified drivers, and an SOS button for emergencies.</p>
+"""
+
 TERMS_CONTENT = """
 <h2>1. Acceptance of Terms</h2>
 <p>By accessing or using the FlexyRide platform, including our mobile applications and website (collectively, the "Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, you may not use the Service.</p>
@@ -188,6 +199,17 @@ def seed():
         }
     )
     print(f"{'Created' if created else 'Updated'} Privacy Policy")
+
+    # About Us
+    about, created = LegalDocument.objects.update_or_create(
+        document_type='about',
+        defaults={
+            'title': 'About FlexyRide',
+            'slug': 'about-us',
+            'content': ABOUT_CONTENT.strip(),
+        }
+    )
+    print(f"{'Created' if created else 'Updated'} About Us")
 
     print("\nLegal documents seeded successfully!")
 

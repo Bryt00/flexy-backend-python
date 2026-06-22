@@ -106,7 +106,7 @@ class DriverVerification(models.Model):
         default='none',
         help_text="Category assigned to the driver upon verification"
     )
-    is_verified = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False, db_index=True)
     verified_at = models.DateTimeField(blank=True, null=True)
     rejected_reason = models.TextField(blank=True, null=True)
 
@@ -121,6 +121,12 @@ class DriverVerification(models.Model):
         
         is_becoming_verified = self.is_verified and (is_new or not was_verified)
         
+        if is_becoming_verified:
+            from django.utils import timezone
+            if not self.verified_at:
+                self.verified_at = timezone.now()
+            self.status = 'VERIFIED'
+            
         super().save(*args, **kwargs)
         
         if is_becoming_verified:

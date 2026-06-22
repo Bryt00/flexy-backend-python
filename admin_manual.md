@@ -32,8 +32,18 @@ Tools to drive user acquisition and revenue.
 *   **Creating Codes**: Generate promo codes with percentage or flat-amount discounts.
 *   **Usage Limits**: Set expiration dates and maximum usage counts to control your marketing budget.
 
-### 🚀 Campaigns
-*   **App Banners**: Manage the sliding banners shown on the passenger home screen. Link them to internal app pages or external URLs.
+### 🚀 Marketing Campaigns (App Banners)
+*   **In-App Banners**: Manage the sliding banners shown on the passenger home screen. Link them to internal app pages or external URLs.
+*   **Targeting**: Select whether the banner should be visible to All Users, Drivers Only, or Passengers Only.
+*   **Message Payload**: A flexible JSON field for passing hidden structured data to the mobile apps (e.g., specific deep-link instructions, promo codes to auto-apply, or A/B testing flags).
+
+### 📲 Notification Campaigns (Push & Emails)
+*   **Broadcast Engine**: Send mass Push Notifications and Bulk Emails to your user base.
+*   **Advanced Targeting (OneSignal-style)**:
+    *   **Audience**: Filter by All, Passengers, or Drivers.
+    *   **City Targeting**: Restrict recipients to a specific city.
+    *   **Behavioral Conditions**: Target specific segments such as "Inactive (7+ days)", "Highly Rated (>= 4.5)", "Loyal (>= 50 rides)", or "New Users".
+*   **Resending**: You can continually broadcast a campaign to hit newly matching users without having to duplicate it.
 
 ---
 

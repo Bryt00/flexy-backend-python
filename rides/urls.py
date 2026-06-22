@@ -12,9 +12,12 @@ urlpatterns = [
     path('history/', RideViewSet.as_view({'get': 'history'})),
     path('active/', RideViewSet.as_view({'get': 'active'})),
     path('scheduled/', RideViewSet.as_view({'get': 'scheduled'})),
+    path('opportunities/', RideViewSet.as_view({'get': 'opportunities'})),
     path('schedule/', RideViewSet.as_view({'post': 'schedule'})),
     path('favorites/', RideViewSet.as_view({'get': 'favorites', 'post': 'favorites'})),
     path('estimate/', RideViewSet.as_view({'get': 'estimate'})),
+    path('surge/', RideViewSet.as_view({'get': 'surge'})),
+    path('surge/heatmap/', RideViewSet.as_view({'get': 'surge_heatmap'})),
     
     # Detail actions
     path('<uuid:pk>/', RideViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),

@@ -4,8 +4,11 @@ from notification.models import FCMDevice
 from .base import PushNotificationProvider
 
 class FCMProvider(PushNotificationProvider):
-    def send_push(self, user_id, title, message, data=None, android_channel_id=None, android_sound=None, ios_sound=None):
-        devices = FCMDevice.objects.filter(user_id=user_id)
+    def send_push(self, user_id, title, message, data=None, android_channel_id=None, android_sound=None, ios_sound=None, app_type=None):
+        queryset = FCMDevice.objects.filter(user_id=user_id)
+        if app_type:
+            queryset = queryset.filter(app_type=app_type)
+        devices = queryset
         if not devices.exists():
             return False
 
@@ -34,7 +37,7 @@ class FCMProvider(PushNotificationProvider):
         )
         
         try:
-            response = messaging.send_multicast(fcm_message)
+            response = messaging.send_each_for_multicast(fcm_message)
             # Handle failures (e.g., token expired)
             if response.failure_count > 0:
                 for idx, resp in enumerate(response.responses):

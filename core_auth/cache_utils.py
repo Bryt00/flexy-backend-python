@@ -89,3 +89,61 @@ def invalidate_global_cache(prefix):
     cache_key = make_cache_key(None, prefix)
     cache.delete(cache_key)
     logger.debug(f"[CACHE INVALIDATED] {cache_key}")
+
+
+def conditional_api_response(request, queryset, serializer_class):
+    """
+    Computes ETag from serialized data and returns 304 if matches.
+    Also handles Last-Modified if model has updated_at / created_at.
+    """
+    import hashlib
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
+    from django.utils.http import http_date
+    from email.utils import parsedate_to_datetime
+    
+    # 1. Check Last-Modified if possible (to avoid serialization on cache hit)
+    latest_dt = None
+    if hasattr(queryset.model, 'updated_at'):
+        latest_item = queryset.order_by('-updated_at').first()
+        if latest_item:
+            latest_dt = latest_item.updated_at
+    elif hasattr(queryset.model, 'created_at'):
+        latest_item = queryset.order_by('-created_at').first()
+        if latest_item:
+            latest_dt = latest_item.created_at
+            
+    # Check If-Modified-Since header before doing full serialization
+    if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE')
+    if if_modified_since and latest_dt:
+        try:
+            client_dt = parsedate_to_datetime(if_modified_since)
+            if latest_dt <= client_dt:
+                response = Response(status=304)
+                response['Last-Modified'] = http_date(latest_dt.timestamp())
+                return response
+        except Exception:
+            pass
+
+    # 2. Compute ETag
+    serializer = serializer_class(queryset, many=True)
+    data = serializer.data
+    serialized_str = json.dumps(data, cls=DjangoJSONEncoder)
+    
+    hasher = hashlib.md5()
+    hasher.update(serialized_str.encode('utf-8'))
+    etag = f'"{hasher.hexdigest()}"'
+    
+    if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
+    if if_none_match and if_none_match == etag:
+        response = Response(status=304)
+        response['ETag'] = etag
+        if latest_dt:
+            response['Last-Modified'] = http_date(latest_dt.timestamp())
+        return response
+        
+    response = Response(data)
+    response['ETag'] = etag
+    if latest_dt:
+        response['Last-Modified'] = http_date(latest_dt.timestamp())
+    return response

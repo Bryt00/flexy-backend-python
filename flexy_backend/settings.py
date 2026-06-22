@@ -278,6 +278,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'notification.tasks.check_document_expirations',
         'schedule': 86400.0,  # Every 24 hours
     },
+    'send-driver-birthday-pushes-daily': {
+        'task': 'notification.tasks.send_driver_birthday_pushes',
+        'schedule': 86400.0,  # Every 24 hours
+    },
 }
 
 DOCUMENT_RENEWAL_THRESHOLD_DAYS = 7
@@ -574,6 +578,26 @@ UNFOLD = {
                         "title": "File Cloud",
                         "icon": "cloud",
                         "link": "/headquarters/file_manager/filemetadata/",
+                    },
+                ],
+            },
+            {
+                "title": "Quick Portals",
+                "items": [
+                    {
+                        "title": "Staff Portal",
+                        "icon": "badge",
+                        "link": "/portal/",
+                    },
+                    {
+                        "title": "Ad Dashboard",
+                        "icon": "campaign",
+                        "link": "/advertise/",
+                    },
+                    {
+                        "title": "Public Website",
+                        "icon": "public",
+                        "link": "/",
                     },
                 ],
             },

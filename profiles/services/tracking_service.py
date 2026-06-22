@@ -21,6 +21,24 @@ class TrackingService:
                 last_lng=lng,
                 last_location_update=timezone.now()
             )
+
+            # 3. Broadcast real-time location update to global_rides channel group
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    'global_rides',
+                    {
+                        'type': 'broadcast_location',
+                        'data': {
+                            'driver_id': str(driver_id),
+                            'lat': float(lat),
+                            'lng': float(lng)
+                        }
+                    }
+                )
+
             return True
         except Exception as e:
             logger.error(f"TrackingService: Failed to update location for driver {driver_id}: {e}")

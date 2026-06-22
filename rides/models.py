@@ -88,7 +88,7 @@ class Ride(models.Model):
 
     dispatch_metadata = models.JSONField(default=dict, blank=True) # Tracks polled/rejected drivers
     
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):

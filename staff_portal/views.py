@@ -5,6 +5,8 @@ from django.contrib import messages
 from core_auth.models import User
 from profiles.models import DriverVerification, Profile
 from vehicles.models import Vehicle
+from notification.utils import send_notification
+from courier.models import Delivery
 
 # --- DECORATORS ---
 
@@ -77,7 +79,7 @@ from rides.models import Ride, Incident
 from payments.models import Transaction
 
 @login_required(login_url='staff_portal:login')
-@user_passes_test(is_super_admin, login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
 def master_dashboard(request):
     seven_days_ago = timezone.now() - timedelta(days=7)
     
@@ -144,7 +146,7 @@ def global_users(request):
     return render(request, 'staff_portal/dashboards/global_users.html', {'users': users, 'query': query})
 
 @login_required(login_url='staff_portal:login')
-@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
+@user_passes_test(is_support, login_url='staff_portal:login')
 def user_detail(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
     
@@ -153,7 +155,9 @@ def user_detail(request, user_id):
         
         # Admin & Super Admin can toggle suspension
         if action == 'toggle_suspension':
-            if target_user.role == 'super_admin' and request.user.role != 'super_admin':
+            if not is_admin_or_super(request.user):
+                messages.error(request, "Permission denied.")
+            elif target_user.role == 'super_admin' and request.user.role != 'super_admin':
                 messages.error(request, "You cannot suspend a super administrator.")
             else:
                 target_user.is_active = not target_user.is_active
@@ -174,10 +178,36 @@ def user_detail(request, user_id):
             target_user.is_email_verified = is_verified
             target_user.save()
             messages.success(request, f"Profile updated for {target_user.email}.")
+
+        # Feature 1: Manual Push Notification
+        elif action == 'send_notification' and is_support(request.user):
+            title = request.POST.get('title')
+            body = request.POST.get('body')
+            if title and body:
+                send_notification(target_user, title, body, type='PUSH')
+                messages.success(request, f"Push notification successfully sent to {target_user.email}.")
+            else:
+                messages.error(request, "Title and body are required for sending notifications.")
             
         return redirect('staff_portal:user_detail', user_id=target_user.id)
         
-    return render(request, 'staff_portal/dashboards/user_detail.html', {'target_user': target_user})
+    # Feature 7: Activity History
+    rides_as_rider = Ride.objects.filter(rider=target_user).order_by('-created_at')[:10]
+    rides_as_driver = Ride.objects.filter(driver=target_user).order_by('-created_at')[:10]
+    
+    deliveries_as_passenger = Delivery.objects.filter(passenger=target_user).order_by('-created_at')[:10]
+    deliveries_as_driver = []
+    if hasattr(target_user, 'profile'):
+        deliveries_as_driver = Delivery.objects.filter(driver=target_user.profile).order_by('-created_at')[:10]
+        
+    context = {
+        'target_user': target_user,
+        'rides_as_rider': rides_as_rider,
+        'rides_as_driver': rides_as_driver,
+        'deliveries_as_passenger': deliveries_as_passenger,
+        'deliveries_as_driver': deliveries_as_driver,
+    }
+    return render(request, 'staff_portal/dashboards/user_detail.html', context)
 
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_admin_or_super, login_url='staff_portal:login')
@@ -189,8 +219,11 @@ def platform_settings(request):
         
         if action == 'update_site_setting':
             setting_id = request.POST.get('setting_id')
-            new_value = request.POST.get('value')
             setting = get_object_or_404(SiteSetting, id=setting_id)
+            if setting.field_type == 'boolean':
+                new_value = 'true' if request.POST.get('value') == 'on' else 'false'
+            else:
+                new_value = request.POST.get('value', '').strip()
             setting.value = new_value
             setting.save()
             messages.success(request, f"Setting '{setting.key}' updated successfully.")
@@ -205,6 +238,10 @@ def platform_settings(request):
                 rule.per_minute_rate = float(request.POST.get('per_minute_rate', rule.per_minute_rate))
                 rule.surge_multiplier = float(request.POST.get('surge_multiplier', rule.surge_multiplier))
                 rule.is_active = request.POST.get('is_active') == 'on'
+                rule.enable_weather_surge = request.POST.get('enable_weather_surge') == 'on'
+                rule.enable_traffic_surge = request.POST.get('enable_traffic_surge') == 'on'
+                rule.max_weather_surge = float(request.POST.get('max_weather_surge', rule.max_weather_surge))
+                rule.max_traffic_surge = float(request.POST.get('max_traffic_surge', rule.max_traffic_surge))
                 rule.save()
                 messages.success(request, f"Pricing rule updated successfully.")
             except ValueError:
@@ -326,14 +363,23 @@ from django.conf import settings
 def support_dashboard(request):
     active_rides = list(Ride.objects.filter(status='in_progress').values(
         'id', 'pickup_lat', 'pickup_lng', 'dropoff_lat', 'dropoff_lng',
-        'last_lat_update', 'last_lng_update', 'rider_name'
+        'last_lat_update', 'last_lng_update', 'last_tracking_time',
+        'driver_id', 'driver__profile__last_location_update', 'rider_name'
     ))
     context = {
-        'pending_verifications': DriverVerification.objects.filter(status='pending')[:10],
         'active_rides_json': json.dumps(active_rides, default=str),
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     }
     return render(request, 'staff_portal/dashboards/support.html', context)
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_support, login_url='staff_portal:login')
+def driver_verifications(request):
+    verifications_qs = DriverVerification.objects.filter(status='pending').order_by('-driver__created_at')
+    paginator = Paginator(verifications_qs, 20)
+    page_number = request.GET.get('page')
+    verifications = paginator.get_page(page_number)
+    return render(request, 'staff_portal/dashboards/verifications.html', {'verifications': verifications})
 
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_support, login_url='staff_portal:login')
@@ -381,29 +427,28 @@ def review_document(request, pk):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'approve':
-            verification.status = 'approved'
-            verification.is_verified = True
-            verification.save()
-            messages.success(request, f"Successfully approved documents for {verification.driver.email}")
+            # Feature 2: Category Assignment dropdown
+            assigned_category = request.POST.get('assigned_category')
+            if assigned_category:
+                verification.assigned_category = assigned_category
+            verification.approve()
+            messages.success(request, f"Successfully approved documents for {verification.driver.user.email}")
         elif action == 'reject':
-            verification.status = 'rejected'
-            verification.rejected_reason = request.POST.get('rejected_reason', 'Documents did not meet criteria.')
-            verification.save()
+            rejected_reason = request.POST.get('rejected_reason', 'Documents did not meet criteria.')
+            verification.reject(reason=rejected_reason)
+            messages.warning(request, f"Rejected documents for {verification.driver.user.email}")
             
-            # Send Push Notification to Driver
-            fcm = FCMProvider()
-            fcm.send_push(
-                user_id=verification.driver.user.id,
-                title="Documents Rejected",
-                message=f"Your documents were rejected: {verification.rejected_reason}. Please re-upload.",
-                data={'type': 'document_rejected'}
-            )
-            
-            messages.warning(request, f"Rejected documents for {verification.driver.email}")
-            
-        return redirect('staff_portal:support_dashboard')
+        return redirect('staff_portal:driver_verifications')
 
-    return render(request, 'staff_portal/dashboards/document_review.html', {'verification': verification})
+    vehicles = verification.driver.vehicles.all()
+    driver_rides = Ride.objects.filter(driver=verification.driver.user).order_by('-created_at')[:10]
+
+    context = {
+        'verification': verification,
+        'vehicles': vehicles,
+        'driver_rides': driver_rides,
+    }
+    return render(request, 'staff_portal/dashboards/document_review.html', context)
 
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_support, login_url='staff_portal:login')
@@ -422,6 +467,9 @@ def dispute_detail(request, incident_id):
 def resolve_dispute(request, incident_id):
     if request.method == 'POST':
         incident = get_object_or_404(Incident, id=incident_id)
+        if incident.status == 'RESOLVED':
+            messages.warning(request, f"Dispute {incident.id} is already resolved.")
+            return redirect('staff_portal:disputes_dashboard')
         incident.status = 'RESOLVED'
         incident.save()
         messages.success(request, f"Dispute {incident.id} marked as resolved.")
@@ -431,7 +479,7 @@ def resolve_dispute(request, incident_id):
 # --- AD OPERATIONS ---
 
 @login_required(login_url='staff_portal:login')
-@user_passes_test(is_super_admin, login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
 def ad_dashboard(request):
     from advertising.models import AdBooking
     
@@ -464,7 +512,7 @@ def ad_dashboard(request):
     return render(request, 'staff_portal/dashboards/ad_dashboard.html', context)
 
 @login_required(login_url='staff_portal:login')
-@user_passes_test(is_super_admin, login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
 def ad_review(request, ad_id):
     from advertising.models import AdBooking
     
@@ -500,7 +548,7 @@ def ad_review(request, ad_id):
     })
 
 @login_required(login_url='staff_portal:login')
-@user_passes_test(is_super_admin, login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
 def ad_slot_config(request):
     from advertising.models import AdSlotCapacity
     
@@ -516,4 +564,137 @@ def ad_slot_config(request):
             messages.error(request, "Invalid values. Please enter valid numbers.")
     
     return redirect('staff_portal:ad_dashboard')
+
+
+# --- COURIER / DELIVERY SECTIONS ---
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_support, login_url='staff_portal:login')
+def delivery_history(request):
+    query = request.GET.get('q', '')
+    deliveries_qs = Delivery.objects.all().select_related('passenger', 'driver__user').order_by('-created_at')
+    
+    if query:
+        deliveries_qs = deliveries_qs.filter(
+            Q(id__icontains=query) | 
+            Q(passenger__email__icontains=query) | 
+            Q(driver__user__email__icontains=query) | 
+            Q(status__icontains=query)
+        )
+        
+    paginator = Paginator(deliveries_qs, 20)
+    page_number = request.GET.get('page')
+    deliveries = paginator.get_page(page_number)
+    
+    return render(request, 'staff_portal/dashboards/deliveries.html', {'deliveries': deliveries, 'query': query})
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_support, login_url='staff_portal:login')
+def delivery_detail(request, delivery_id):
+    delivery = get_object_or_404(Delivery.objects.select_related('passenger', 'driver__user'), id=delivery_id)
+    proofs = delivery.proofs.all().order_by('timestamp')
+    
+    return render(request, 'staff_portal/dashboards/delivery_detail.html', {'delivery': delivery, 'proofs': proofs})
+
+
+# --- SUBSCRIPTION MANAGEMENT ---
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
+def subscriptions_overview(request):
+    from subscriptions.models import DriverSubscription
+    
+    status_filter = request.GET.get('status', '')
+    query = request.GET.get('q', '')
+    
+    subs_qs = DriverSubscription.objects.all().select_related('profile__user', 'plan').order_by('-created_at')
+    
+    if status_filter:
+        subs_qs = subs_qs.filter(status=status_filter)
+    if query:
+        subs_qs = subs_qs.filter(profile__user__email__icontains=query)
+        
+    paginator = Paginator(subs_qs, 20)
+    page_number = request.GET.get('page')
+    subscriptions = paginator.get_page(page_number)
+    
+    return render(request, 'staff_portal/dashboards/subscriptions.html', {
+        'subscriptions': subscriptions,
+        'query': query,
+        'status_filter': status_filter
+    })
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
+def cancel_subscription(request, sub_id):
+    if request.method == 'POST':
+        from subscriptions.models import DriverSubscription
+        sub = get_object_or_404(DriverSubscription, id=sub_id)
+        sub.status = 'cancelled'
+        sub.save()
+        
+        # Send Push Notification
+        title = "Subscription Cancelled"
+        body = "Your driver subscription has been cancelled by administration."
+        send_notification(sub.profile.user, title, body, type='PUSH')
+        
+        messages.success(request, f"Subscription for {sub.profile.user.email} cancelled successfully.")
+        
+    return redirect('staff_portal:subscriptions_overview')
+
+
+# --- AUDIT & FRAUD LOGS ---
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
+def audit_log(request):
+    from audit.models import AuditLog
+    
+    query = request.GET.get('q', '')
+    action_filter = request.GET.get('action', '')
+    
+    logs_qs = AuditLog.objects.all().select_related('user').order_by('-created_at')
+    
+    if action_filter:
+        logs_qs = logs_qs.filter(action__icontains=action_filter)
+    if query:
+        logs_qs = logs_qs.filter(
+            Q(user__email__icontains=query) |
+            Q(entity_type__icontains=query) |
+            Q(entity_id__icontains=query)
+        )
+        
+    paginator = Paginator(logs_qs, 20)
+    page_number = request.GET.get('page')
+    logs = paginator.get_page(page_number)
+    
+    return render(request, 'staff_portal/dashboards/audit_log.html', {
+        'logs': logs,
+        'query': query,
+        'action_filter': action_filter
+    })
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_admin_or_super, login_url='staff_portal:login')
+def fraud_flags(request):
+    from audit.models import FraudFlag
+    
+    if request.method == 'POST':
+        flag_id = request.POST.get('flag_id')
+        action = request.POST.get('action')
+        
+        flag = get_object_or_404(FraudFlag, id=flag_id)
+        if action == 'resolve':
+            flag.status = 'RESOLVED'
+            flag.save()
+            messages.success(request, f"Fraud flag resolved successfully.")
+        elif action == 'ignore':
+            flag.status = 'IGNORED'
+            flag.save()
+            messages.warning(request, f"Fraud flag ignored.")
+            
+        return redirect('staff_portal:fraud_flags')
+        
+    flags = FraudFlag.objects.all().select_related('user').order_by('-created_at')
+    return render(request, 'staff_portal/dashboards/fraud_flags.html', {'flags': flags})
 

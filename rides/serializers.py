@@ -24,10 +24,10 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'timestamp')
 
     def get_ride_id(self, obj):
-        if obj.ride:
-            return str(obj.ride.id)
-        if obj.delivery:
-            return str(obj.delivery.id)
+        if obj.ride_id:
+            return str(obj.ride_id)
+        if obj.delivery_id:
+            return str(obj.delivery_id)
         return ''
 
     def get_sender_type(self, obj):
@@ -145,3 +145,39 @@ class RideSerializer(serializers.ModelSerializer):
         if request and request.user == obj.driver:
             return obj.driver_payout_amount
         return 0.0
+
+class LiteRideSerializer(serializers.ModelSerializer):
+    rider_id = serializers.UUIDField(source='rider.id', read_only=True)
+    driver_id = serializers.UUIDField(source='driver.id', read_only=True, allow_null=True)
+    
+    driver_name = serializers.SerializerMethodField()
+    driver_photo = serializers.SerializerMethodField()
+    vehicle_info = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Ride
+        fields = (
+            'id', 'rider_id', 'driver_id', 'status', 'fare', 'distance',
+            'pickup_address', 'dropoff_address', 'pickup_lat', 'pickup_lng',
+            'dropoff_lat', 'dropoff_lng', 'is_scheduled', 'scheduled_for',
+            'payment_method', 'preferred_vehicle_type', 'created_at', 'updated_at',
+            'driver_name', 'driver_photo', 'vehicle_info'
+        )
+
+    def get_driver_name(self, obj):
+        if obj.driver and hasattr(obj.driver, 'profile'):
+            return obj.driver.profile.full_name
+        return None
+
+    def get_driver_photo(self, obj):
+        if obj.driver and hasattr(obj.driver, 'profile'):
+            pic = obj.driver.profile.profile_picture
+            return pic.url if pic else None
+        return None
+
+    def get_vehicle_info(self, obj):
+        if obj.driver and hasattr(obj.driver, 'profile'):
+            vehicle = obj.driver.profile.vehicles.filter(is_active=True).first()
+            if vehicle:
+                return f"{vehicle.color} {vehicle.make} {vehicle.model} ({vehicle.license_plate})"
+        return "Standard Vehicle"

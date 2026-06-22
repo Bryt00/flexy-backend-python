@@ -1,0 +1,93 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block content %}
+<div class="mb-8">
+    <h2 class="text-3xl font-outfit font-bold tracking-tight">Fraud Prevention Dashboard</h2>
+    <p class="text-white/50 mt-1">Review system-generated security alerts and flagged user behavior.</p>
+</div>
+
+<div class="glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/10">
+        <h3 class="text-lg font-outfit font-bold">Flagged Behavioral Activity</h3>
+        <span class="text-xs text-white/50">Auto-generated via analytics thresholds</span>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">User</th>
+                    <th class="px-6 py-4 font-bold">Flag Type</th>
+                    <th class="px-6 py-4 font-bold">Severity</th>
+                    <th class="px-6 py-4 font-bold">Details</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold">Detected At</th>
+                    <th class="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for flag in flags %}
+                <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4 font-bold text-white">
+                        <a href="{% url 'staff_portal:user_detail' flag.user.id %}" class="hover:text-primary transition-colors">{{ flag.user.email }}</a>
+                    </td>
+                    <td class="px-6 py-4 text-white/90">
+                        <span class="px-2 py-1 rounded bg-orange-500/10 text-orange-500 text-xs font-mono font-bold">{{ flag.get_type_display }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if flag.severity == 'HIGH' %}
+                            <span class="status-pill status-pill-error font-bold">High</span>
+                        {% elif flag.severity == 'MEDIUM' %}
+                            <span class="status-pill status-pill-warning font-bold">Medium</span>
+                        {% else %}
+                            <span class="status-pill status-pill-success font-bold">Low</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-white/70 text-xs max-w-xs truncate" title="{{ flag.details }}">
+                        {{ flag.details|default:"-" }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if flag.status == 'RESOLVED' %}
+                            <span class="status-pill status-pill-success">Resolved</span>
+                        {% elif flag.status == 'IGNORED' %}
+                            <span class="status-pill status-pill-warning">Ignored</span>
+                        {% else %}
+                            <span class="status-pill status-pill-error">Flagged</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-white/50 text-xs">{{ flag.created_at|date:"Y-m-d H:i" }}</td>
+                    <td class="px-6 py-4 text-right">
+                        {% if flag.status == 'FLAGGED' %}
+                            <div class="flex items-center justify-end space-x-2">
+                                <form method="POST" action="{% url 'staff_portal:fraud_flags' %}" class="inline-block">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="flag_id" value="{{ flag.id }}">
+                                    <input type="hidden" name="action" value="resolve">
+                                    <button type="submit" class="text-xs font-bold bg-brand-green hover:bg-brand-green/80 text-black px-2.5 py-1.5 rounded transition-colors uppercase tracking-wider">
+                                        Resolve
+                                    </button>
+                                </form>
+                                <form method="POST" action="{% url 'staff_portal:fraud_flags' %}" class="inline-block">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="flag_id" value="{{ flag.id }}">
+                                    <input type="hidden" name="action" value="ignore">
+                                    <button type="submit" class="text-xs font-bold bg-white/5 hover:bg-white/10 text-white/80 px-2.5 py-1.5 rounded border border-white/10 transition-colors uppercase tracking-wider">
+                                        Ignore
+                                    </button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <span class="text-xs text-white/30 italic">No action pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-white/50">No behavioral fraud flags active.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

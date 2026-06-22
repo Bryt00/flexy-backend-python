@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from .models import SiteSetting
 from .serializers import SiteSettingSerializer
-from core_auth.cache_utils import cached_api_response
+from core_auth.cache_utils import conditional_api_response
 
 class SiteSettingViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -14,8 +14,5 @@ class SiteSettingViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_field = 'key'
 
     def list(self, request, *args, **kwargs):
-        def fetch_settings():
-            queryset = self.filter_queryset(self.get_queryset())
-            serializer = self.get_serializer(queryset, many=True)
-            return Response(serializer.data)
-        return cached_api_response(request, 'site_settings', timeout=900, fetcher=fetch_settings, global_cache=True)
+        queryset = self.filter_queryset(self.get_queryset())
+        return conditional_api_response(request, queryset, self.serializer_class)

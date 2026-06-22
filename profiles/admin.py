@@ -11,7 +11,13 @@ class ProfileAdmin(ModelAdmin):
     list_display = ('user', 'full_name', 'phone_number', 'city', 'rating', 'online_status')
     search_fields = ('user__email', 'full_name', 'phone_number')
     list_filter = ('city', 'is_online', 'created_at', 'updated_at')
-    readonly_fields = ('online_status', 'last_location_update')
+    readonly_fields = ('online_status', 'last_location_update', 'profile_picture_preview')
+
+    def profile_picture_preview(self, obj):
+        if obj.profile_picture:
+            return format_html('<img src="{0}" width="100" height="100" style="border-radius: 8px; object-fit: cover;" />', obj.profile_picture.url)
+        return "No profile picture"
+    profile_picture_preview.short_description = "Profile Picture"
 
     def online_status(self, obj):
         if obj.is_online:
@@ -30,9 +36,15 @@ class DriverVerificationAdmin(ModelAdmin):
     list_display = ('driver', 'driver_email', 'assigned_category', 'status', 'is_verified', 'license_number', 'updated_at_display')
     list_filter = ('assigned_category', 'status', 'is_verified', 'verified_at', 'license_expiry_date', 'id_card_expiry_date')
     search_fields = ('driver__user__email', 'driver__full_name', 'license_number')
-    readonly_fields = ('driver_email', 'license_preview', 'id_card_preview', 'insurance_preview', 'roadworthy_preview', 'video_link', 'verified_at')
+    readonly_fields = ('driver_email', 'driver_profile_picture', 'license_preview', 'id_card_preview', 'insurance_preview', 'roadworthy_preview', 'video_link', 'verified_at')
     
     actions = ['approve_verification', 'reject_verification']
+
+    def driver_profile_picture(self, obj):
+        if obj.driver.profile_picture:
+            return format_html('<img src="{0}" width="100" height="100" style="border-radius: 8px; object-fit: cover;" />', obj.driver.profile_picture.url)
+        return "No profile picture uploaded by driver"
+    driver_profile_picture.short_description = "Driver Profile Picture"
 
     def updated_at_display(self, obj):
         return obj.driver.updated_at

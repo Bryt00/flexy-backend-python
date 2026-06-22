@@ -3,7 +3,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Ride, ChatMessage, Incident, Rating
-from .serializers import RideSerializer, ChatMessageSerializer, IncidentSerializer, RatingSerializer
+from .serializers import RideSerializer, ChatMessageSerializer, IncidentSerializer, RatingSerializer, LiteRideSerializer
 from rest_framework.views import APIView
 from core_settings.models import LegalDocument
 from django.utils import timezone
@@ -15,6 +15,11 @@ class RideViewSet(viewsets.ModelViewSet):
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'history']:
+            return LiteRideSerializer
+        return RideSerializer
 
     def get_queryset(self):
         return Ride.objects.select_related(
@@ -93,6 +98,50 @@ class RideViewSet(viewsets.ModelViewSet):
             "status": "active"
         })
 
+    @action(detail=False, methods=['get'], url_path='surge/heatmap')
+    def surge_heatmap(self, request):
+        """
+        Returns a list of surge points to draw on the driver map heatmap.
+        """
+        lat = float(request.query_params.get('lat', 0.0))
+        lng = float(request.query_params.get('lng', 0.0))
+        radius = float(request.query_params.get('radius', 5.0))
+        
+        if not lat or not lng:
+            return Response({"error": "lat and lng required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from .services.pricing_service import PricingService
+        from django.utils import timezone
+        from datetime import timedelta
+        import random
+        
+        center_multiplier = PricingService.get_surge_multiplier(lat=lat, lng=lng, radius=radius)
+        
+        points = []
+        if center_multiplier > 1.0:
+            # Add center point
+            points.append({
+                "lat": lat,
+                "lng": lng,
+                "multiplier": center_multiplier,
+                "expires_at": (timezone.now() + timedelta(minutes=5)).isoformat()
+            })
+            
+            # Generate scattered nearby points to create a realistic heat blob
+            num_points = random.randint(3, 8)
+            for _ in range(num_points):
+                offset_lat = random.uniform(-0.01, 0.01) * (radius / 5.0)
+                offset_lng = random.uniform(-0.01, 0.01) * (radius / 5.0)
+                pt_multiplier = round(random.uniform(1.2, center_multiplier), 1)
+                points.append({
+                    "lat": lat + offset_lat,
+                    "lng": lng + offset_lng,
+                    "multiplier": pt_multiplier,
+                    "expires_at": (timezone.now() + timedelta(minutes=5)).isoformat()
+                })
+        
+        return Response({"points": points, "status": "success"})
+
     @action(detail=False, methods=['get'])
     def history(self, request):
         from rest_framework.pagination import PageNumberPagination
@@ -116,6 +165,11 @@ class RideViewSet(viewsets.ModelViewSet):
             (Q(rider=request.user) | Q(driver=request.user)),
             Q(status__in=['pending', 'accepted', 'arrived', 'in_progress']) |
             Q(status='completed', updated_at__gte=five_mins_ago)
+        ).exclude(
+            # Never show 'pending' scheduled rides as active on the home screen
+            Q(is_scheduled=True, status='pending') |
+            # Exclude accepted scheduled rides that are far in the future
+            Q(is_scheduled=True, status='accepted', scheduled_for__gt=timezone.now() + timezone.timedelta(minutes=30))
         ).order_by('-updated_at')
 
         # Critical: Exclude rides that the user has already rated.
@@ -730,6 +784,28 @@ class RideViewSet(viewsets.ModelViewSet):
         # Trigger Admin Email Notification
         from integrations.email_service import EmailService
         EmailService.send_sos_alert_email(incident)
+
+        # Broadcast to admin_alerts group via Django Channels
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                'admin_alerts',
+                {
+                    'type': 'admin_alert',
+                    'data': {
+                        'incident_id': str(incident.id),
+                        'ride_id': str(ride.id),
+                        'reporter_email': incident.reporter.email if incident.reporter else 'Anonymous',
+                        'type': incident.type,
+                        'description': incident.description,
+                        'location_lat': incident.location_lat,
+                        'location_lng': incident.location_lng,
+                        'created_at': incident.created_at.isoformat()
+                    }
+                }
+            )
         
         return Response(IncidentSerializer(incident).data, status=status.HTTP_201_CREATED)
 
@@ -828,7 +904,7 @@ class RideViewSet(viewsets.ModelViewSet):
                 time_since_terminal = (timezone.now() - ride.updated_at).total_seconds()
                 if time_since_terminal > 1800: # 30 minutes
                     return Response([])
-            messages = ride.messages.all().order_by('created_at')
+            messages = ride.messages.select_related('sender').all().order_by('created_at')
         except Ride.DoesNotExist:
             try:
                 delivery = Delivery.objects.get(pk=pk)
@@ -836,7 +912,7 @@ class RideViewSet(viewsets.ModelViewSet):
                     time_since_terminal = (timezone.now() - delivery.updated_at).total_seconds()
                     if time_since_terminal > 1800: # 30 minutes
                         return Response([])
-                messages = delivery.messages.all().order_by('created_at')
+                messages = delivery.messages.select_related('sender').all().order_by('created_at')
             except Delivery.DoesNotExist:
                 return Response({"detail": "Not found."}, status=404)
             

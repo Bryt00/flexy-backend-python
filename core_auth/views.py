@@ -3,6 +3,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.models import update_last_login
 import random
 from django.utils import timezone
 from datetime import timedelta
@@ -104,6 +105,7 @@ class LoginView(views.APIView):
                     "message": "Email not verified. A new OTP has been sent."
                 }, status=status.HTTP_403_FORBIDDEN)
             
+            update_last_login(None, user)
             refresh = RefreshToken.for_user(user)
             return Response({
                 "user": UserSerializer(user).data,
@@ -225,6 +227,7 @@ class OTPVerifyView(views.APIView):
             from integrations.email_service import EmailService
             EmailService.send_welcome_email(user)
             
+            update_last_login(None, user)
             refresh = RefreshToken.for_user(user)
             return Response({
                 "message": "Email verified successfully",

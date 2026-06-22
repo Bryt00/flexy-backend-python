@@ -33,7 +33,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, max_length=255)
-    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='rider')
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='rider', db_index=True)
     
     # Social Auth IDs
     google_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
@@ -52,11 +52,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        try:
-            if hasattr(self, 'profile') and self.profile.full_name:
-                return f"{self.profile.full_name} ({self.email})"
-        except Exception:
-            pass
         return self.email
 
 class OTPCode(models.Model):

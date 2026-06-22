@@ -100,6 +100,30 @@ class RegisterSerializer(serializers.ModelSerializer):
                 except Exception:
                     pass
 
+                # --- REFERRER REWARD ---
+                # Generate a reward promo code for the referrer
+                referrer_code_str = f"THANKS-{referrer_profile.referral_code}-{random.randint(100, 999)}"
+                PromoCode.objects.create(
+                    user=referrer_profile.user,
+                    code=referrer_code_str,
+                    type='fixed',
+                    value=5.0,
+                    usage_limit=1,
+                    expires_at=timezone.now() + timedelta(days=30),
+                    active=True
+                )
+
+                # Send push notification to the referrer
+                try:
+                    send_notification(
+                        referrer_profile.user,
+                        title="Referral Successful! 🎉",
+                        body=f"Your friend just joined! Here is GH₵ 5.00 off your next ride. Promo code: {referrer_code_str}",
+                        type='PUSH'
+                    )
+                except Exception:
+                    pass
+
             except Profile.DoesNotExist:
                 pass  # Already handled by validate_referral_code, but keep try-except to be absolutely safe
 

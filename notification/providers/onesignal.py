@@ -11,7 +11,7 @@ class OneSignalProvider(PushNotificationProvider):
         self.api_key = getattr(settings, 'ONESIGNAL_REST_API_KEY', None)
         self.base_url = 'https://onesignal.com/api/v1/notifications'
 
-    def send_push(self, user_id: str, title, message, data: dict = None, android_channel_id: str = None, android_sound: str = None, ios_sound: str = None) -> bool:
+    def send_push(self, user_id: str, title, message, data: dict = None, android_channel_id: str = None, android_sound: str = None, ios_sound: str = None, app_type: str = None) -> bool:
         if not self.app_id or not self.api_key:
             logger.warning("OneSignalProvider: ONESIGNAL_APP_ID or ONESIGNAL_REST_API_KEY is not set.")
             return False

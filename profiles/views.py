@@ -63,15 +63,13 @@ class ProfileViewSet(viewsets.ModelViewSet):
     @extend_schema(responses={200: DriverVerificationSerializer})
     @action(detail=False, methods=['get'], url_path='verification')
     def verification_status(self, request):
-        def fetch_verification():
-            try:
-                profile = Profile.objects.get(user=request.user)
-            except Profile.DoesNotExist:
-                return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-            verification, created = DriverVerification.objects.get_or_create(driver=profile)
-            serializer = DriverVerificationSerializer(verification)
-            return Response(serializer.data)
-        return cached_api_response(request, 'verification', timeout=300, fetcher=fetch_verification)
+        try:
+            profile = Profile.objects.get(user=request.user)
+        except Profile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        verification, created = DriverVerification.objects.get_or_create(driver=profile)
+        serializer = DriverVerificationSerializer(verification)
+        return Response(serializer.data)
     @extend_schema(responses={200: OpenApiTypes.OBJECT})
     @action(detail=False, methods=['post'], url_path='verification/initiate')
     def initiate_verification(self, request):

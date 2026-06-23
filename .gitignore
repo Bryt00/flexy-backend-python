@@ -80,6 +80,7 @@ send_test_tls.py
 test_panel_host.py
 test_estimate.py
 test_onesignal.py
+portal_manual.md
 .secret/
 firebase_service_account.json
 firebase-service-account.json

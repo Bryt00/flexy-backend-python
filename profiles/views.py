@@ -229,7 +229,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_403_FORBIDDEN)
 
             # 2. Subscription Check
-            subscription = getattr(profile, 'subscription', None)
+            subscription = profile.subscription if hasattr(profile, 'subscription') else None
             if not subscription or not subscription.can_go_online:
                 return Response({
                     "error": "Active subscription required.",

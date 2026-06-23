@@ -222,7 +222,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
                  return Response({"error": "Only drivers can toggle online status"}, status=status.HTTP_403_FORBIDDEN)
             
             is_verified = getattr(profile, 'verification', None) and profile.verification.is_verified
-            if not is_verified and not settings.DEBUG:
+            if not is_verified:
                 return Response({
                     "error": "Account verification required.",
                     "detail": "Your account is not yet verified for active duty. Please complete your profile verification."
@@ -230,6 +230,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
             # 2. Subscription Check
             subscription = profile.subscription if hasattr(profile, 'subscription') else None
+            
             if not subscription or not subscription.can_go_online:
                 return Response({
                     "error": "Active subscription required.",

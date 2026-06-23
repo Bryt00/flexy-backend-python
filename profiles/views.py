@@ -221,7 +221,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
             if request.user.role != 'driver':
                  return Response({"error": "Only drivers can toggle online status"}, status=status.HTTP_403_FORBIDDEN)
             
-            is_verified = getattr(profile, 'verification', None) and profile.verification.is_verified
+            verification = profile.verification if hasattr(profile, 'verification') else None
+            is_verified = verification and verification.is_verified
             if not is_verified:
                 return Response({
                     "error": "Account verification required.",

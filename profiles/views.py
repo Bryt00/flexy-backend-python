@@ -232,10 +232,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
             subscription = profile.subscription if hasattr(profile, 'subscription') else None
             
             if not subscription or not subscription.can_go_online:
-                return Response({
-                    "error": "Active subscription required.",
-                    "detail": "You need an active subscription to go online. Please check your plan status."
-                }, status=status.HTTP_403_FORBIDDEN)
+                if subscription and subscription.is_trial_used and not subscription.is_in_trial and subscription.status != 'active':
+                    return Response({
+                        "error": "Free trial expired.",
+                        "detail": "Your 14-day free trial has expired. Please purchase a subscription plan to go online and continue driving."
+                    }, status=status.HTTP_403_FORBIDDEN)
+                else:
+                    return Response({
+                        "error": "Active subscription required.",
+                        "detail": "You need an active subscription to go online. Please check your plan status."
+                    }, status=status.HTTP_403_FORBIDDEN)
 
             # 3. Toggle Status via Centralized Service
             requested_status = request.data.get('is_online')

@@ -282,6 +282,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'notification.tasks.send_driver_birthday_pushes',
         'schedule': 86400.0,  # Every 24 hours
     },
+    'remind-upcoming-scheduled-rides-every-minute': {
+        'task': 'rides.tasks.remind_upcoming_scheduled_rides',
+        'schedule': 60.0,
+    },
 }
 
 DOCUMENT_RENEWAL_THRESHOLD_DAYS = 7
@@ -347,15 +351,30 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Operations",
+                "title": "Headquarters & Live Operations",
                 "items": [
                     {
-                        "title": "Dashboard / Live Map",
-                        "icon": "map",
+                        "title": "Dashboard",
+                        "icon": "dashboard",
                         "link": "/headquarters/",
                     },
                     {
-                        "title": "Rides",
+                        "title": "User Registry",
+                        "icon": "group",
+                        "link": "/headquarters/core_auth/user/",
+                    },
+                    {
+                        "title": "User Profiles",
+                        "icon": "person",
+                        "link": "/headquarters/profiles/profile/",
+                    },
+                ],
+            },
+            {
+                "title": "Ride-Hailing Operations",
+                "items": [
+                    {
+                        "title": "Active & Past Rides",
                         "icon": "commute",
                         "link": "/headquarters/rides/ride/",
                     },
@@ -365,34 +384,44 @@ UNFOLD = {
                         "link": "/headquarters/rides/ridereceipt/",
                     },
                     {
-                        "title": "Delivery Hub",
-                        "icon": "local_shipping",
-                        "link": "/headquarters/courier/delivery/",
-                    },
-                    {
                         "title": "Vehicle Fleet",
                         "icon": "directions_car",
                         "link": "/headquarters/vehicles/vehicle/",
                     },
                     {
-                        "title": "Profiles",
-                        "icon": "person",
-                        "link": "/headquarters/profiles/profile/",
-                    },
-                    {
-                        "title": "Wallets",
-                        "icon": "account_balance_wallet",
-                        "link": "/headquarters/payments/wallet/",
-                    },
-                    {
-                        "title": "Transactions",
-                        "icon": "receipt_long",
-                        "link": "/headquarters/payments/transaction/",
+                        "title": "Driver Verifications",
+                        "icon": "verified_user",
+                        "link": "/headquarters/profiles/driververification/",
                     },
                 ],
             },
             {
-                "title": "Growth & Marketing",
+                "title": "Delivery & Courier Operations",
+                "items": [
+                    {
+                        "title": "Delivery Registry",
+                        "icon": "local_shipping",
+                        "link": "/headquarters/courier/delivery/",
+                    },
+                    {
+                        "title": "Delivery Categories",
+                        "icon": "inventory",
+                        "link": "/headquarters/core_settings/deliverycategory/",
+                    },
+                    {
+                        "title": "Delivery Weight Tiers",
+                        "icon": "scale",
+                        "link": "/headquarters/core_settings/deliveryweighttier/",
+                    },
+                    {
+                        "title": "Delivery Vehicle Types",
+                        "icon": "local_shipping",
+                        "link": "/headquarters/core_settings/deliveryvehicletype/",
+                    },
+                ],
+            },
+            {
+                "title": "Subscriptions & Advertising",
                 "items": [
                     {
                         "title": "Subscription Plans",
@@ -408,21 +437,6 @@ UNFOLD = {
                         "title": "Subscription Payments",
                         "icon": "payment",
                         "link": "/headquarters/subscriptions/subscriptionpayment/",
-                    },
-                    {
-                        "title": "App Banners",
-                        "icon": "view_carousel",
-                        "link": "/headquarters/marketing/campaign/",
-                    },
-                    {
-                        "title": "Push Campaigns",
-                        "icon": "campaign",
-                        "link": "/headquarters/notification/campaign/",
-                    },
-                    {
-                        "title": "Promos & Coupons",
-                        "icon": "confirmation_number",
-                        "link": "/headquarters/marketing/promocode/",
                     },
                     {
                         "title": "Ad Management",
@@ -447,7 +461,47 @@ UNFOLD = {
                 ],
             },
             {
-                "title": "Security & Support",
+                "title": "Marketing & Communications",
+                "items": [
+                    {
+                        "title": "Promo Codes & Coupons",
+                        "icon": "confirmation_number",
+                        "link": "/headquarters/marketing/promocode/",
+                    },
+                    {
+                        "title": "App Campaign Banners",
+                        "icon": "view_carousel",
+                        "link": "/headquarters/marketing/campaign/",
+                    },
+                    {
+                        "title": "Push Campaigns",
+                        "icon": "campaign",
+                        "link": "/headquarters/notification/campaign/",
+                    },
+                    {
+                        "title": "Sent Notifications Log",
+                        "icon": "notifications",
+                        "link": "/headquarters/notification/notification/",
+                    },
+                ],
+            },
+            {
+                "title": "Financial Operations",
+                "items": [
+                    {
+                        "title": "User Wallets",
+                        "icon": "account_balance_wallet",
+                        "link": "/headquarters/payments/wallet/",
+                    },
+                    {
+                        "title": "Transaction Logs",
+                        "icon": "receipt_long",
+                        "link": "/headquarters/payments/transaction/",
+                    },
+                ],
+            },
+            {
+                "title": "Safety, Security & Support",
                 "items": [
                     {
                         "title": "Incident Hub (SOS)",
@@ -460,37 +514,32 @@ UNFOLD = {
                         "link": "/headquarters/audit/fraudflag/",
                     },
                     {
-                        "title": "User Directory",
-                        "icon": "group",
-                        "link": "/headquarters/core_auth/user/",
-                    },
-                    {
-                        "title": "Deletion Requests",
+                        "title": "Account Deletion Requests",
                         "icon": "person_remove",
                         "link": "/headquarters/core_auth/deletionrequest/",
                     },
                     {
-                        "title": "Driver Verifications",
-                        "icon": "verified_user",
-                        "link": "/headquarters/profiles/driververification/",
-                    },
-                    {
-                        "title": "Notifications",
-                        "icon": "notifications",
-                        "link": "/headquarters/notification/notification/",
+                        "title": "System Audit Logs",
+                        "icon": "history",
+                        "link": "/headquarters/audit/auditlog/",
                     },
                     {
                         "title": "API Keys / Integrations",
                         "icon": "api",
                         "link": "/headquarters/integrations/apikey/",
                     },
+                    {
+                        "title": "File Cloud Metadata",
+                        "icon": "cloud",
+                        "link": "/headquarters/file_manager/filemetadata/",
+                    },
                 ],
             },
             {
-                "title": "Content & System",
+                "title": "System Parameters & Configurations",
                 "items": [
                     {
-                        "title": "Pricing & Surge",
+                        "title": "Pricing & Surge Rules",
                         "icon": "payments",
                         "link": "/headquarters/core_settings/pricingrule/",
                     },
@@ -504,6 +553,16 @@ UNFOLD = {
                         "icon": "straighten",
                         "link": "/headquarters/core_settings/distancetier/",
                     },
+                    {
+                        "title": "Global System Settings",
+                        "icon": "settings",
+                        "link": "/headquarters/core_settings/sitesetting/",
+                    },
+                ],
+            },
+            {
+                "title": "Public Website Content",
+                "items": [
                     {
                         "title": "Blog Posts",
                         "icon": "article",
@@ -525,12 +584,12 @@ UNFOLD = {
                         "link": "/headquarters/website/faqitem/",
                     },
                     {
-                        "title": "Cities",
+                        "title": "Cities Offered",
                         "icon": "location_city",
                         "link": "/headquarters/website/city/",
                     },
                     {
-                        "title": "Testimonials",
+                        "title": "User Testimonials",
                         "icon": "format_quote",
                         "link": "/headquarters/website/testimonial/",
                     },
@@ -550,7 +609,7 @@ UNFOLD = {
                         "link": "/headquarters/website/brandfeature/",
                     },
                     {
-                        "title": "Website Settings",
+                        "title": "Website Global Settings",
                         "icon": "tune",
                         "link": "/headquarters/website/websitesettings/",
                     },
@@ -560,24 +619,9 @@ UNFOLD = {
                         "link": "/headquarters/website/contactinquiry/",
                     },
                     {
-                        "title": "Global Settings",
-                        "icon": "settings",
-                        "link": "/headquarters/core_settings/sitesetting/",
-                    },
-                    {
                         "title": "Legal Documents",
                         "icon": "description",
                         "link": "/headquarters/website/legaldocument/",
-                    },
-                    {
-                        "title": "System Audit Logs",
-                        "icon": "history",
-                        "link": "/headquarters/audit/auditlog/",
-                    },
-                    {
-                        "title": "File Cloud",
-                        "icon": "cloud",
-                        "link": "/headquarters/file_manager/filemetadata/",
                     },
                 ],
             },

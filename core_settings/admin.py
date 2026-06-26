@@ -1,13 +1,25 @@
 from django.contrib import admin
+from django.db import models
+from django.forms import TextInput
 from unfold.admin import ModelAdmin
-from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier
+from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('key', 'value', 'updated_at')
+    list_display = ('key', 'value', 'description', 'updated_at')
+    list_editable = ('value',)
     list_filter = ('updated_at',)
     search_fields = ('key', 'value')
+    
+    formfield_overrides = {
+        models.TextField: {'widget': TextInput(attrs={'size': '40', 'class': 'vTextField'})},
+    }
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj: # Editing an existing object
+            return ('key', 'description')
+        return ()
 
 @admin.register(LegalDocument)
 class LegalDocumentAdmin(ModelAdmin):
@@ -44,4 +56,26 @@ class DistanceTierAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('name', 'min_km', 'max_km', 'rate_per_km', 'is_active')
     list_editable = ('rate_per_km', 'is_active')
+
+@admin.register(DeliveryCategory)
+class DeliveryCategoryAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('name', 'markup_percentage', 'is_active', 'created_at')
+    list_editable = ('markup_percentage', 'is_active')
+    search_fields = ('name',)
+
+@admin.register(DeliveryWeightTier)
+class DeliveryWeightTierAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('name', 'min_weight', 'max_weight', 'markup_percentage', 'is_active')
+    list_editable = ('min_weight', 'max_weight', 'markup_percentage', 'is_active')
+    search_fields = ('name',)
+
+@admin.register(DeliveryVehicleType)
+class DeliveryVehicleTypeAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('name', 'base_fare', 'per_km_rate', 'is_active', 'created_at')
+    list_editable = ('base_fare', 'per_km_rate', 'is_active')
+    search_fields = ('name',)
+
 

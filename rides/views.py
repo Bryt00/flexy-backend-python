@@ -21,7 +21,30 @@ class RideViewSet(viewsets.ModelViewSet):
             return LiteRideSerializer
         return RideSerializer
 
+    def _clear_overdue_scheduled_rides(self):
+        """
+        Clears (cancels) scheduled rides whose scheduled_for time is less than now
+        and were never accepted (driver is null, status is pending/requested).
+        """
+        overdue_rides = Ride.objects.filter(
+            is_scheduled=True,
+            status__in=['pending', 'requested'],
+            driver__isnull=True,
+            scheduled_for__lt=timezone.now()
+        )
+        
+        if overdue_rides.exists():
+            for ride in overdue_rides:
+                ride.status = 'cancelled'
+                ride.save()
+                # Broadcast update
+                try:
+                    self._broadcast_ride_update(ride, 'ride_cancelled')
+                except Exception as e:
+                    print(f"Error broadcasting scheduled ride timeout: {e}")
+
     def get_queryset(self):
+        self._clear_overdue_scheduled_rides()
         return Ride.objects.select_related(
             'driver__profile', 
             'rider__profile', 

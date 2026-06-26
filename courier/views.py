@@ -6,15 +6,62 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Delivery
 from .serializers import DeliverySerializer
-from rides.utils import FareCalculator
+from rides.utils import FareCalculator, GeospatialUtils
 from integrations.google_maps import GoogleMapsService
+from .utils import CourierFareCalculator
 
 class DeliveryViewSet(viewsets.ModelViewSet):
     queryset = Delivery.objects.all()
     serializer_class = DeliverySerializer
     permission_classes = [IsAuthenticated]
 
+    def _check_and_expire_deliveries(self):
+        """
+        Auto-expires pending deliveries that have been searching for more than 3 minutes.
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        timeout_threshold = timezone.now() - timedelta(minutes=3)
+        expired_deliveries = Delivery.objects.filter(
+            status='PENDING',
+            created_at__lt=timeout_threshold
+        )
+        
+        if expired_deliveries.exists():
+            channel_layer = get_channel_layer()
+            for delivery in expired_deliveries:
+                delivery.status = 'CANCELLED'
+                delivery.save()
+                
+                # Broadcast status update
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        f'delivery_{delivery.id}',
+                        {
+                            'type': 'delivery_broadcast',
+                            'message_type': 'status_update',
+                            'data': DeliverySerializer(delivery).data
+                        }
+                    )
+                except Exception as e:
+                    print(f"Error broadcasting delivery timeout: {e}")
+                    
+                # Broadcast removal to discovery stream
+                try:
+                    async_to_sync(channel_layer.group_send)(
+                        'delivery_discovery',
+                        {
+                            'type': 'delivery_broadcast',
+                            'message_type': 'delivery_taken',
+                            'data': {'delivery_id': str(delivery.id)}
+                        }
+                    )
+                except Exception as e:
+                    print(f"Error broadcasting delivery discovery removal: {e}")
+
     def get_queryset(self):
+        self._check_and_expire_deliveries()
         # Passengers see their requested deliveries, drivers see assigned ones
         user = self.request.user
         qs = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs')
@@ -37,8 +84,19 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         
         try:
             distance_km, duration_sec, _ = GoogleMapsService.get_trip_metrics(pickup_lat, pickup_lng, dropoff_lat, dropoff_lng)
-            # Use motorbike for base delivery calculation
-            ledger = FareCalculator.compute_final_fare(distance_km, 'motorbike')
+            
+            vehicle_type_id = serializer.validated_data.get('vehicle_type')
+            category_id = serializer.validated_data.get('item_category')
+            weight_tier_id = serializer.validated_data.get('weight_tier')
+
+            ledger = CourierFareCalculator.compute_final_fare(
+                distance_km=distance_km, 
+                vehicle_type_id=vehicle_type_id.id if vehicle_type_id else None,
+                category_id=category_id.id if category_id else None,
+                weight_tier_id=weight_tier_id.id if weight_tier_id else None,
+                lat=pickup_lat,
+                lng=pickup_lng
+            )
             total_fare = ledger.get('total_fare', 0.0)
             base_fare = ledger.get('base_fare', 0.0)
             distance_fee = ledger.get('distance_fare', 0.0)
@@ -76,13 +134,23 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             p_lng = float(request.query_params.get('pickup_lng'))
             d_lat = float(request.query_params.get('dropoff_lat'))
             d_lng = float(request.query_params.get('dropoff_lng'))
-            # item_category and weight are available but we use distance-based pricing for now
+            
+            vehicle_type_id = request.query_params.get('vehicle_type_id') or request.query_params.get('vehicle_type')
+            category_id = request.query_params.get('category_id') or request.query_params.get('item_category')
+            weight_tier_id = request.query_params.get('weight_tier_id') or request.query_params.get('weight_tier')
             
             # 1. Fetch real metrics from Google
             dist_km, duration_sec, _ = GoogleMapsService.get_trip_metrics(p_lat, p_lng, d_lat, d_lng)
             
-            # 2. Calculate fare using 'motorbike' as the baseline for delivery
-            ledger = FareCalculator.compute_final_fare(dist_km, 'motorbike')
+            # 2. Calculate dynamic courier fare
+            ledger = CourierFareCalculator.compute_final_fare(
+                distance_km=dist_km, 
+                vehicle_type_id=vehicle_type_id,
+                category_id=category_id,
+                weight_tier_id=weight_tier_id,
+                lat=p_lat,
+                lng=p_lng
+            )
             
             return Response({
                 "estimated_fare": ledger['total_fare'],
@@ -221,10 +289,28 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     def available(self, request):
         """
         Returns all deliveries that are currently PENDING and available for drivers to accept.
+        Filters based on proximity (15km radius) if driver location is provided.
         """
-        # In the future, we can filter by proximity here.
+        self._check_and_expire_deliveries()
+        user = request.user
+        if user.role != 'driver' or not hasattr(user, 'profile') or not user.profile.receive_deliveries:
+            return Response([]) # Only opted-in drivers see available deliveries
+
+        driver_lat = user.profile.last_lat
+        driver_lng = user.profile.last_lng
+
         available_deliveries = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs').filter(status='PENDING').order_by('-created_at')
-        serializer = DeliverySerializer(available_deliveries, many=True)
+        
+        filtered_deliveries = []
+        if driver_lat and driver_lng:
+            for delivery in available_deliveries:
+                dist = GeospatialUtils.calculate_haversine_distance(driver_lat, driver_lng, delivery.pickup_lat, delivery.pickup_lng) / 1000.0
+                if dist <= 15.0: # 15km radius
+                    filtered_deliveries.append(delivery)
+        else:
+            filtered_deliveries = available_deliveries # Fallback if no driver location
+
+        serializer = DeliverySerializer(filtered_deliveries, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
@@ -247,11 +333,6 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def nearby(self, request):
         """
-        Stub for nearby delivery discovery (GPR/Radius).
+        Nearby delivery discovery with radius filter.
         """
-        lat = request.query_params.get('lat')
-        lng = request.query_params.get('lng')
-        # radius_km = float(request.query_params.get('radius', 5.0))
-        
-        # For now, just return available ones as a fallback
         return self.available(request)

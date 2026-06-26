@@ -272,6 +272,9 @@ class PasswordResetView(views.APIView):
         otp_obj.save()
         
         user.set_password(new_password)
+        if not user.is_email_verified:
+            user.is_email_verified = True
+            user.is_active = True
         user.save()
         
         return Response({"message": "Password reset successfully", "status": "success"})

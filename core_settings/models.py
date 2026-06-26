@@ -127,3 +127,41 @@ class DistanceTier(models.Model):
 
     def __str__(self):
         return f"{self.name}: {self.min_km}km - {self.max_km}km @ {self.rate_per_km}/km"
+
+class DeliveryCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, help_text="e.g. 'Documents', 'Food', 'Electronics'")
+    markup_percentage = models.FloatField(default=0.0, help_text="Percentage markup (e.g. 10.0 for 10% extra)")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Delivery Categories"
+
+    def __str__(self):
+        return self.name
+
+class DeliveryWeightTier(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, help_text="e.g. 'Light (< 5kg)'")
+    min_weight = models.FloatField(default=0.0)
+    max_weight = models.FloatField(default=0.0, help_text="Use a high number like 9999 for the highest tier")
+    markup_percentage = models.FloatField(default=0.0, help_text="Percentage markup (e.g. 20.0 for 20% extra)")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['min_weight']
+
+    def __str__(self):
+        return f"{self.name} ({self.min_weight}kg - {self.max_weight}kg)"
+
+class DeliveryVehicleType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, help_text="e.g. 'Motorbike', 'Truck', 'Van'")
+    base_fare = models.FloatField(default=0.0, help_text="Base fare for this vehicle type")
+    per_km_rate = models.FloatField(default=0.0, help_text="Rate per km for this vehicle type")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name

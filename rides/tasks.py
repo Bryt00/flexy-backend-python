@@ -185,6 +185,43 @@ def activate_scheduled_rides():
         logger.info(f"Triggered dispatch for {count} scheduled rides.")
 
 @shared_task
+def remind_upcoming_scheduled_rides():
+    from datetime import timedelta
+    from notification.utils import send_notification
+    
+    now = timezone.now()
+    target_time_start = now + timedelta(minutes=29)
+    target_time_end = now + timedelta(minutes=31)
+    
+    # Find rides that are accepted and are about 30 mins away
+    upcoming_rides = Ride.objects.filter(
+        is_scheduled=True,
+        status='accepted',
+        driver__isnull=False,
+        scheduled_for__gte=target_time_start,
+        scheduled_for__lte=target_time_end
+    )
+    
+    count = 0
+    for ride in upcoming_rides:
+        # Check if reminder already sent to prevent duplicate pushes (if we ran multiple times in the window)
+        # Use a simple metadata flag or redis key
+        from flexy_backend.redis_client import redis_geo
+        lock_key = f"ride_reminder_sent:{ride.id}"
+        if redis_geo.r.set(lock_key, "1", nx=True, ex=3600):
+            send_notification(
+                ride.driver,
+                title="Upcoming Scheduled Ride",
+                body=f"Reminder: You have a scheduled ride from {ride.pickup_address} starting in about 30 minutes.",
+                type='PUSH',
+                ref_id=ride.id
+            )
+            count += 1
+            
+    if count > 0:
+        logger.info(f"Sent {count} reminders for upcoming scheduled rides.")
+
+@shared_task
 def check_single_ride_anomaly(ride_id):
     from .services.safety_service import SafetyService
     if SafetyService.check_ride_anomaly(ride_id):

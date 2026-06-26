@@ -55,6 +55,12 @@
     const activeRides = JSON.parse('{{ active_rides_json|escapejs }}');
     const rideTrackers = {}; // Keyed by driver_id
     
+    // Focus and routing tracking
+    let focusedRideId = null;
+    let focusedPickupMarker = null;
+    let focusedDropoffMarker = null;
+    let focusedRouteLine = null;
+    
     // Initialize Leaflet Map
     const map = L.map('liveMap', { zoomControl: false }).setView([5.6037, -0.1870], 12);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -103,6 +109,90 @@
         requestAnimationFrame(step);
     }
 
+
+
+    function focusOnRide(rideId) {
+        // Clear previous focused elements
+        if (focusedPickupMarker) map.removeLayer(focusedPickupMarker);
+        if (focusedDropoffMarker) map.removeLayer(focusedDropoffMarker);
+        if (focusedRouteLine) map.removeLayer(focusedRouteLine);
+
+        // If clicking the currently focused ride, toggle/unfocus it
+        if (focusedRideId === rideId) {
+            focusedRideId = null;
+            // Reset to fit all active driver markers
+            if (markerClusterGroup.getBounds().isValid()) {
+                map.fitBounds(markerClusterGroup.getBounds(), { padding: [40, 40] });
+            }
+            // Remove highlight class from list item
+            Object.keys(rideTrackers).forEach(id => {
+                const item = rideTrackers[id].listItem;
+                item.classList.remove('border-primary/50', 'bg-primary/10');
+            });
+            return;
+        }
+
+        focusedRideId = rideId;
+
+        // Find the tracker
+        const driverId = Object.keys(rideTrackers).find(dId => rideTrackers[dId].ride.id === rideId);
+        if (!driverId) return;
+
+        const tracker = rideTrackers[driverId];
+        const ride = tracker.ride;
+        const driverLatLng = tracker.marker.getLatLng();
+
+        // Highlight list item and dim others
+        Object.keys(rideTrackers).forEach(id => {
+            const item = rideTrackers[id].listItem;
+            if (id === driverId) {
+                item.classList.add('border-primary/50', 'bg-primary/10');
+            } else {
+                item.classList.remove('border-primary/50', 'bg-primary/10');
+            }
+        });
+
+        // Add Pickup Marker
+        const pickupIcon = L.divIcon({
+            html: `<div style="background-color: #A3E635; color: black; font-weight: 900; font-size: 9px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(0,0,0,0.5);">P</div>`,
+            className: '',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+        focusedPickupMarker = L.marker([ride.pickup_lat, ride.pickup_lng], { icon: pickupIcon }).addTo(map);
+        focusedPickupMarker.bindPopup(`<b>Pickup Location</b><br><span class="text-xs text-slate-500">${ride.rider_name || 'Rider'}'s pickup spot</span>`);
+
+        // Add Dropoff Marker
+        const dropoffIcon = L.divIcon({
+            html: `<div style="background-color: #EF4444; color: white; font-weight: 900; font-size: 9px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(0,0,0,0.5);">D</div>`,
+            className: '',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+        focusedDropoffMarker = L.marker([ride.dropoff_lat, ride.dropoff_lng], { icon: dropoffIcon }).addTo(map);
+        focusedDropoffMarker.bindPopup(`<b>Dropoff Location</b><br><span class="text-xs text-slate-500">Destination</span>`);
+
+        // Add Polyline connecting route (Pickup -> Driver -> Dropoff)
+        focusedRouteLine = L.polyline([
+            [ride.pickup_lat, ride.pickup_lng],
+            [driverLatLng.lat, driverLatLng.lng],
+            [ride.dropoff_lat, ride.dropoff_lng]
+        ], {
+            color: '#00B4FF',
+            dashArray: '6, 8',
+            weight: 3.5,
+            opacity: 0.85
+        }).addTo(map);
+
+        // Zoom map to fit the route bounds
+        const bounds = L.latLngBounds([
+            [ride.pickup_lat, ride.pickup_lng],
+            [driverLatLng.lat, driverLatLng.lng],
+            [ride.dropoff_lat, ride.dropoff_lng]
+        ]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
     function createOrUpdateRideTracker(ride, newLat = null, newLng = null, isUpdate = false) {
         const driverId = ride.driver_id;
         if (!driverId) return;
@@ -137,6 +227,9 @@
         if (!tracker) {
             // Create Marker
             const marker = L.marker([lat, lng], {icon: icon});
+            marker.on('click', () => {
+                focusOnRide(ride.id);
+            });
             marker.bindPopup(`
                 <div class="text-slate-900 font-sans p-1">
                     <b class="text-sm">${name}</b><br>
@@ -147,7 +240,7 @@
 
             // Create list item DOM
             const li = document.createElement('li');
-            li.className = 'flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 transition-all duration-300';
+            li.className = 'flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 transition-all duration-300 cursor-pointer hover:bg-white/10 hover:border-primary/30';
             li.innerHTML = `
                 <div class="flex items-center">
                     <div class="w-8 h-8 rounded-full bg-brand-green/20 text-brand-green flex items-center justify-center font-bold text-xs mr-3">
@@ -161,6 +254,9 @@
                 </div>
                 <span class="status-pill ${statusPillClass}">${statusText}</span>
             `;
+            li.addEventListener('click', () => {
+                focusOnRide(ride.id);
+            });
             listContainer.appendChild(li);
 
             // Add marker to the cluster group
@@ -190,6 +286,17 @@
                 </div>
             `);
 
+            // If currently focused, update route line coordinates
+            if (focusedRideId === ride.id) {
+                if (focusedRouteLine) {
+                    focusedRouteLine.setLatLngs([
+                        [ride.pickup_lat, ride.pickup_lng],
+                        [lat, lng],
+                        [ride.dropoff_lat, ride.dropoff_lng]
+                    ]);
+                }
+            }
+
             // Update list item
             const elapsedLabel = tracker.listItem.querySelector('.elapsed-label');
             if (elapsedLabel) {
@@ -201,13 +308,17 @@
                 statusPill.textContent = statusText;
             }
 
-            // Highlight list item briefly to show activity
-            tracker.listItem.classList.remove('bg-white/5');
-            tracker.listItem.classList.add('bg-primary/20');
-            setTimeout(() => {
-                tracker.listItem.classList.remove('bg-primary/20');
-                tracker.listItem.classList.add('bg-white/5');
-            }, 1000);
+            // Highlight list item briefly to show activity if not currently focused
+            if (focusedRideId !== ride.id) {
+                tracker.listItem.classList.remove('bg-white/5');
+                tracker.listItem.classList.add('bg-primary/20');
+                setTimeout(() => {
+                    if (focusedRideId !== ride.id) {
+                        tracker.listItem.classList.remove('bg-primary/20');
+                        tracker.listItem.classList.add('bg-white/5');
+                    }
+                }, 1000);
+            }
         }
     }
 

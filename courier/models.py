@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.conf import settings
 from profiles.models import Profile
+from core_settings.models import DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType
 
 class Delivery(models.Model):
     STATUS_CHOICES = (
@@ -15,18 +16,14 @@ class Delivery(models.Model):
         ('CANCELLED', 'Cancelled'),
     )
 
-    CATEGORY_CHOICES = (
-        ('DOCUMENTS', 'Documents'),
-        ('FOOD', 'Food'),
-        ('PACKAGE', 'Package'),
-    )
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     passenger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='deliveries_requested')
     driver = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, blank=True, related_name='courier_deliveries')
     
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='PENDING')
-    item_category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    item_category = models.ForeignKey(DeliveryCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    weight_tier = models.ForeignKey(DeliveryWeightTier, on_delete=models.SET_NULL, null=True, blank=True)
+    vehicle_type = models.ForeignKey(DeliveryVehicleType, on_delete=models.SET_NULL, null=True, blank=True)
     weight = models.FloatField(blank=True, null=True)
     
     # Location Information
@@ -49,6 +46,9 @@ class Delivery(models.Model):
     base_fare = models.FloatField(default=0.0)
     distance_fee = models.FloatField(default=0.0)
     final_fare = models.FloatField(blank=True, null=True)
+    promo_code_string = models.CharField(max_length=50, blank=True, null=True)
+    discount_amount = models.FloatField(default=0.0)
+    surge_multiplier_applied = models.FloatField(default=1.0)
     
     distance = models.FloatField(default=0.0)
     estimated_eta = models.FloatField(default=0.0)

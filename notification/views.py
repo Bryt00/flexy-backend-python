@@ -51,6 +51,12 @@ class NotificationViewSet(viewsets.ModelViewSet):
         self.get_queryset().filter(is_read=False).update(is_read=True)
         return Response({"status": "success"})
 
+    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=['delete'])
+    def delete_all(self, request):
+        self.get_queryset().delete()
+        return Response({"status": "success"}, status=status.HTTP_204_NO_CONTENT)
+
     @extend_schema(responses={200: NotificationSerializer})
     @action(detail=True, methods=['post'])
     def read(self, request, pk=None):
@@ -84,13 +90,22 @@ class RegisterFCMTokenView(APIView):
         # Send a welcome push if this is their first registered device 
         # (we use the Notification model to check if we've already welcomed them)
         if created:
+            from django.utils import timezone
+            from datetime import timedelta
             from .models import Notification
             from .utils import send_notification
             from core_settings.models import SiteSetting
             
+            # Check if this is the only registered device for this user
+            FCMDevice = __import__('notification').models.FCMDevice
+            device_count = FCMDevice.objects.filter(user=request.user).count()
+            
+            # Welcome push is only sent for brand new users (account created in the last 24 hours)
+            is_new_user = (timezone.now() - request.user.created_at) < timedelta(hours=24)
+            
             # Check if they have already received a welcome message
             has_welcomed = Notification.objects.filter(user=request.user, title__icontains="Welcome").exists()
-            if not has_welcomed:
+            if device_count == 1 and is_new_user and not has_welcomed:
                 # Safely extract the first name from the user's profile
                 first_name = "there"
                 try:

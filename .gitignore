@@ -48,7 +48,7 @@ coverage.xml
 .pytest_cache/
 
 # Celery stuff
-celerybeat-schedule
+celerybeat-schedule*
 celerybeat.pid
 
 # SageMath parsed files
@@ -65,7 +65,7 @@ celerybeat.pid
 .DS_Store
 
 # Docker
-.dockerignoreseed_services.py
+.dockerignore
 
 # Scratch / Temporary scripts
 scratch/
@@ -84,3 +84,13 @@ portal_manual.md
 .secret/
 firebase_service_account.json
 firebase-service-account.json
+test_fcm.py
+send_test_push.py
+broadcast_push.py
+seed_delivery.py
+seed_data.py
+seed_legal.py
+seed_platform_settings.py
+seed_pricing.py
+seed_services.py
+seed_ads.py

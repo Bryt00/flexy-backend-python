@@ -1,6 +1,6 @@
 # FlexyRide Admin Portal: Operational Manual
 
-Welcome to the FlexyRide Central Command. This manual provides a detailed guide on how to manage the FlexyRide ecosystem, from fleet operations to global system configurations.
+Welcome to the FlexyRide Central Command. This manual provides a detailed guide on how to manage the FlexyRide ecosystem, from fleet operations to global platform settings.
 
 ---
 
@@ -9,15 +9,15 @@ Managing the heartbeat of the service.
 
 ### 🚗 Vehicle Fleet
 *   **Approving Vehicles**: When a driver uploads vehicle documents (Insurance, Roadworthy), they appear here. Review the files and set the status to `Approved` to allow the vehicle to go online.
-*   **Vehicle Categories**: Define your fleet types (e.g., *Go*, *Pragya*, *Comfort*). Each category can have a different base fare and multiplier.
+*   **Vehicle Categories**: Define your fleet types (e.g., *Go*, *Pragya*, *Comfort*). Each category can have a different base fare and pricing multiplier.
 
 ### 🛡️ Incident Hub (SOS)
 *   **Emergency Response**: All SOS alerts triggered from the mobile apps appear here in real-time.
-*   **Resolution**: Track the status of safety incidents and document the resolution steps taken by the support team.
+*   **Resolution**: Track the status of safety incidents and document the steps taken by the support team to resolve them.
 
 ### 📍 Live Map & Rides
 *   **Real-time Monitoring**: View active rides on the live map.
-*   **Ride History**: Audit past trips, including pickup/dropoff points, fare breakdowns, and driver/passenger details.
+*   **Ride History**: Review past trips, including pickup/dropoff points, fare breakdowns, and driver/passenger details.
 
 ---
 
@@ -25,7 +25,7 @@ Managing the heartbeat of the service.
 Tools to drive user acquisition and revenue.
 
 ### 📢 Ad Management
-*   **Reviewing Requests**: Advertising inquiries from the website appear here. Review the headline, body text, and target URL.
+*   **Reviewing Requests**: Advertising inquiries from the website appear here. Review the headline, text, and destination link.
 *   **Approval Workflow**: Once you approve a request, the business owner is notified via email and can proceed to payment to activate their ad in the passenger app.
 
 ### 🎫 Promos & Coupons
@@ -33,17 +33,17 @@ Tools to drive user acquisition and revenue.
 *   **Usage Limits**: Set expiration dates and maximum usage counts to control your marketing budget.
 
 ### 🚀 Marketing Campaigns (App Banners)
-*   **In-App Banners**: Manage the sliding banners shown on the passenger home screen. Link them to internal app pages or external URLs.
+*   **In-App Banners**: Manage the sliding banners shown on the passenger home screen. Link them to internal app pages or external websites.
 *   **Targeting**: Select whether the banner should be visible to All Users, Drivers Only, or Passengers Only.
-*   **Message Payload**: A flexible JSON field for passing hidden structured data to the mobile apps (e.g., specific deep-link instructions, promo codes to auto-apply, or A/B testing flags).
+*   **Special Instructions**: A flexible field for passing hidden instructions to the mobile apps (e.g., telling the app to automatically apply a specific promo code when the banner is tapped).
 
 ### 📲 Notification Campaigns (Push & Emails)
 *   **Broadcast Engine**: Send mass Push Notifications and Bulk Emails to your user base.
-*   **Advanced Targeting (OneSignal-style)**:
+*   **Advanced Targeting**:
     *   **Audience**: Filter by All, Passengers, or Drivers.
     *   **City Targeting**: Restrict recipients to a specific city.
-    *   **Behavioral Conditions**: Target specific segments such as "Inactive (7+ days)", "Highly Rated (>= 4.5)", "Loyal (>= 50 rides)", or "New Users".
-*   **Resending**: You can continually broadcast a campaign to hit newly matching users without having to duplicate it.
+    *   **Behavioral Conditions**: Target specific segments such as "Inactive (7+ days)", "Highly Rated", "Loyal", or "New Users".
+*   **Resending**: You can continually broadcast a campaign to hit newly matching users without having to recreate the message.
 
 ---
 
@@ -52,7 +52,7 @@ Managing the flow of money.
 
 ### 💳 Transactions
 *   **Audit Trail**: A centralized log of all payments (Rides, Ad Bookings, Top-ups).
-*   **Status Tracking**: Monitor Paystack transaction statuses (Pending, Success, Failed).
+*   **Status Tracking**: Monitor payment statuses (Pending, Success, Failed).
 
 ### 👛 User Wallets
 *   **Balance Management**: View and adjust user wallet balances for refunds or manual bonuses.
@@ -62,13 +62,13 @@ Managing the flow of money.
 ## 4. Content & System Configuration
 Fine-tuning the platform behavior.
 
-### ⚙️ Global Settings (SiteSettings)
+### ⚙️ Global Settings
 This is the "Control Room" for the platform's behavior.
-*   **`maps_country_restriction`**: Enter ISO country codes (e.g., `gh, ng`) to restrict address searching in the mobile apps. Leave blank for global search.
-*   **`contact_email` / `contact_phone`**: Updates the contact details displayed on the marketing website.
+*   **Maps Search Restriction**: Enter country abbreviations (e.g., `gh` for Ghana, `ng` for Nigeria) to restrict address searching in the mobile apps. Leave blank for global search.
+*   **Public Contact Details**: Updates the contact email and phone number displayed on the marketing website.
 
 ### 📝 Website Editor
-*   **Cities**: Add or remove cities where FlexyRide is "active." This updates the coverage map on the website.
+*   **Cities**: Add or remove cities where FlexyRide is active. This updates the coverage map on the website.
 *   **FAQ**: Manage the questions and answers shown in the app and on the web.
 *   **Blog**: Publish updates, safety tips, and news to the marketing site.
 

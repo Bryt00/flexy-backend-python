@@ -103,6 +103,20 @@ class Ride(models.Model):
             
         super().save(*args, **kwargs)
 
+    @property
+    def driver_name(self):
+        if self.driver and hasattr(self.driver, 'profile') and self.driver.profile.full_name:
+            return self.driver.profile.full_name
+        return "Flexy Driver"
+
+    @property
+    def vehicle_info(self):
+        if self.driver and hasattr(self.driver, 'profile'):
+            vehicle = self.driver.profile.vehicles.filter(is_active=True).first()
+            if vehicle:
+                return f"{vehicle.color} {vehicle.make} {vehicle.model} ({vehicle.license_plate})"
+        return "Standard Vehicle"
+
     def __str__(self):
         return f"Ride {self.id} - {self.status}"
 

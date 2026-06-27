@@ -64,8 +64,8 @@
         </div>
 
         <div class="footer">
-            <p>Vehicle: {{ ride.driver.vehicle.make|default:"FlexyRide" }} {{ ride.driver.vehicle.model|default:"" }}</p>
-            <p>Driver: {{ ride.driver.full_name|default:"Flexy Driver" }}</p>
+            <p>Vehicle: {{ ride.vehicle_info }}</p>
+            <p>Driver: {{ ride.driver_name }}</p>
             <p style="margin-top: 20px;">Thank you for riding with FlexyRide!</p>
         </div>
     </div>

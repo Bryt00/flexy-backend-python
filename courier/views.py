@@ -149,7 +149,8 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                     title="📦 New Delivery Opportunity!",
                     body=f"Pickup: {delivery.pickup_address}\nDropoff: {delivery.dropoff_address}",
                     type='PUSH',
-                    ref_id=str(delivery.id)
+                    ref_id=str(delivery.id),
+                    extra_data={'notification_type': 'DELIVERY_OPPORTUNITY'}
                 )
         except Exception as e:
             print(f"Error sending delivery notifications to drivers: {e}")
@@ -252,6 +253,20 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             }
         )
 
+        # Send push notification to passenger
+        try:
+            from notification.utils import send_notification
+            send_notification(
+                user=delivery.passenger,
+                title="📦 Courier Assigned!",
+                body=f"{request.user.profile.full_name or 'A courier'} has accepted your delivery request.",
+                type='PUSH',
+                ref_id=str(delivery.id),
+                extra_data={'notification_type': 'DELIVERY_ACTIVE'}
+            )
+        except Exception as e:
+            print(f"Error sending delivery accept push notification: {e}")
+
         return Response(DeliverySerializer(delivery).data)
 
     @action(detail=True, methods=['post'])
@@ -309,6 +324,25 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 'data': DeliverySerializer(delivery).data
             }
         )
+
+        # Send push notification to passenger
+        try:
+            from notification.utils import send_notification
+            status_msgs = {
+                'PACKAGE_COLLECTED': "Your package has been picked up by the courier.",
+                'DELIVERED': "Your package has been delivered successfully!"
+            }
+            body_msg = status_msgs.get(delivery.status, f"Delivery status updated to {delivery.status}")
+            send_notification(
+                user=delivery.passenger,
+                title="📦 Delivery Update",
+                body=body_msg,
+                type='PUSH',
+                ref_id=str(delivery.id),
+                extra_data={'notification_type': 'DELIVERY_ACTIVE'}
+            )
+        except Exception as e:
+            print(f"Error sending delivery proof push notification: {e}")
         
         return Response({
             "message": f"Proof uploaded successfully. Delivery advanced to {delivery.status}.",

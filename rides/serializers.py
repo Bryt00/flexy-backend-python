@@ -69,6 +69,7 @@ class RideSerializer(serializers.ModelSerializer):
     vehicle_info = serializers.SerializerMethodField()
     driver_lat = serializers.SerializerMethodField()
     driver_lng = serializers.SerializerMethodField()
+    driver_rating = serializers.SerializerMethodField()
     
     # Rider Fallbacks (If not explicitly set on Ride model)
     rider_name = serializers.SerializerMethodField()
@@ -121,6 +122,11 @@ class RideSerializer(serializers.ModelSerializer):
             return obj.driver.profile.last_lng
         return None
 
+    def get_driver_rating(self, obj):
+        if obj.driver and hasattr(obj.driver, 'profile'):
+            return float(obj.driver.profile.rating)
+        return 5.0
+
     def get_rider_name(self, obj):
         return obj.rider_name or (obj.rider.profile.full_name if obj.rider and hasattr(obj.rider, 'profile') else None)
 
@@ -153,6 +159,7 @@ class LiteRideSerializer(serializers.ModelSerializer):
     driver_name = serializers.SerializerMethodField()
     driver_photo = serializers.SerializerMethodField()
     vehicle_info = serializers.SerializerMethodField()
+    driver_rating = serializers.SerializerMethodField()
     
     class Meta:
         model = Ride
@@ -161,7 +168,7 @@ class LiteRideSerializer(serializers.ModelSerializer):
             'pickup_address', 'dropoff_address', 'pickup_lat', 'pickup_lng',
             'dropoff_lat', 'dropoff_lng', 'is_scheduled', 'scheduled_for',
             'payment_method', 'preferred_vehicle_type', 'created_at', 'updated_at',
-            'driver_name', 'driver_photo', 'vehicle_info'
+            'driver_name', 'driver_photo', 'vehicle_info', 'driver_rating'
         )
 
     def get_driver_name(self, obj):
@@ -181,3 +188,8 @@ class LiteRideSerializer(serializers.ModelSerializer):
             if vehicle:
                 return f"{vehicle.color} {vehicle.make} {vehicle.model} ({vehicle.license_plate})"
         return "Standard Vehicle"
+
+    def get_driver_rating(self, obj):
+        if obj.driver and hasattr(obj.driver, 'profile'):
+            return float(obj.driver.profile.rating)
+        return 5.0

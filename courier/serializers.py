@@ -13,6 +13,7 @@ class DeliverySerializer(serializers.ModelSerializer):
     driver_photo = serializers.SerializerMethodField()
     driver_vehicle_info = serializers.SerializerMethodField()
     driver_license_plate = serializers.SerializerMethodField()
+    driver_rating = serializers.SerializerMethodField()
     item_category_name = serializers.CharField(source='item_category.name', read_only=True, allow_null=True)
     weight_tier_name = serializers.CharField(source='weight_tier.name', read_only=True, allow_null=True)
     vehicle_type_name = serializers.CharField(source='vehicle_type.name', read_only=True, allow_null=True)
@@ -46,3 +47,8 @@ class DeliverySerializer(serializers.ModelSerializer):
             if vehicle:
                 return vehicle.license_plate
         return None
+
+    def get_driver_rating(self, obj):
+        if obj.driver:
+            return float(obj.driver.rating)
+        return 5.0

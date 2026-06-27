@@ -949,7 +949,7 @@ class RideViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def share(self, request, pk=None):
         ride = self.get_object()
-        share_url = f"https://flexyride.com/track/{ride.id}"
+        share_url = f"https://flexyridegh.com/track/{ride.id}"
         return Response({"share_url": share_url})
 
 

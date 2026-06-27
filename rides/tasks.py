@@ -214,7 +214,8 @@ def remind_upcoming_scheduled_rides():
                 title="Upcoming Scheduled Ride",
                 body=f"Reminder: You have a scheduled ride from {ride.pickup_address} starting in about 30 minutes.",
                 type='PUSH',
-                ref_id=ride.id
+                ref_id=ride.id,
+                save_in_db=False
             )
             count += 1
             

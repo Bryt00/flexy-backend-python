@@ -215,6 +215,24 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                     'data': DeliverySerializer(delivery).data
                 }
             )
+
+            # Send push notification to passenger
+            try:
+                from notification.utils import send_notification
+                if new_status == 'AT_PICKUP':
+                    send_notification(
+                        user=delivery.passenger,
+                        title="📦 Courier Arrived!",
+                        body=f"{delivery.driver.full_name if (delivery.driver and delivery.driver.full_name) else 'Your courier'} has arrived at the pickup location.",
+                        type='PUSH',
+                        ref_id=str(delivery.id),
+                        android_channel_id='high_priority_rides',
+                        android_sound='horn',
+                        ios_sound='horn.wav',
+                        extra_data={'notification_type': 'DELIVERY_ACTIVE'}
+                    )
+            except Exception as e:
+                print(f"Error sending delivery status push notification: {e}")
             
             return Response(DeliverySerializer(delivery).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)

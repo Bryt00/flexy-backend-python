@@ -106,7 +106,11 @@ class LoginView(views.APIView):
                 }, status=status.HTTP_403_FORBIDDEN)
             
             update_last_login(None, user)
+            import uuid
+            user.session_key = uuid.uuid4()
+            user.save(update_fields=['session_key'])
             refresh = RefreshToken.for_user(user)
+            refresh['session_key'] = str(user.session_key)
             return Response({
                 "user": UserSerializer(user).data,
                 "token": str(refresh.access_token),
@@ -134,6 +138,20 @@ class CustomTokenRefreshView(views.APIView):
         
         try:
             token = RefreshToken(refresh_token)
+            
+            # Validate session key
+            user_id = token.get('user_id')
+            token_session_key = token.get('session_key')
+            
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                user = User.objects.get(id=user_id)
+                if str(user.session_key) != token_session_key:
+                    return Response({"error": "Session expired. You logged in on another device."}, status=status.HTTP_401_UNAUTHORIZED)
+            except User.DoesNotExist:
+                return Response({"error": "User not found."}, status=status.HTTP_401_UNAUTHORIZED)
+            
             return Response({
                 "token": str(token.access_token),
                 "refresh_token": str(token),
@@ -228,7 +246,11 @@ class OTPVerifyView(views.APIView):
             EmailService.send_welcome_email(user)
             
             update_last_login(None, user)
+            import uuid
+            user.session_key = uuid.uuid4()
+            user.save(update_fields=['session_key'])
             refresh = RefreshToken.for_user(user)
+            refresh['session_key'] = str(user.session_key)
             return Response({
                 "message": "Email verified successfully",
                 "user": UserSerializer(user).data,
@@ -359,7 +381,11 @@ class SocialAuthView(views.APIView):
                 from integrations.email_service import EmailService
                 EmailService.send_welcome_email(user)
 
+            import uuid
+            user.session_key = uuid.uuid4()
+            user.save(update_fields=['session_key'])
             refresh = RefreshToken.for_user(user)
+            refresh['session_key'] = str(user.session_key)
             return Response({
                 "user": UserSerializer(user).data,
                 "token": str(refresh.access_token),

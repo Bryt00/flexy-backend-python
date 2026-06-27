@@ -62,11 +62,12 @@ class DeliveryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         self._check_and_expire_deliveries()
-        # Passengers see their requested deliveries, drivers see assigned ones
+        # Passengers see their requested deliveries, drivers see assigned ones OR PENDING ones
         user = self.request.user
         qs = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs')
         if user.role == 'driver':
-            return qs.filter(driver=user.profile)
+            from django.db.models import Q
+            return qs.filter(Q(driver=user.profile) | Q(status='PENDING'))
         return qs.filter(passenger=user)
 
     def perform_create(self, serializer):
@@ -123,6 +124,35 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 'data': DeliverySerializer(delivery).data
             }
         )
+
+        # Notify active delivery drivers via push notifications within 15km
+        try:
+            from profiles.models import Profile
+            from notification.utils import send_notification
+            
+            eligible_drivers = Profile.objects.filter(
+                is_online=True,
+                receive_deliveries=True
+            ).select_related('user')
+            
+            for driver in eligible_drivers:
+                if driver.last_lat and driver.last_lng and pickup_lat and pickup_lng:
+                    dist = GeospatialUtils.calculate_haversine_distance(
+                        driver.last_lat, driver.last_lng, 
+                        pickup_lat, pickup_lng
+                    ) / 1000.0
+                    if dist > 15.0: # 15km radius
+                        continue
+                
+                send_notification(
+                    user=driver.user,
+                    title="📦 New Delivery Opportunity!",
+                    body=f"Pickup: {delivery.pickup_address}\nDropoff: {delivery.dropoff_address}",
+                    type='PUSH',
+                    ref_id=str(delivery.id)
+                )
+        except Exception as e:
+            print(f"Error sending delivery notifications to drivers: {e}")
 
     @action(detail=False, methods=['get'])
     def estimate(self, request):

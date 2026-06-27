@@ -97,7 +97,8 @@ class EmailService:
         context = {
             'ride': ride,
             'receipt': receipt,
-            'user': ride.rider
+            'user': ride.rider,
+            'site_url': getattr(settings, 'SITE_URL', 'https://flexyride.com'),
         }
         
         try:

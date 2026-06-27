@@ -594,6 +594,7 @@ class RideViewSet(viewsets.ModelViewSet):
                             channel_id = 'high_priority_rides'
                             sound = 'horn'
                             
+                        save_in_db = (new_status == 'completed')
                         send_notification(
                             ride.rider, 
                             title=title, 
@@ -602,7 +603,8 @@ class RideViewSet(viewsets.ModelViewSet):
                             ref_id=ride.id,
                             android_channel_id=channel_id,
                             android_sound=sound,
-                            ios_sound=f'{sound}.wav' if sound else None
+                            ios_sound=f'{sound}.wav' if sound else None,
+                            save_in_db=save_in_db
                         )
             except Exception as e:
                 print(f"Notification error: {e}")
@@ -901,7 +903,15 @@ class RideViewSet(viewsets.ModelViewSet):
                     else:
                         body = f"Stop at {stop.address} is now {new_status}."
                     
-                    send_notification(ride.rider, title=title, body=body, type='PUSH', ref_id=ride.id, extra_data={'notification_type': 'RIDE_ACTIVE'})
+                    send_notification(
+                        ride.rider,
+                        title=title,
+                        body=body,
+                        type='PUSH',
+                        ref_id=ride.id,
+                        extra_data={'notification_type': 'RIDE_ACTIVE'},
+                        save_in_db=False
+                    )
                 except Exception as e:
                     print(f"Notification error: {e}")
                 
@@ -951,6 +961,129 @@ class RideViewSet(viewsets.ModelViewSet):
         ride = self.get_object()
         share_url = f"https://flexyridegh.com/track/{ride.id}"
         return Response({"share_url": share_url})
+
+    @action(detail=True, methods=['put', 'patch', 'post'])
+    def destination(self, request, pk=None):
+        """
+        Updates the ride dropoff destination and/or its intermediate stops.
+        Recalculates trip metrics (fare, distance) dynamically.
+        """
+        ride = self.get_object()
+        
+        # 1. Update final destination if provided
+        dropoff_lat = request.data.get('dropoff_lat')
+        dropoff_lng = request.data.get('dropoff_lng')
+        dropoff_address = request.data.get('dropoff_address')
+        
+        if dropoff_lat is not None:
+            ride.dropoff_lat = float(dropoff_lat)
+        if dropoff_lng is not None:
+            ride.dropoff_lng = float(dropoff_lng)
+        if dropoff_address is not None:
+            ride.dropoff_address = dropoff_address
+            
+        # 2. Update intermediate stops if provided
+        stops_data = request.data.get('stops')
+        if stops_data is not None:
+            from .models import RideStop
+            # Parse stops_data if it comes as a string (json encoded)
+            import json
+            if isinstance(stops_data, str):
+                try:
+                    stops_data = json.loads(stops_data)
+                except Exception:
+                    pass
+            
+            if isinstance(stops_data, list):
+                # Synchronize stops
+                existing_stops = {str(s.id): s for s in ride.stops.all()}
+                new_stop_ids = []
+                
+                for idx, stop_item in enumerate(stops_data):
+                    stop_id = stop_item.get('id')
+                    address = stop_item.get('address')
+                    lat = float(stop_item.get('latitude'))
+                    lng = float(stop_item.get('longitude'))
+                    order = stop_item.get('stop_order', idx + 1)
+                    
+                    if stop_id and stop_id in existing_stops:
+                        stop_obj = existing_stops[stop_id]
+                        stop_obj.address = address
+                        stop_obj.latitude = lat
+                        stop_obj.longitude = lng
+                        stop_obj.stop_order = order
+                        stop_obj.save()
+                        new_stop_ids.append(stop_id)
+                    else:
+                        new_stop = RideStop.objects.create(
+                            ride=ride,
+                            address=address,
+                            latitude=lat,
+                            longitude=lng,
+                            stop_order=order,
+                            status='pending'
+                        )
+                        new_stop_ids.append(str(new_stop.id))
+                        
+                # Delete any existing stops that were omitted (only if pending)
+                for s_id, stop_obj in existing_stops.items():
+                    if s_id not in new_stop_ids and stop_obj.status == 'pending':
+                        stop_obj.delete()
+
+        # 3. Recalculate distance and estimated fare based on the new route
+        from integrations.google_maps import GoogleMapsService
+        from .services.pricing_service import PricingService
+        
+        origin_lat = ride.pickup_lat
+        origin_lng = ride.pickup_lng
+        if ride.status == 'in_progress' and ride.last_lat_update and ride.last_lng_update:
+            origin_lat = ride.last_lat_update
+            origin_lng = ride.last_lng_update
+            
+        waypoints = []
+        for stop in ride.stops.filter(status='pending').order_by('stop_order'):
+            waypoints.append((stop.latitude, stop.longitude))
+            
+        try:
+            metrics = GoogleMapsService.get_trip_metrics(
+                origin_lat, origin_lng,
+                ride.dropoff_lat, ride.dropoff_lng,
+                waypoints=waypoints
+            )
+            dist_km = metrics['distance_km']
+            duration_sec = metrics['duration_seconds']
+            
+            estimates = PricingService.estimate_fare_options(dist_km, duration_sec, len(waypoints))
+            pref_cat = ride.preferred_vehicle_type or 'standard'
+            est_data = estimates.get(pref_cat) or list(estimates.values())[0]
+            
+            ride.distance = dist_km
+            ride.fare = est_data['fare']
+        except Exception as e:
+            print(f"Error recalculating route on destination edit: {e}")
+            
+        ride.save()
+        
+        # 4. Broadcast the update
+        self._broadcast_ride_update(ride, 'destination_updated')
+        
+        # Send push notification to driver
+        if ride.driver:
+            try:
+                from notification.utils import send_notification
+                send_notification(
+                    user=ride.driver,
+                    title="📍 Route Updated",
+                    body=f"The passenger has updated the destination or stop locations.",
+                    type='PUSH',
+                    ref_id=str(ride.id),
+                    extra_data={'notification_type': 'RIDE_ACTIVE'},
+                    save_in_db=False
+                )
+            except Exception as e:
+                print(f"Error sending route update push to driver: {e}")
+                
+        return Response(self.get_serializer(ride).data)
 
 
 from drf_spectacular.utils import extend_schema, OpenApiTypes

@@ -320,6 +320,9 @@ UNFOLD = {
         lambda request: "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200",
         lambda request: "/static/css/admin_theme.css",
     ],
+    "SCRIPTS": [
+        lambda request: "/static/js/admin_spa_nav.js",
+    ],
     "COLORS": {
         "primary": {
             "50": "240 100% 98%",

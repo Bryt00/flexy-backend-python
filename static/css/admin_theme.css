@@ -241,3 +241,33 @@ body.login {
     flex-wrap: wrap !important;
     min-width: 0 !important;
 }
+
+/* ─── Fix Form Input Borders ─────────────────────────── */
+body.unfold-admin input[type="text"]:not(#login-form input),
+body.unfold-admin input[type="password"]:not(#login-form input),
+body.unfold-admin input[type="email"],
+body.unfold-admin input[type="number"],
+body.unfold-admin input[type="url"],
+body.unfold-admin input[type="tel"],
+body.unfold-admin textarea,
+body.unfold-admin select {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(15, 23, 42, 0.4) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.75rem !important;
+  color: white !important;
+  transition: all 0.2s ease !important;
+}
+
+body.unfold-admin input[type="text"]:not(#login-form input):focus,
+body.unfold-admin input[type="password"]:not(#login-form input):focus,
+body.unfold-admin input[type="email"]:focus,
+body.unfold-admin input[type="number"]:focus,
+body.unfold-admin input[type="url"]:focus,
+body.unfold-admin input[type="tel"]:focus,
+body.unfold-admin textarea:focus,
+body.unfold-admin select:focus {
+  border-color: #00B4FF !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(0, 180, 255, 0.15) !important;
+}

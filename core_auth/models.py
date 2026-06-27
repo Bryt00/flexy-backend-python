@@ -43,6 +43,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_email_verified = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     
+    session_key = models.UUIDField(default=uuid.uuid4, editable=False)
+    
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     

@@ -15,11 +15,31 @@ class CourierConsumer(AsyncWebsocketConsumer):
             self.room_group_name = f'delivery_{self.delivery_id}'
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
+
+            # Send initial state
+            delivery_data = await self.get_serialized_delivery(self.delivery_id)
+            if delivery_data:
+                await self.send(text_data=json.dumps({
+                    'type': 'status_update',
+                    'data': delivery_data
+                }, cls=DjangoJSONEncoder))
         else:
             # Discovery stream for available deliveries
             self.room_group_name = 'delivery_discovery'
             await self.channel_layer.group_add(self.room_group_name, self.channel_name)
             await self.accept()
+
+    from channels.db import database_sync_to_async
+
+    @database_sync_to_async
+    def get_serialized_delivery(self, delivery_id):
+        try:
+            from .models import Delivery
+            from .serializers import DeliverySerializer
+            delivery = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs').get(id=delivery_id)
+            return DeliverySerializer(delivery).data
+        except Delivery.DoesNotExist:
+            return None
 
     async def disconnect(self, close_code):
         if hasattr(self, 'room_group_name'):

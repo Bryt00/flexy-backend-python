@@ -24,6 +24,8 @@ urlpatterns = [
     path('<uuid:pk>/status/', RideViewSet.as_view({'post': 'status', 'put': 'status', 'patch': 'status'})),
     path('<uuid:pk>/accept/', RideViewSet.as_view({'post': 'accept', 'put': 'accept'})),
     path('<uuid:pk>/cancel/', RideViewSet.as_view({'post': 'cancel'})),
+    path('<uuid:pk>/destination/', RideViewSet.as_view({'put': 'destination', 'patch': 'destination', 'post': 'destination'})),
+    path('<uuid:pk>/track/', RideViewSet.as_view({'post': 'track'})),
     path('<uuid:pk>/sos/', RideViewSet.as_view({'post': 'sos'})),
     path('<uuid:pk>/rate/', RideViewSet.as_view({'post': 'rate'})),
     path('<uuid:pk>/chat/', RideViewSet.as_view({'get': 'chat_history'})),

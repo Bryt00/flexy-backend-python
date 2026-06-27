@@ -11,11 +11,24 @@ class GoogleMapsService:
         Fetches distance and duration. For multi-stop routes, uses Directions API to sum up legs.
         Returns a tuple: (distance_km, duration_seconds)
         """
+        from django.core.cache import cache
+        
+        cache_key = None
+        if not waypoints:
+            # Round coordinates to 5 decimal places (approx. 1 meter accuracy)
+            cache_key = f"trip_metrics_{round(float(origin_lat), 5)}_{round(float(origin_lng), 5)}_{round(float(dest_lat), 5)}_{round(float(dest_lng), 5)}"
+            cached = cache.get(cache_key)
+            if cached:
+                return cached
+
         api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
         
         if not api_key:
             logger.warning("Google Maps API Key not configured. Using fallback estimation.")
-            return GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+            fallback_res = GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+            if cache_key:
+                cache.set(cache_key, fallback_res, timeout=900)
+            return fallback_res
 
         # If waypoints exist, we must use Directions API to get total route metrics
         if waypoints and len(waypoints) > 0:
@@ -48,13 +61,19 @@ class GoogleMapsService:
                         else:
                             total_traffic_s += leg['duration']['value']
                     
-                    return total_distance_m / 1000.0, total_duration_s, total_traffic_s
+                    result = (total_distance_m / 1000.0, total_duration_s, total_traffic_s)
+                    if cache_key:
+                        cache.set(cache_key, result, timeout=900)
+                    return result
                 else:
                     logger.error(f"Directions API Error: {data.get('status')}")
             except Exception as e:
                 logger.error(f"Directions API Exception: {e}")
             
-            return GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+            fallback_res = GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+            if cache_key:
+                cache.set(cache_key, fallback_res, timeout=900)
+            return fallback_res
 
         # Simple point-to-point can still use Distance Matrix
         url = "https://maps.googleapis.com/maps/api/distancematrix/json"
@@ -78,7 +97,10 @@ class GoogleMapsService:
                     duration_in_traffic = duration_seconds
                     if 'duration_in_traffic' in element:
                         duration_in_traffic = element['duration_in_traffic']['value']
-                    return distance_km, duration_seconds, duration_in_traffic
+                    result = (distance_km, duration_seconds, duration_in_traffic)
+                    if cache_key:
+                        cache.set(cache_key, result, timeout=900)
+                    return result
                 else:
                     logger.error(f"Google Maps Element Error: {element['status']}")
             else:
@@ -86,7 +108,10 @@ class GoogleMapsService:
         except Exception as e:
             logger.error(f"Google Maps Request Exception: {str(e)}")
 
-        return GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+        fallback_res = GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
+        if cache_key:
+            cache.set(cache_key, fallback_res, timeout=900)
+        return fallback_res
 
     @staticmethod
     def _get_fallback_metrics(lat1, lng1, lat2, lng2):

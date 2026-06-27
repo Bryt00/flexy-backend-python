@@ -272,7 +272,8 @@ class MatchingService:
                     ref_id=str(ride.id),
                     android_channel_id='high_priority_rides',
                     android_sound='alarm',
-                    ios_sound='alarm.wav'
+                    ios_sound='alarm.wav',
+                    extra_data={'notification_type': 'RIDE_REQUEST'}
                 )
                 
                 # 5. Update Metadata & Set Redis Lock (Point 5)

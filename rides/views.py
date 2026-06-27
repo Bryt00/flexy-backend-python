@@ -901,7 +901,7 @@ class RideViewSet(viewsets.ModelViewSet):
                     else:
                         body = f"Stop at {stop.address} is now {new_status}."
                     
-                    send_notification(ride.rider, title=title, body=body, type='PUSH', ref_id=ride.id)
+                    send_notification(ride.rider, title=title, body=body, type='PUSH', ref_id=ride.id, extra_data={'notification_type': 'RIDE_ACTIVE'})
                 except Exception as e:
                     print(f"Notification error: {e}")
                 

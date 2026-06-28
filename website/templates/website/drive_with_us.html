@@ -32,9 +32,15 @@
                 </div>
             </div>
             
-            <a href="{{ site_settings.driver_download_url|default:'https://play.google.com/store/apps/details?id=com.flexyride.driver' }}" class="btn btn-primary px-12 py-5 text-lg flex items-center justify-center gap-2 group w-full sm:w-auto" target="_blank">
+            {% if site_settings.driver_download_url %}
+            <a href="{{ site_settings.driver_download_url }}" class="btn btn-primary px-12 py-5 text-lg flex items-center justify-center gap-2 group w-full sm:w-auto" target="_blank">
                 Sign Up to Drive <i data-lucide="arrow-right" class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
             </a>
+            {% else %}
+            <div class="inline-block px-6 py-3 rounded-2xl bg-brand/10 border border-brand/20 text-brand text-lg font-bold uppercase tracking-widest">
+                 🚀 Launching Soon
+            </div>
+            {% endif %}
         </div>
         
         <!-- Driver earnings calculator -->

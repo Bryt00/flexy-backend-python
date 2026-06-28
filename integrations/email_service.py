@@ -98,7 +98,7 @@ class EmailService:
             'ride': ride,
             'receipt': receipt,
             'user': ride.rider,
-            'site_url': getattr(settings, 'SITE_URL', 'https://flexyride.com'),
+            'site_url': getattr(settings, 'SITE_URL', 'https://api.flexyridegh.com').rstrip('/'),
         }
         
         try:

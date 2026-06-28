@@ -17,6 +17,7 @@ urlpatterns = [
     path('drive-with-us/', views.DriveWithUsView.as_view(), name='drive_with_us'),
     path('safety/', views.SafetyView.as_view(), name='safety'),
     path('cities/', views.CitiesView.as_view(), name='cities'),
+    path('cities/<slug:slug>/', views.CityDetailView.as_view(), name='city_detail'),
     path('blog/', views.BlogListView.as_view(), name='blog_list'),
     path('blog/<slug:slug>/', views.BlogDetailView.as_view(), name='blog_detail'),
     path('contact/', views.ContactView.as_view(), name='contact'),

@@ -294,3 +294,29 @@ class RobotsView(TemplateView):
             f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}\n"
         )
         return HttpResponse(content, content_type='text/plain')
+
+class CityDetailView(DetailView):
+    model = City
+    template_name = 'website/city_detail.html'
+    context_object_name = 'city'
+
+    def get_object(self, queryset=None):
+        from django.utils.text import slugify
+        slug = self.kwargs.get('slug')
+        for city in City.objects.filter(is_active=True):
+            if slugify(city.name) == slug:
+                return city
+        from django.http import Http404
+        raise Http404("City not found")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_global_context())
+        from website.models import Testimonial
+        city_name = self.object.name.lower()
+        context['testimonials'] = Testimonial.objects.filter(
+            Q(quote__icontains=city_name) | Q(role__icontains=city_name)
+        )[:3]
+        if not context['testimonials'].exists():
+            context['testimonials'] = Testimonial.objects.all().order_by('-created_at')[:3]
+        return context

@@ -166,8 +166,10 @@ class WebsiteSettings(models.Model):
     instagram_url = models.URLField(blank=True)
     linkedin_url = models.URLField(blank=True)
     whatsapp_url = models.URLField(blank=True)
-    passenger_download_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link for passenger app downloads. Leave blank to display 'Launching Soon'")
-    driver_download_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link for driver app downloads. Leave blank to display 'Launching Soon'")
+    passenger_play_store_url = models.URLField(max_length=500, blank=True, null=True, help_text="Passenger App Google Play link. Leave blank to display 'Launching Soon'")
+    passenger_app_store_url = models.URLField(max_length=500, blank=True, null=True, help_text="Passenger App iOS App Store link. Leave blank to display 'Launching Soon'")
+    driver_play_store_url = models.URLField(max_length=500, blank=True, null=True, help_text="Driver App Google Play link. Leave blank to display 'Launching Soon'")
+    driver_app_store_url = models.URLField(max_length=500, blank=True, null=True, help_text="Driver App iOS App Store link. Leave blank to display 'Launching Soon'")
 
     class Meta:
         verbose_name = "Website Settings"

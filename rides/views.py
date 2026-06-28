@@ -1053,12 +1053,16 @@ class RideViewSet(viewsets.ModelViewSet):
             dist_km = metrics['distance_km']
             duration_sec = metrics['duration_seconds']
             
-            estimates = PricingService.estimate_fare_options(dist_km, duration_sec, len(waypoints))
+            estimates = PricingService.calculate_fare_estimates(
+                dist_km, duration_sec,
+                lat=origin_lat, lng=origin_lng,
+                num_stops=len(waypoints)
+            )
             pref_cat = ride.preferred_vehicle_type or 'standard'
-            est_data = estimates.get(pref_cat) or list(estimates.values())[0]
+            new_fare = estimates.get(pref_cat) or list(estimates.values())[0]
             
             ride.distance = dist_km
-            ride.fare = est_data['fare']
+            ride.fare = new_fare
         except Exception as e:
             print(f"Error recalculating route on destination edit: {e}")
             

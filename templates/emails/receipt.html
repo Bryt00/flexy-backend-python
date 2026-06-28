@@ -21,7 +21,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{% if site_url %}{{ site_url }}{% endif %}{% static 'img/app_logo.png' %}" alt="FlexyRide Logo" style="height: 48px; margin-bottom: 16px; border-radius: 12px; vertical-align: middle;" />
+            <img src="https://flexyridegh.com/static/vectors/logo.svg" alt="FlexyRide Logo" style="height: 48px; margin-bottom: 16px; border-radius: 12px; vertical-align: middle;" />
             <h3>Trip Completed</h3>
             <div class="fare-total">GHS {{ receipt.total_fare|floatformat:2 }}</div>
             <div class="receipt-no">Receipt #{{ receipt.receipt_no }}</div>

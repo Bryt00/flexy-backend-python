@@ -77,6 +77,7 @@ send_otp.py
 send_test.py
 send_test_25.py
 send_test_tls.py
+send_receipt_test.py
 test_panel_host.py
 test_estimate.py
 test_onesignal.py

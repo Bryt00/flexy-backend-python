@@ -166,6 +166,8 @@ class WebsiteSettings(models.Model):
     instagram_url = models.URLField(blank=True)
     linkedin_url = models.URLField(blank=True)
     whatsapp_url = models.URLField(blank=True)
+    passenger_download_url = models.URLField(max_length=500, blank=True, default="https://play.google.com/store/apps/details?id=com.flexyride.app", help_text="Link for passenger app downloads")
+    driver_download_url = models.URLField(max_length=500, blank=True, default="https://play.google.com/store/apps/details?id=com.flexyride.driver", help_text="Link for driver app downloads")
 
     class Meta:
         verbose_name = "Website Settings"

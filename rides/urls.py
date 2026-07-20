@@ -18,6 +18,7 @@ urlpatterns = [
     path('estimate/', RideViewSet.as_view({'get': 'estimate'})),
     path('surge/', RideViewSet.as_view({'get': 'surge'})),
     path('surge/heatmap/', RideViewSet.as_view({'get': 'surge_heatmap'})),
+    path('nearby-vehicles/', RideViewSet.as_view({'get': 'nearby_vehicles'})),
     
     # Detail actions
     path('<uuid:pk>/', RideViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),

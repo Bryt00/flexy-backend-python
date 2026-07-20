@@ -17,6 +17,7 @@ urlpatterns = [
     path('finance/revenue/', views.revenue_reports, name='revenue_reports'),
     path('support/', views.support_dashboard, name='support_dashboard'),
     path('support/verifications/', views.driver_verifications, name='driver_verifications'),
+    path('support/verifications/vehicle/<uuid:vehicle_id>/', views.review_secondary_vehicle, name='review_secondary_vehicle'),
     path('support/rides/', views.ride_history, name='ride_history'),
     path('support/rides/<uuid:ride_id>/', views.ride_detail, name='ride_detail'),
     path('support/document/<int:pk>/', views.review_document, name='review_document'),

@@ -23,21 +23,21 @@ class MatchingService:
             
             # 1. Category Matching (Cascade Upgrades + Fallback - Point 3 & 4)
             requested_category = ride.preferred_vehicle_type or 'go'
+            from core_settings.models import VehicleCategory
+            active_cats = list(VehicleCategory.objects.filter(is_active=True).order_by('multiplier'))
             
             # Fallback logic: If no drivers found after 2 attempts, expand to ALL categories
             if attempt_count >= 2:
-                target_categories = ['go', 'standard', 'comfort', 'xl', 'exec', 'pragya']
+                target_categories = [c.slug for c in active_cats]
+                if requested_category not in target_categories:
+                    target_categories.append(requested_category)
                 logger.info(f"Matching: Falling back to ALL categories for ride {ride_id} (Attempt {attempt_count + 1}).")
             else:
-                target_categories = [requested_category]
-                if requested_category == 'go':
-                    target_categories.extend(['standard', 'comfort', 'xl', 'exec'])
-                elif requested_category == 'standard':
-                    target_categories.extend(['comfort', 'xl', 'exec'])
-                elif requested_category == 'comfort':
-                    target_categories.extend(['xl', 'exec'])
-                elif requested_category == 'xl':
-                    target_categories.extend(['exec'])
+                req_cat = next((c for c in active_cats if c.slug == requested_category), None)
+                if req_cat:
+                    target_categories = [c.slug for c in active_cats if c.multiplier >= req_cat.multiplier]
+                else:
+                    target_categories = [requested_category]
                 
             # 2. Redis Geospatial Filter with Distance
             nearby_data = redis_geo.geo_radius_drivers_with_dist(ride.pickup_lat, ride.pickup_lng, radius_km)
@@ -59,7 +59,7 @@ class MatchingService:
             # 3. DB Filter for Eligibility
             # Increase stale threshold to 4 hours (240 mins) to avoid filtering drivers waiting in one spot
             stale_threshold = timezone.now() - timezone.timedelta(hours=4)
-            available_drivers = Profile.objects.filter(
+            available_drivers_qs = Profile.objects.filter(
                 pk__in=nearby_driver_ids,
                 user__role='driver',
                 is_online=True,
@@ -70,7 +70,10 @@ class MatchingService:
                 vehicles__is_verified=True
             ).distinct()
             
-            if not available_drivers.exists():
+            # Enforce subscription rules
+            drivers_list = [d for d in available_drivers_qs if getattr(d, 'subscription', None) and d.subscription.can_go_online]
+
+            if not drivers_list:
                 logger.info(f"Matching debug: {len(nearby_driver_ids)} drivers nearby in Redis, but none eligible in DB. Radius: {radius_km}km. Categories: {target_categories}")
                 # Log one sample driver's state if any nearby
                 if nearby_driver_ids:
@@ -80,7 +83,6 @@ class MatchingService:
                         logger.info(f"Sample driver {sample.pk} state: Online={sample.is_online}, Verified={getattr(sample.verification, 'is_verified', 'N/A')}, Stale={is_stale} (Last: {sample.last_location_update}), Categories={[v.type for v in sample.vehicles.all()]}")
             
             # 4. Sort by distance
-            drivers_list = list(available_drivers)
             drivers_list.sort(key=lambda d: distance_map.get(str(d.pk), 999.0))
             
             return drivers_list, distance_map

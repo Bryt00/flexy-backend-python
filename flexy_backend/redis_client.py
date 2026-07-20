@@ -7,7 +7,12 @@ logger = logging.getLogger(__name__)
 class RedisGeoClient:
     def __init__(self):
         redis_url = getattr(settings, 'REDIS_URL', 'redis://localhost:6379/0')
-        self.r = redis.Redis.from_url(redis_url, decode_responses=True)
+        self.r = redis.Redis.from_url(
+            redis_url, 
+            decode_responses=True,
+            socket_timeout=1.0,
+            socket_connect_timeout=1.0
+        )
         self.location_key = "driver_locations"
 
     def geo_add_driver(self, driver_id, lat, lng):
@@ -74,6 +79,40 @@ class RedisGeoClient:
             logger.error(f"Failed to remove driver from Redis: {str(e)}")
             return 0
 
+    def cache_driver_vehicle_type(self, driver_id, vehicle_type):
+        """
+        Caches a driver's vehicle type.
+        """
+        try:
+            return self.r.hset("driver_vehicle_types", str(driver_id), str(vehicle_type))
+        except Exception as e:
+            logger.error(f"Failed to cache vehicle type for driver {driver_id}: {e}")
+            return False
+
+    def get_driver_vehicle_types(self, driver_ids):
+        """
+        Retrieves the vehicle types for a list of driver_ids.
+        Returns a dictionary mapping driver_id to vehicle_type.
+        """
+        if not driver_ids:
+            return {}
+        try:
+            types = self.r.hmget("driver_vehicle_types", [str(d) for d in driver_ids])
+            return {str(driver_ids[i]): t for i, t in enumerate(types) if t}
+        except Exception as e:
+            logger.error(f"Failed to fetch vehicle types: {e}")
+            return {}
+
+    def remove_driver_vehicle_type(self, driver_id):
+        """
+        Removes a driver's vehicle type from cache.
+        """
+        try:
+            return self.r.hdel("driver_vehicle_types", str(driver_id))
+        except Exception as e:
+            logger.error(f"Failed to remove vehicle type for driver {driver_id}: {e}")
+            return False
+
     def set_driver_lock(self, driver_id, duration=15):
         """
         Locks a driver for a specific duration to prevent concurrent ride dispatches.
@@ -125,6 +164,41 @@ class RedisGeoClient:
         except Exception as e:
             logger.error(f"Failed to remove request from Redis: {str(e)}")
             return 0
+
+    def queue_driver_location_update(self, driver_id, lat, lng):
+        """
+        Queues driver location update details to a Redis list for write-behind batch logging.
+        """
+        try:
+            import json
+            import time
+            data = json.dumps({
+                'driver_id': str(driver_id),
+                'lat': float(lat),
+                'lng': float(lng),
+                'timestamp': time.time()
+            })
+            self.r.rpush("driver_location_updates_queue", data)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to queue location update: {e}")
+            return False
+
+    def pop_driver_location_updates(self, batch_size=1000):
+        """
+        Pops up to batch_size location updates from the Redis list.
+        """
+        try:
+            updates = []
+            for _ in range(batch_size):
+                item = self.r.lpop("driver_location_updates_queue")
+                if not item:
+                    break
+                updates.append(item)
+            return updates
+        except Exception as e:
+            logger.error(f"Failed to pop location updates: {e}")
+            return []
 
 # Singleton instance for project-wide usage
 redis_geo = RedisGeoClient()

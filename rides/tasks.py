@@ -103,9 +103,13 @@ def cancel_abandoned_rides():
     This prevents users from resuming ancient rides upon login.
     """
     limit = timezone.now() - timezone.timedelta(minutes=3)
+    # Exclude scheduled rides that are accepted but have not started yet (scheduled_for is upcoming or in the 15-minute grace period)
     abandoned_rides = Ride.objects.filter(
         status__in=['accepted', 'arrived', 'in_progress'],
         updated_at__lt=limit
+    ).exclude(
+        is_scheduled=True,
+        scheduled_for__gt=timezone.now() - timezone.timedelta(minutes=15)
     )
     count = abandoned_rides.update(status='cancelled')
     if count > 0:
@@ -193,11 +197,10 @@ def remind_upcoming_scheduled_rides():
     target_time_start = now + timedelta(minutes=29)
     target_time_end = now + timedelta(minutes=31)
     
-    # Find rides that are accepted and are about 30 mins away
+    # Find rides that are scheduled and are about 30 mins away
     upcoming_rides = Ride.objects.filter(
         is_scheduled=True,
-        status='accepted',
-        driver__isnull=False,
+        status__in=['pending', 'requested', 'accepted'],
         scheduled_for__gte=target_time_start,
         scheduled_for__lte=target_time_end
     )
@@ -209,14 +212,31 @@ def remind_upcoming_scheduled_rides():
         from flexy_backend.redis_client import redis_geo
         lock_key = f"ride_reminder_sent:{ride.id}"
         if redis_geo.r.set(lock_key, "1", nx=True, ex=3600):
+            # 1. Notify Passenger (Rider)
+            passenger_body = f"Reminder: Your scheduled ride from {ride.pickup_address} is starting in about 30 minutes."
+            if ride.driver:
+                driver_name = getattr(ride.driver.profile, 'full_name', '') or ride.driver.email
+                passenger_body = f"Reminder: Your scheduled ride with driver {driver_name} is starting in about 30 minutes."
+            
             send_notification(
-                ride.driver,
-                title="Upcoming Scheduled Ride",
-                body=f"Reminder: You have a scheduled ride from {ride.pickup_address} starting in about 30 minutes.",
+                ride.rider,
+                title="Scheduled Ride Reminder",
+                body=passenger_body,
                 type='PUSH',
                 ref_id=ride.id,
                 save_in_db=False
             )
+
+            # 2. Notify Driver if assigned
+            if ride.driver:
+                send_notification(
+                    ride.driver,
+                    title="Upcoming Scheduled Ride",
+                    body=f"Reminder: You have a scheduled ride from {ride.pickup_address} starting in about 30 minutes.",
+                    type='PUSH',
+                    ref_id=ride.id,
+                    save_in_db=False
+                )
             count += 1
             
     if count > 0:

@@ -30,7 +30,7 @@ class RideViewSet(viewsets.ModelViewSet):
             is_scheduled=True,
             status__in=['pending', 'requested'],
             driver__isnull=True,
-            scheduled_for__lt=timezone.now()
+            scheduled_for__lt=timezone.now() - timezone.timedelta(minutes=15)
         )
         
         if overdue_rides.exists():
@@ -213,7 +213,7 @@ class RideViewSet(viewsets.ModelViewSet):
             (Q(rider=request.user) | Q(driver=request.user)),
             (Q(is_scheduled=True) | Q(scheduled_for__isnull=False)),
             Q(status__in=['accepted', 'arrived', 'in_progress']) | 
-            (Q(status__in=['pending', 'requested']) & Q(scheduled_for__gt=timezone.now()))
+            (Q(status__in=['pending', 'requested']) & Q(scheduled_for__gt=timezone.now() - timezone.timedelta(minutes=15)))
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
@@ -222,16 +222,21 @@ class RideViewSet(viewsets.ModelViewSet):
         """
         Returns scheduled rides that are in 'pending' status for drivers to accept.
         """
+        if getattr(request.user, 'role', 'rider') != 'driver':
+            return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
         rides = self.get_queryset().filter(
             is_scheduled=True, 
             status__in=['pending', 'requested'],
             driver__isnull=True,
-            scheduled_for__gt=timezone.now()
+            scheduled_for__gt=timezone.now() - timezone.timedelta(minutes=15)
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
     @action(detail=True, methods=['post'], url_path='schedule/accept')
     def schedule_accept(self, request, pk=None):
+        if getattr(request.user, 'role', 'rider') != 'driver':
+            return Response({"error": "Only drivers can accept rides."}, status=status.HTTP_403_FORBIDDEN)
         ride = self.get_object()
         if ride.status not in ['pending', 'requested']:
             return Response({"error": "Ride is not in pending status"}, status=status.HTTP_400_BAD_REQUEST)
@@ -245,6 +250,7 @@ class RideViewSet(viewsets.ModelViewSet):
     def schedule_start(self, request, pk=None):
         ride = self.get_object()
         ride.status = 'accepted'
+        ride.is_scheduled = False
         ride.save()
         
         # Sync Vehicle Status to 'riding'
@@ -312,68 +318,146 @@ class RideViewSet(viewsets.ModelViewSet):
     def estimate(self, request):
         """
         Calculates dynamic fares and real-time ETA for all categories.
-        Only shows categories with available drivers within 5km.
+        Results are cached per rounded coordinate pair for 45 seconds to reduce
+        Google Maps API costs when the passenger is not moving significantly.
         """
         try:
             p_lat = float(request.query_params.get('pickup_lat'))
             p_lng = float(request.query_params.get('pickup_lng'))
             d_lat = request.query_params.get('dropoff_lat')
             d_lng = request.query_params.get('dropoff_lng')
-            
+
+            # --- Cache check (per rounded coordinate pair, ~50m grid) ---
+            from django.core.cache import cache as django_cache
+            import json as _json
+            stops_raw_qs = request.query_params.get('stops', '')
+            lat_key = round(p_lat, 3)
+            lng_key = round(p_lng, 3)
+            d_lat_key = round(float(d_lat), 3) if d_lat else 'x'
+            d_lng_key = round(float(d_lng), 3) if d_lng else 'x'
+            estimate_cache_key = f'estimate:{lat_key},{lng_key}:{d_lat_key},{d_lng_key}:{hash(stops_raw_qs)}'
+
+            cached_estimate = django_cache.get(estimate_cache_key)
+            if cached_estimate is not None:
+                from rest_framework.response import Response as DRFResponse
+                resp = DRFResponse(cached_estimate)
+                resp['X-Cache'] = 'HIT'
+                resp['Cache-Control'] = 'private, max-age=45'
+                return resp
+            # --- End cache check ---
+
             from .services.pricing_service import PricingService
             from flexy_backend.redis_client import redis_geo
-            from vehicles.models import Vehicle
             from integrations.google_maps import GoogleMapsService
             
             # 1. Broad fetch for nearby drivers (5.0 km radius)
             nearby_ids = redis_geo.geo_radius_drivers(p_lat, p_lng, 5.0)
             
-            # 2. Map drivers to their vehicle categories
-            active_vehicles = Vehicle.objects.filter(
-                driver_id__in=nearby_ids,  # Redis stores profile.pk, driver FK points to Profile
-                is_active=True,
-                is_verified=True
-            ).select_related('driver')
+            # 2. Map drivers to their vehicle categories using Redis cache
+            vtype_map = redis_geo.get_driver_vehicle_types(nearby_ids)
             
-            # Group driver positions by category
+            # Group driver positions by category (keep closest per category)
             driver_positions = redis_geo.get_driver_positions(nearby_ids)
-            category_availability = {} # category_slug -> closest_driver_coords
-            
-            for v in active_vehicles:
-                driver_id = str(v.driver_id)
-                if driver_id in driver_positions:
-                    pos = driver_positions[driver_id] # [lng, lat]
-                    if v.type not in category_availability:
-                        category_availability[v.type] = pos
+            category_availability = {}  # category_slug -> closest_driver_coords
 
-            # 3. Fetch trip metrics (Passenger's route)
-            import json
+            for driver_id_str, v_type in vtype_map.items():
+                if driver_id_str in driver_positions:
+                    pos = driver_positions[driver_id_str]  # [lng, lat]
+                    if v_type not in category_availability:
+                        category_availability[v_type] = pos
+
+            # 3. Fetch trip metrics (Passenger's route) and Driver ETAs concurrently in parallel
             stops_raw = request.query_params.get('stops') or request.data.get('stops', [])
             if isinstance(stops_raw, str):
                 try:
-                    stops = json.loads(stops_raw)
-                except:
+                    stops = _json.loads(stops_raw)
+                except Exception:
                     stops = []
             else:
                 stops = stops_raw
 
-            dist_km, duration_sec, traffic_sec = 0.0, 0, 0
-            if d_lat and d_lng:
+            from concurrent.futures import ThreadPoolExecutor
+
+            def get_passenger_metrics():
+                if d_lat and d_lng:
+                    try:
+                        return GoogleMapsService.get_trip_metrics(
+                            p_lat, p_lng, float(d_lat), float(d_lng),
+                            waypoints=stops
+                        )
+                    except Exception as e:
+                        print(f"Error fetching trip metrics: {e}")
+                return 0.0, 0, 0
+
+            def get_driver_eta(category_slug, c_pos):
                 try:
-                    # Pass waypoints to Directions API for accurate multi-stop distance
-                    dist_km, duration_sec, traffic_sec = GoogleMapsService.get_trip_metrics(
-                        p_lat, p_lng, float(d_lat), float(d_lng),
-                        waypoints=stops
+                    driver_lat = float(c_pos[1])
+                    driver_lng = float(c_pos[0])
+                    
+                    # Round coordinates to 2 decimal places (approx. 1.1km grid) to maximize cache hit rate
+                    grid_d_lat = round(driver_lat, 2)
+                    grid_d_lng = round(driver_lng, 2)
+                    grid_p_lat = round(float(p_lat), 2)
+                    grid_p_lng = round(float(p_lng), 2)
+                    
+                    from django.core.cache import cache
+                    cache_key = f"driver_eta_grid_{category_slug}_{grid_d_lat}_{grid_d_lng}_{grid_p_lat}_{grid_p_lng}"
+                    
+                    try:
+                        cached_eta = cache.get(cache_key)
+                        if cached_eta is not None:
+                            return category_slug, int(cached_eta)
+                    except Exception:
+                        pass
+                        
+                    # Use Google Maps for traffic-aware driver ETA
+                    _, driver_duration_sec, _ = GoogleMapsService.get_trip_metrics(
+                        driver_lat, driver_lng, float(p_lat), float(p_lng)
                     )
-                except Exception as e:
-                    print(f"Error fetching trip metrics: {e}")
-                
-                print(f"DEBUG ESTIMATE: dist_km={dist_km}, duration_sec={duration_sec}, traffic_sec={traffic_sec}, stops={len(stops)}")
+                    eta_minutes = max(1, int(driver_duration_sec / 60))
+                    
+                    try:
+                        # Cache grid ETA for 5 minutes (300 seconds)
+                        cache.set(cache_key, eta_minutes, timeout=300)
+                    except Exception:
+                        pass
+                        
+                    return category_slug, eta_minutes
+                except Exception:
+                    # Fallback: Haversine / 30 km/h
+                    try:
+                        from .services.geo_service import GeoService
+                        distance_km = GeoService.calculate_haversine_distance(
+                            float(c_pos[1]), float(c_pos[0]), float(p_lat), float(p_lng)
+                        )
+                        return category_slug, max(1, int(distance_km / 0.5))
+                    except Exception:
+                        return category_slug, 5
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                passenger_future = executor.submit(get_passenger_metrics)
+                driver_futures = [
+                    executor.submit(get_driver_eta, cat, pos)
+                    for cat, pos in category_availability.items()
+                ]
+
+                # Retrieve results
+                dist_km, duration_sec, traffic_sec = passenger_future.result()
+                driver_etas = {}
+                for fut in driver_futures:
+                    try:
+                        cat, eta = fut.result()
+                        driver_etas[cat] = eta
+                    except Exception:
+                        pass
+
+            print(f"DEBUG ESTIMATE: dist_km={dist_km}, duration_sec={duration_sec}, traffic_sec={traffic_sec}, stops={len(stops)}")
             
-            # 4. Calculate Fares with ETA and Availability
+            # 4. Calculate Fares with Traffic-Aware ETA and Real Availability
             base_estimates = PricingService.calculate_fare_estimates(
                 dist_km, duration_sec, 
                 lat=p_lat, lng=p_lng,
+                d_lat=d_lat, d_lng=d_lng,
                 num_stops=len(stops),
                 duration_in_traffic_sec=traffic_sec
             )
@@ -381,38 +465,21 @@ class RideViewSet(viewsets.ModelViewSet):
             
             for category_slug, fare in base_estimates.items():
                 is_real_time_available = category_slug in category_availability
-                eta_minutes = None
-                
-                if is_real_time_available:
-                    # Calculate ETA for this category
-                    c_pos = category_availability[category_slug]
-                    # ETA from driver [lng, lat] to pickup [p_lat, p_lng]
-                    try:
-                        from .services.geo_service import GeoService
-                        driver_lat = float(c_pos[1])
-                        driver_lng = float(c_pos[0])
-                        distance_km = GeoService.calculate_haversine_distance(driver_lat, driver_lng, float(p_lat), float(p_lng))
-                        # Assume avg city speed of 30 km/h (0.5 km/min)
-                        eta_minutes = max(1, int(distance_km / 0.5))
-                    except Exception:
-                        # Fallback to a very rough distance-based estimate if calculation fails
-                        eta_minutes = 5
+                eta_minutes = driver_etas.get(category_slug) if is_real_time_available else None
                 
                 final_estimates[category_slug] = {
                     "fare": fare,
-                    "is_available": True, # Always selectable (Restore Point 4)
+                    "is_available": is_real_time_available,  # Restored: reflects actual driver availability
                     "real_time_available": is_real_time_available,
                     "eta_minutes": eta_minutes
                 }
 
-            # If no drivers nearby, we still return the list but informed about unavailability
             if not final_estimates:
                 return Response({"error": "No vehicle categories available at this time."}, status=status.HTTP_404_NOT_FOUND)
 
-            # Standard data for the summary view
             standard_data = final_estimates.get('standard') or final_estimates.get('go') or list(final_estimates.values())[0]
             
-            return Response({
+            response_data = {
                 "estimated_fare": standard_data['fare'],
                 "is_available": standard_data['is_available'],
                 "eta_minutes": standard_data['eta_minutes'],
@@ -422,17 +489,70 @@ class RideViewSet(viewsets.ModelViewSet):
                 "duration_text": f"{int(duration_sec // 60)} mins",
                 "distance_text": f"{round(dist_km, 1)} km",
                 "currency": "GHS"
-            })
+            }
 
+            # Store in cache for 45 seconds
+            django_cache.set(estimate_cache_key, response_data, 45)
+
+            resp = Response(response_data)
+            resp['X-Cache'] = 'MISS'
+            resp['Cache-Control'] = 'private, max-age=45'
+            return resp
 
         except (TypeError, ValueError) as e:
             return Response({"error": "Missing or invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(detail=False, methods=['get'], url_path='nearby-vehicles')
+    def nearby_vehicles(self, request):
+        """
+        Returns anonymised positions (±~50m jitter) of active drivers within 3km.
+        Used by the passenger map to display ambient vehicle markers before a ride is ordered.
+        """
+        try:
+            import random
+            p_lat = float(request.query_params.get('lat', 0))
+            p_lng = float(request.query_params.get('lng', 0))
+            if not p_lat or not p_lng:
+                return Response({"error": "lat and lng are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            from flexy_backend.redis_client import redis_geo
+
+            nearby_ids = redis_geo.geo_radius_drivers(p_lat, p_lng, 3.0)
+            if not nearby_ids:
+                return Response({"vehicles": []})
+
+            positions = redis_geo.get_driver_positions(nearby_ids)
+            vtype_map = redis_geo.get_driver_vehicle_types(nearby_ids)
+
+            result = []
+            for driver_id, pos in positions.items():
+                if pos is None:
+                    continue
+                # Add ~50m random jitter to anonymise exact positions
+                jitter_lat = random.uniform(-0.0005, 0.0005)
+                jitter_lng = random.uniform(-0.0005, 0.0005)
+                result.append({
+                    'lat': round(float(pos[1]) + jitter_lat, 5),
+                    'lng': round(float(pos[0]) + jitter_lng, 5),
+                    'type': vtype_map.get(driver_id, 'go'),
+                })
+
+            return Response({"vehicles": result})
+        except (TypeError, ValueError):
+            return Response({"error": "Invalid coordinates"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     @action(detail=True, methods=['post', 'put', 'patch'])
     def status(self, request, pk=None):
         ride = self.get_object()
+        
+        # Security: ensure only assigned driver can update standard statuses
+        if request.user != ride.driver:
+            return Response({"error": "Only the assigned driver can update the ride status."}, status=status.HTTP_403_FORBIDDEN)
+            
         old_status = ride.status
         new_status = request.data.get('status')
         
@@ -569,27 +689,30 @@ class RideViewSet(viewsets.ModelViewSet):
             # Broadcast the status update via WebSocket room (Screenshot 6)
             self._broadcast_ride_update(ride, 'status_updated')
 
-            # Send Push Notification to Passenger
+            # Send Push Notification to Passenger with specific notification_type for deep-link routing
             try:
                 from notification.utils import send_notification
                 if new_status != old_status:
                     title = "Ride Update"
                     body = None
+                    notification_type = None
                     if new_status == 'accepted':
                         body = f"Great news! {ride.driver.profile.full_name} has accepted your ride request."
+                        notification_type = 'RIDE_ACCEPTED'
                     elif new_status == 'arrived':
                         body = f"Your driver has arrived at {ride.pickup_address}."
+                        notification_type = 'RIDE_ARRIVED'
                     elif new_status == 'in_progress':
                         body = "Your trip has started. Enjoy the ride!"
+                        notification_type = 'RIDE_ACTIVE'
                     elif new_status == 'completed':
                         body = f"You've arrived! Your total is GH₵ {ride.fare:.2f}."
+                        notification_type = 'RIDE_COMPLETED'
                     
-                    if body:
-                        # Default settings
+                    if body and notification_type:
                         channel_id = None
                         sound = None
                         
-                        # Use horn sound for arrival
                         if new_status == 'arrived':
                             channel_id = 'high_priority_rides'
                             sound = 'horn'
@@ -604,7 +727,8 @@ class RideViewSet(viewsets.ModelViewSet):
                             android_channel_id=channel_id,
                             android_sound=sound,
                             ios_sound=f'{sound}.wav' if sound else None,
-                            save_in_db=save_in_db
+                            save_in_db=save_in_db,
+                            extra_data={'notification_type': notification_type}
                         )
             except Exception as e:
                 print(f"Notification error: {e}")
@@ -619,8 +743,16 @@ class RideViewSet(viewsets.ModelViewSet):
         Includes throttling to optimize Google Maps API usage.
         """
         ride = self.get_object()
-        lat = float(request.data.get('lat'))
-        lng = float(request.data.get('lng'))
+        
+        if request.user != ride.driver:
+            return Response({"error": "Only the assigned driver can update location tracking."}, status=status.HTTP_403_FORBIDDEN)
+            
+        raw_lat = request.data.get('lat') or request.data.get('latitude')
+        raw_lng = request.data.get('lng') or request.data.get('longitude')
+        if raw_lat is None or raw_lng is None:
+            return Response({"error": "Latitude and longitude are required."}, status=status.HTTP_400_BAD_REQUEST)
+        lat = float(raw_lat)
+        lng = float(raw_lng)
         
         from django.utils import timezone
         from .services.pricing_service import PricingService
@@ -1056,6 +1188,7 @@ class RideViewSet(viewsets.ModelViewSet):
             estimates = PricingService.calculate_fare_estimates(
                 dist_km, duration_sec,
                 lat=origin_lat, lng=origin_lng,
+                d_lat=ride.dropoff_lat, d_lng=ride.dropoff_lng,
                 num_stops=len(waypoints)
             )
             pref_cat = ride.preferred_vehicle_type or 'standard'

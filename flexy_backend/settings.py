@@ -51,8 +51,7 @@ if env('DJANGO_ENV', default='production') == 'local':
 
     try:
         from django.contrib.gis import gdal
-        if not hasattr(gdal, 'HAS_GDAL') or not gdal.HAS_GDAL:
-            USE_GIS = False
+        USE_GIS = True
     except Exception:
         USE_GIS = False
 
@@ -138,10 +137,20 @@ ASGI_APPLICATION = 'flexy_backend.asgi.application'
 DATABASES = {
     'default': env.db('DATABASE_URL', default='')   
 }
+DATABASES['default']['CONN_MAX_AGE'] = 600
 
 # If GIS is enabled, we MUST use the postgis engine for Postgres
 if USE_GIS and DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+
+DB_NUM_REPLICAS = env.int('DB_NUM_REPLICAS', default=0)
+if DB_NUM_REPLICAS > 0:
+    for i in range(1, DB_NUM_REPLICAS + 1):
+        db_key = f'standby_{i}'
+        DATABASES[db_key] = DATABASES['default'].copy()
+        DATABASES[db_key]['PORT'] = str(5432 + i)
+
+DATABASE_ROUTERS = ['flexy_backend.db_router.PrimaryReplicaRouter']
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -192,6 +201,9 @@ if REDIS_URL:
             'LOCATION': REDIS_URL,
             'OPTIONS': {
                 'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'IGNORE_EXCEPTIONS': True,
+                'SOCKET_CONNECT_TIMEOUT': 1,
+                'SOCKET_TIMEOUT': 1,
             },
             'TIMEOUT': 300,  # Default 5 minutes
         }
@@ -257,7 +269,18 @@ SIMPLE_JWT = {
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5673//')
 CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6380/1')
 REDIS_URL = env('REDIS_URL', default='redis://localhost:6380/0')
+
+CELERY_TASK_ROUTES = {
+    'notification.tasks.send_fcm_push_task': {'queue': 'high_priority'},
+    'rides.tasks.process_ride_matching': {'queue': 'high_priority'},
+    'profiles.tasks.flush_driver_locations_to_db': {'queue': 'high_priority'},
+    '*': {'queue': 'default'},
+}
 CELERY_BEAT_SCHEDULE = {
+    'flush-driver-locations-to-db-every-30-seconds': {
+        'task': 'profiles.tasks.flush_driver_locations_to_db',
+        'schedule': 30.0,
+    },
     'activate-scheduled-rides-every-minute': {
         'task': 'rides.tasks.activate_scheduled_rides',
         'schedule': 60.0,
@@ -295,7 +318,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "flexy_backend.custom_layer.UUIDRedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL],
+            "hosts": [REDIS_URL.replace('/0', '/2') if '/0' in REDIS_URL else REDIS_URL.rstrip('/') + '/2'],
         },
     },
 }
@@ -318,7 +341,7 @@ UNFOLD = {
     "STYLES": [
         lambda request: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap",
         lambda request: "https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200",
-        lambda request: "/static/css/admin_theme.css",
+        lambda request: "/static/css/admin_theme.css?v=3",
     ],
     "SCRIPTS": [
         lambda request: "/static/js/admin_spa_nav.js",
@@ -557,6 +580,16 @@ UNFOLD = {
                         "link": "/headquarters/core_settings/distancetier/",
                     },
                     {
+                        "title": "Service Areas",
+                        "icon": "map",
+                        "link": "/headquarters/core_settings/servicearea/",
+                    },
+                    {
+                        "title": "Legal Documents",
+                        "icon": "gavel",
+                        "link": "/headquarters/core_settings/legaldocument/",
+                    },
+                    {
                         "title": "Global System Settings",
                         "icon": "settings",
                         "link": "/headquarters/core_settings/sitesetting/",
@@ -668,7 +701,7 @@ GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
 APPLE_OAUTH_CLIENT_ID = env('APPLE_OAUTH_CLIENT_ID', default='')
 
 # Email Configuration (SMTP Details)
-SITE_URL = env('SITE_URL', default='https://flexyride.com')
+SITE_URL = env('SITE_URL', default='https://flexyridegh.com')
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = env('EMAIL_HOST', default='flexyridegh.com')
 EMAIL_PORT = env.int('EMAIL_PORT', default=465)

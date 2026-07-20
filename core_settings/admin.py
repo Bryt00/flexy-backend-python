@@ -2,7 +2,28 @@ from django.contrib import admin
 from django.db import models
 from django.forms import TextInput
 from unfold.admin import ModelAdmin
-from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType
+from django.contrib.gis import admin as gis_admin
+from django.contrib.gis.db import models as gis_models
+import unfold.templatetags.unfold
+
+def _safe_flatten_context(context):
+    flat = {}
+    for d in context.dicts:
+        if isinstance(d, dict):
+            flat.update(d)
+        elif hasattr(d, 'flatten') and callable(d.flatten):
+            try:
+                flat.update(d.flatten())
+            except Exception:
+                pass
+        elif hasattr(d, 'keys'):
+            for k in d.keys():
+                flat[k] = d[k]
+    return flat
+
+unfold.templatetags.unfold._flatten_context = _safe_flatten_context
+
+from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType, ServiceArea
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(ModelAdmin):
@@ -46,10 +67,35 @@ class PricingRuleAdmin(ModelAdmin):
 @admin.register(VehicleCategory)
 class VehicleCategoryAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('display_name', 'slug', 'base_fare', 'multiplier', 'image', 'is_active')
-    list_filter = ('created_at',)
-    list_editable = ('base_fare', 'multiplier', 'is_active')
+    list_display = ('display_name', 'slug', 'base_fare', 'multiplier', 'is_passenger_allowed', 'is_delivery_geofenced', 'is_active')
+    list_filter = ('created_at', 'is_passenger_allowed', 'is_delivery_geofenced')
+    list_editable = ('base_fare', 'multiplier', 'is_passenger_allowed', 'is_delivery_geofenced', 'is_active')
     search_fields = ('display_name', 'slug')
+    filter_horizontal = ('allowed_service_areas',)
+
+from django.contrib.gis.forms.widgets import OSMWidget
+
+
+@admin.register(ServiceArea)
+class ServiceAreaAdmin(ModelAdmin):
+    list_display = ('name', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    
+    formfield_overrides = {
+        gis_models.PolygonField: {
+            'widget': OSMWidget(attrs={
+                'map_width': 800,
+                'map_height': 500,
+                'default_lon': 0,
+                'default_lat': 0,
+                'default_zoom': 2,
+                'style': 'width: 100% !important; min-width: 800px; height: 500px;'
+            })
+        },
+    }
+
+
 
 @admin.register(DistanceTier)
 class DistanceTierAdmin(ModelAdmin):

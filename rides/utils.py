@@ -7,12 +7,66 @@ logger = logging.getLogger(__name__)
 
 class FareCalculator:
     @staticmethod
+    def _get_active_categories():
+        from django.core.cache import cache
+        cache_key = "active_vehicle_categories_list"
+        try:
+            categories = cache.get(cache_key)
+            if categories is not None:
+                return categories
+        except Exception:
+            pass
+        
+        categories = list(VehicleCategory.objects.filter(is_active=True))
+        try:
+            cache.set(cache_key, categories, timeout=300)
+        except Exception:
+            pass
+        return categories
+
+    @staticmethod
+    def _get_active_distance_tiers():
+        from django.core.cache import cache
+        cache_key = "active_distance_tiers_list"
+        try:
+            tiers = cache.get(cache_key)
+            if tiers is not None:
+                return tiers
+        except Exception:
+            pass
+        
+        tiers = list(DistanceTier.objects.filter(is_active=True).order_by('min_km'))
+        try:
+            cache.set(cache_key, tiers, timeout=300)
+        except Exception:
+            pass
+        return tiers
+
+    @staticmethod
+    def _get_active_pricing_rules():
+        from django.core.cache import cache
+        cache_key = "active_pricing_rules_list"
+        try:
+            rules = cache.get(cache_key)
+            if rules is not None:
+                return rules
+        except Exception:
+            pass
+        
+        from core_settings.models import PricingRule
+        rules = list(PricingRule.objects.filter(is_active=True).select_related('city'))
+        try:
+            cache.set(cache_key, rules, timeout=300)
+        except Exception:
+            pass
+        return rules
+
+    @staticmethod
     def get_surge_multiplier(target_time=None, lat=None, lng=None, radius=5.0, duration_seconds=None, duration_in_traffic=None):
         """
         Calculates compounded surge multiplier factoring in admin-set rules, 
         peak hours, live Redis spatial density, traffic delays, and weather.
         """
-        from core_settings.models import PricingRule
         from integrations.weather import WeatherService
         multiplier = 1.0
         
@@ -24,22 +78,20 @@ class FareCalculator:
         # Step 1: Admin-set Pricing Rule (Manual Surge & Toggles)
         try:
             rule = None
+            rules = FareCalculator._get_active_pricing_rules()
             if lat is not None and lng is not None:
-                from website.models import City
-                closest_city = None
                 min_dist = float('inf')
-                for city in City.objects.filter(is_active=True, latitude__isnull=False, longitude__isnull=False):
-                    dist = GeospatialUtils.calculate_haversine_distance(lat, lng, city.latitude, city.longitude) / 1000.0
-                    if dist < 100.0 and dist < min_dist:
-                        min_dist = dist
-                        closest_city = city
-                if closest_city:
-                    rule = PricingRule.objects.filter(city=closest_city, is_active=True).first()
+                for r in rules:
+                    if r.city and r.city.is_active and r.city.latitude is not None and r.city.longitude is not None:
+                        dist = GeospatialUtils.calculate_haversine_distance(lat, lng, r.city.latitude, r.city.longitude) / 1000.0
+                        if dist < 100.0 and dist < min_dist:
+                            min_dist = dist
+                            rule = r
             
             if not rule:
-                rule = PricingRule.objects.filter(city__isnull=True, is_active=True).first()
-                if not rule:
-                    rule = PricingRule.objects.filter(is_active=True).first()
+                rule = next((r for r in rules if r.city is None), None)
+                if not rule and rules:
+                    rule = rules[0]
 
             if rule:
                 enable_weather = rule.enable_weather_surge
@@ -149,32 +201,30 @@ class FareCalculator:
             'driver_payout': 0.0
         }
 
-        try:
-            category = VehicleCategory.objects.get(slug=vehicle_category_slug)
-        except VehicleCategory.DoesNotExist:
-            logger.error(f"Category {vehicle_category_slug} not found.")
-            return ledger
+        categories = FareCalculator._get_active_categories()
+        category = next((c for c in categories if c.slug == vehicle_category_slug), None)
+        if not category:
+            try:
+                category = VehicleCategory.objects.get(slug=vehicle_category_slug)
+            except VehicleCategory.DoesNotExist:
+                logger.error(f"Category {vehicle_category_slug} not found.")
+                return ledger
 
-        from core_settings.models import PricingRule
+        rules = FareCalculator._get_active_pricing_rules()
         rule = None
         if lat is not None and lng is not None:
-            from website.models import City
-            closest_city = None
             min_dist = float('inf')
-            # Find closest active city within 100km using Haversine
-            for city in City.objects.filter(is_active=True, latitude__isnull=False, longitude__isnull=False):
-                dist = GeospatialUtils.calculate_haversine_distance(lat, lng, city.latitude, city.longitude) / 1000.0
-                if dist < 100.0 and dist < min_dist:
-                    min_dist = dist
-                    closest_city = city
-            if closest_city:
-                rule = PricingRule.objects.filter(city=closest_city, is_active=True).first()
+            for r in rules:
+                if r.city and r.city.is_active and r.city.latitude is not None and r.city.longitude is not None:
+                    dist = GeospatialUtils.calculate_haversine_distance(lat, lng, r.city.latitude, r.city.longitude) / 1000.0
+                    if dist < 100.0 and dist < min_dist:
+                        min_dist = dist
+                        rule = r
         
         if not rule:
-            # Fallback: global rule (city is null) or first active rule
-            rule = PricingRule.objects.filter(city__isnull=True, is_active=True).first()
-            if not rule:
-                rule = PricingRule.objects.filter(is_active=True).first()
+            rule = next((r for r in rules if r.city is None), None)
+            if not rule and rules:
+                rule = rules[0]
 
         # Stage 1: Add Base Fare
         if rule and rule.base_fare > 0:
@@ -188,7 +238,7 @@ class FareCalculator:
             tiered_dist_charge = distance_km * rule.per_km_rate * category.multiplier
         else:
             # Default Distance Tiers fallback
-            tiers = DistanceTier.objects.filter(is_active=True).order_by('min_km')
+            tiers = FareCalculator._get_active_distance_tiers()
             remaining_dist = distance_km
             tiered_dist_charge = 0
             

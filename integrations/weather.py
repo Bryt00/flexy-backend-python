@@ -2,15 +2,19 @@ import requests
 import logging
 from django.conf import settings
 from django.core.cache import cache
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 class WeatherService:
+    # Class-level in-memory fallback cache to bypass Redis/network overhead
+    _mem_cache = {}
+
     @staticmethod
     def get_weather_surge(lat, lng):
         """
         Queries Open-Meteo for the current weather at (lat, lng).
-        Uses a Grid-Based Redis Cache (rounded to 1 decimal place = ~11km grid)
+        Uses a Grid-Based Redis Cache + In-Memory Fallback Cache.
         Returns a weather multiplier (e.g. 1.2 for rain, 1.5 for thunderstorm).
         """
         if lat is None or lng is None:
@@ -19,15 +23,30 @@ class WeatherService:
         # Round to 1 decimal place for 11km x 11km grid caching
         grid_lat = round(float(lat), 1)
         grid_lng = round(float(lng), 1)
-        cache_key = f"weather_surge_grid_{grid_lat}_{grid_lng}"
+        cache_key = f"{grid_lat}_{grid_lng}"
+        redis_key = f"weather_surge_grid_{cache_key}"
 
-        # 1. Check Redis Cache
-        cached_surge = cache.get(cache_key)
-        if cached_surge is not None:
-            logger.info(f"Weather Cache Hit for grid [{grid_lat}, {grid_lng}]: {cached_surge}x")
-            return float(cached_surge)
+        now = datetime.now()
 
-        # 2. Fetch from Open-Meteo if not cached
+        # 1. Check in-memory fallback cache first (extremely fast)
+        if cache_key in WeatherService._mem_cache:
+            val, expiry = WeatherService._mem_cache[cache_key]
+            if now < expiry:
+                logger.info(f"Weather In-Memory Cache Hit for grid [{grid_lat}, {grid_lng}]: {val}x")
+                return val
+
+        # 2. Check Django cache (Redis) with try-except for tolerance
+        try:
+            cached_surge = cache.get(redis_key)
+            if cached_surge is not None:
+                logger.info(f"Weather Redis Cache Hit for grid [{grid_lat}, {grid_lng}]: {cached_surge}x")
+                val = float(cached_surge)
+                WeatherService._mem_cache[cache_key] = (val, now + timedelta(minutes=15))
+                return val
+        except Exception as e:
+            logger.warning(f"Weather Cache service unavailable: {e}")
+
+        # 3. Fetch from Open-Meteo if not cached
         surge = 1.0
         try:
             url = "https://api.open-meteo.com/v1/forecast"
@@ -36,7 +55,8 @@ class WeatherService:
                 "longitude": grid_lng,
                 "current": "weather_code"
             }
-            response = requests.get(url, params=params, timeout=5)
+            # Short timeout to prevent locking threads on external network delays
+            response = requests.get(url, params=params, timeout=2)
             data = response.json()
 
             if "current" in data and "weather_code" in data["current"]:
@@ -63,6 +83,11 @@ class WeatherService:
         except Exception as e:
             logger.error(f"WeatherService API Exception: {e}")
 
-        # 3. Cache the calculated surge for 15 minutes (900 seconds)
-        cache.set(cache_key, surge, timeout=900)
+        # 4. Cache the calculated surge for 15 minutes (900 seconds) in Django cache and In-Memory
+        try:
+            cache.set(redis_key, surge, timeout=900)
+        except Exception as e:
+            logger.warning(f"Failed to write weather to Redis cache: {e}")
+
+        WeatherService._mem_cache[cache_key] = (surge, now + timedelta(minutes=15))
         return surge

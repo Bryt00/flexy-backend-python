@@ -1,11 +1,21 @@
-﻿{% extends 'website/base.html' %}
+{% extends 'website/base.html' %}
 {% load static %}
 
 {% block title %}Press & Media | FlexyRide{% endblock %}
 {% block meta_description %}Press resources, media kit, and latest news from FlexyRide, Ghana's leading ride-hailing platform.{% endblock %}
 
+{% block extra_css %}
+<style>
+.press-hero {
+    background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="relative py-24 text-center" style="background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+<section class="press-hero relative py-24 text-center">
     <div class="container animate-fade-in">
         <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Press & Media</h1>
         <p class="text-xl text-gray-400 max-w-2xl mx-auto">Resources for journalists and media professionals covering FlexyRide's story.</p>

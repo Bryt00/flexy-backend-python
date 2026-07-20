@@ -1,0 +1,16 @@
+.dj_map_wrapper {
+    width: 100% !important;
+    min-width: 800px !important;
+    flex-grow: 1 !important;
+    display: block !important;
+}
+
+.dj_map {
+    width: 100% !important;
+    min-width: 800px !important;
+    height: 500px !important;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    position: relative;
+    z-index: 1;
+}

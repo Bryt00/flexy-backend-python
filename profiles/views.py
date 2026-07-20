@@ -215,39 +215,46 @@ class ProfileViewSet(viewsets.ModelViewSet):
         try:
             profile = Profile.objects.get(user=request.user)
             
-            # 1. Eligibility Check (must be a verified driver)
+            # 1. Base Eligibility
             if request.user.role != 'driver':
                  return Response({"error": "Only drivers can toggle online status"}, status=status.HTTP_403_FORBIDDEN)
             
-            verification = profile.verification if hasattr(profile, 'verification') else None
-            is_verified = verification and verification.is_verified
-            if not is_verified:
-                return Response({
-                    "error": "Account verification required.",
-                    "detail": "Your account is not yet verified for active duty. Please complete your profile verification."
-                }, status=status.HTTP_403_FORBIDDEN)
-
-            # 2. Subscription Check
-            subscription = profile.subscription if hasattr(profile, 'subscription') else None
-            
-            if not subscription or not subscription.can_go_online:
-                if subscription and subscription.is_trial_used and not subscription.is_in_trial and subscription.status != 'active':
-                    return Response({
-                        "error": "Free trial expired.",
-                        "detail": "Your 14-day free trial has expired. Please purchase a subscription plan to go online and continue driving."
-                    }, status=status.HTTP_403_FORBIDDEN)
-                else:
-                    return Response({
-                        "error": "Active subscription required.",
-                        "detail": "You need an active subscription to go online. Please check your plan status."
-                    }, status=status.HTTP_403_FORBIDDEN)
-
-            # 3. Toggle Status via Centralized Service
             requested_status = request.data.get('is_online')
             is_online = bool(requested_status) if requested_status is not None else not profile.is_online
-            
+
+            # Only enforce restrictions if the driver is attempting to go ONLINE
+            if is_online:
+                # 2. Verification Check
+                verification = profile.verification if hasattr(profile, 'verification') else None
+                is_verified = verification and verification.is_verified
+                if not is_verified:
+                    return Response({
+                        "error": "Account verification required.",
+                        "detail": "Your account is not yet verified for active duty. Please complete your profile verification."
+                    }, status=status.HTTP_403_FORBIDDEN)
+
+                # 3. Subscription Check
+                subscription = profile.subscription if hasattr(profile, 'subscription') else None
+                
+                if not subscription or not subscription.can_go_online:
+                    if subscription and subscription.is_trial_used and not subscription.is_in_trial and subscription.status != 'active':
+                        return Response({
+                            "error": "Free trial expired.",
+                            "detail": "Your 14-day free trial has expired. Please purchase a subscription plan to go online and continue driving."
+                        }, status=status.HTTP_403_FORBIDDEN)
+                    else:
+                        return Response({
+                            "error": "Active subscription required.",
+                            "detail": "You need an active subscription to go online. Please check your plan status."
+                        }, status=status.HTTP_403_FORBIDDEN)
+
+            # 4. Toggle Status via Centralized Service
             from .services.tracking_service import TrackingService
             TrackingService.set_driver_online_status(str(profile.pk), is_online)
+            
+            # Invalidate profile cache so subsequent GET /me calls reflect the new status
+            from core_auth.cache_utils import invalidate_user_cache
+            invalidate_user_cache(request.user.id, 'profile')
             
             # Refresh to reflect updated status in response
             profile.refresh_from_db()

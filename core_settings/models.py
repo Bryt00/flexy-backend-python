@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.gis.db import models as gis_models
 import uuid
 
 class SiteSetting(models.Model):
@@ -95,8 +96,28 @@ class PricingRule(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_pricing_rules_list")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_pricing_rules_list")
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return f"Pricing for {self.city}"
+
+class ServiceArea(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    polygon = gis_models.PolygonField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
 
 class VehicleCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -105,8 +126,24 @@ class VehicleCategory(models.Model):
     base_fare = models.FloatField(default=0.0)
     multiplier = models.FloatField(default=1.0, help_text="Fare multiplier for this category")
     image = models.ImageField(upload_to='vehicle_categories/', blank=True, null=True, help_text="Upload an icon for this vehicle type (PNG recommended)")
+    
+    # Geofenced Restrictions
+    is_passenger_allowed = models.BooleanField(default=True, help_text="If False, this vehicle cannot take passengers by default.")
+    is_delivery_geofenced = models.BooleanField(default=False, help_text="If True, deliveries are restricted to allowed service areas.")
+    allowed_service_areas = models.ManyToManyField(ServiceArea, blank=True, related_name='allowed_vehicle_categories')
+    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_vehicle_categories_list")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_vehicle_categories_list")
+        super().delete(*args, **kwargs)
 
     class Meta:
         verbose_name_plural = "Vehicle Categories"
@@ -121,6 +158,16 @@ class DistanceTier(models.Model):
     max_km = models.FloatField(default=0.0, help_text="Use a very large number like 9999 for the last tier")
     rate_per_km = models.FloatField(default=0.0)
     is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_distance_tiers_list")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_distance_tiers_list")
+        super().delete(*args, **kwargs)
     
     class Meta:
         ordering = ['min_km']
@@ -165,3 +212,16 @@ class DeliveryVehicleType(models.Model):
 
     def __str__(self):
         return self.name
+
+def get_vehicle_categories():
+    try:
+        # Query active categories. If empty (e.g. during migrations), fallback.
+        categories = list(VehicleCategory.objects.filter(is_active=True).values_list('slug', 'display_name'))
+        if not categories:
+            return [('go', 'Flexy Go')]
+        return categories
+    except Exception:
+        return [('go', 'Flexy Go')]
+
+def get_assigned_categories():
+    return [('none', 'Not Assigned')] + get_vehicle_categories()

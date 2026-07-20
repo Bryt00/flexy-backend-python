@@ -90,11 +90,9 @@
                 <div class="mb-4">
                     <label class="block text-xs font-bold text-white/70 uppercase tracking-widest mb-2">Assign Ride Category</label>
                     <select name="assigned_category" class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none">
-                        <option value="go">Flexy Go</option>
-                        <option value="comfort">Flexy Comfort</option>
-                        <option value="xl">Flexy XL</option>
-                        <option value="exec">Flexy Executive</option>
-                        <option value="pragya">Flexy Pragya</option>
+                        {% for category in categories %}
+                        <option value="{{ category.slug }}">{{ category.display_name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <button type="submit" name="action" value="approve" class="w-full bg-brand-green hover:bg-brand-green/80 text-black font-bold py-3 rounded-lg transition-colors">

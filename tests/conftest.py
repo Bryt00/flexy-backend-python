@@ -10,6 +10,7 @@ class UserFactory(DjangoModelFactory):
     
     email = factory.Sequence(lambda n: f'user{n}@example.com')
     password = factory.PostGenerationMethodCall('set_password', 'password123')
+    is_email_verified = True
 
 @pytest.fixture
 def api_client():

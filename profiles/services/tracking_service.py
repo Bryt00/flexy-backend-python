@@ -15,12 +15,8 @@ class TrackingService:
             # 1. Update Redis Geospatial Index
             redis_geo.geo_add_driver(driver_id, lat, lng)
             
-            # 2. Update DB Profile
-            Profile.objects.filter(user_id=driver_id).update(
-                last_lat=lat,
-                last_lng=lng,
-                last_location_update=timezone.now()
-            )
+            # 2. Queue DB Profile location update (Write-Behind)
+            redis_geo.queue_driver_location_update(driver_id, lat, lng)
 
             # 3. Broadcast real-time location update to global_rides channel group
             from channels.layers import get_channel_layer
@@ -68,9 +64,13 @@ class TrackingService:
                 profile = Profile.objects.filter(user_id=driver_id).first()
                 if profile and profile.last_lat and profile.last_lng:
                     redis_geo.geo_add_driver(driver_id, profile.last_lat, profile.last_lng)
+                    active_vehicle = Vehicle.objects.filter(driver_id=driver_id, is_active=True).first()
+                    if active_vehicle:
+                        redis_geo.cache_driver_vehicle_type(driver_id, active_vehicle.type)
             else:
                 # Remove from tracking pool if offline
                 redis_geo.geo_remove_driver(driver_id)
+                redis_geo.remove_driver_vehicle_type(driver_id)
             return True
         except Exception as e:
             logger.error(f"TrackingService: Failed to set online status for {driver_id}: {e}")

@@ -178,4 +178,637 @@
         </div>
     </div>
 </div>
+
+<!-- Vehicle Categories Section -->
+<div class="mt-8 glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900">
+        <h3 class="text-lg font-outfit font-bold">Vehicle Categories</h3>
+        {% if request.user.role == 'super_admin' %}
+        <button onclick="document.getElementById('addCategoryModal').classList.remove('hidden')" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest">
+            Create Category
+        </button>
+        {% endif %}
+    </div>
+    <div class="p-6 bg-slate-900">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for category in vehicle_categories %}
+            <div class="bg-[#1E293B] p-4 rounded-xl border border-slate-750 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-black/30 border border-white/10 flex items-center justify-center overflow-hidden">
+                            {% if category.image %}
+                            <img src="{{ category.image.url }}" alt="{{ category.display_name }}" class="object-contain w-full h-full">
+                            {% else %}
+                            <span class="text-white/40 font-bold text-lg">{{ category.display_name|slice:":1"|upper }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-base">{{ category.display_name }}</h4>
+                            <span class="text-[10px] font-mono text-white/50 uppercase tracking-widest">{{ category.slug }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4 bg-black/30 p-3 rounded-lg text-sm">
+                        <div>
+                            <p class="text-[10px] text-white/40 uppercase">Base Fare</p>
+                            <p class="font-bold text-white font-mono">GHS {{ category.base_fare }}</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-white/40 uppercase">Multiplier</p>
+                            <p class="font-bold text-white font-mono">x{{ category.multiplier }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-4 border-t border-white/5">
+                    <div>
+                        {% if category.is_active %}
+                            <span class="status-pill status-pill-success">Active</span>
+                        {% else %}
+                            <span class="status-pill bg-white/10 text-white/60 border-white/20">Inactive</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if request.user.role == 'super_admin' %}
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openEditCategoryModal('{{ category.id }}', '{{ category.slug }}', '{{ category.display_name }}', '{{ category.base_fare }}', '{{ category.multiplier }}', '{{ category.is_active }}')" class="text-primary hover:text-primary-light p-1.5 rounded bg-white/5 hover:bg-white/10 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <form method="POST" action="" class="inline" onsubmit="return confirm('Are you sure you want to delete this category?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_vehicle_category">
+                            <input type="hidden" name="category_id" value="{{ category.id }}">
+                            <button type="submit" class="text-red-500 hover:text-red-400 p-1.5 rounded bg-white/5 hover:bg-white/10 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-white/50 text-center py-4 col-span-3">No vehicle categories found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Category Modal -->
+<div id="addCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Create Vehicle Category</h3>
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_vehicle_category">
+            
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Display Name</label>
+                <input type="text" name="display_name" id="new_display_name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-primary" required oninput="generateSlug(this.value, 'new_slug')">
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Slug / Code</label>
+                <input type="text" name="slug" id="new_slug" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm font-mono focus:outline-none focus:border-primary" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Base Fare (GHS)</label>
+                    <input type="number" step="0.01" name="base_fare" value="10.00" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-primary" required>
+                </div>
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Multiplier</label>
+                    <input type="number" step="0.01" name="multiplier" value="1.00" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-primary" required>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Category Icon / Image</label>
+                <input type="file" name="image" accept="image/*" class="w-full text-xs text-white/70 py-1.5 focus:outline-none">
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="new_is_active" class="rounded bg-black border-white/20 text-primary" checked>
+                <label for="new_is_active" class="text-xs text-white/70">Category Active</label>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('addCategoryModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div id="editCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Edit Vehicle Category</h3>
+        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_vehicle_category">
+            <input type="hidden" name="category_id" id="edit_category_id">
+            
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Display Name</label>
+                <input type="text" name="display_name" id="edit_display_name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-primary" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Slug / Code</label>
+                <input type="text" id="edit_slug" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white/50 text-sm font-mono" disabled>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Base Fare (GHS)</label>
+                    <input type="number" step="0.01" name="base_fare" id="edit_base_fare" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-primary" required>
+                </div>
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Multiplier</label>
+                    <input type="number" step="0.01" name="multiplier" id="edit_multiplier" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm focus:outline-none focus:border-primary" required>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Update Icon / Image</label>
+                <input type="file" name="image" accept="image/*" class="w-full text-xs text-white/70 py-1.5 focus:outline-none">
+                <p class="text-[10px] text-white/40 mt-1">Leave empty to keep current icon</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="edit_is_active" class="rounded bg-black border-white/20 text-primary">
+                <label for="edit_is_active" class="text-xs text-white/70">Category Active</label>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('editCategoryModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Subscription Plans Section -->
+<div class="mt-8 glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900">
+        <h3 class="text-lg font-outfit font-bold">Subscription Plans</h3>
+        {% if request.user.role == 'super_admin' %}
+        <button onclick="document.getElementById('addSubscriptionPlanModal').classList.remove('hidden')" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest">
+            Create Plan
+        </button>
+        {% endif %}
+    </div>
+    <div class="p-6 bg-slate-900">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">Plan Name</th>
+                        <th class="px-6 py-4 font-bold">Category</th>
+                        <th class="px-6 py-4 font-bold">Price & Duration</th>
+                        <th class="px-6 py-4 font-bold">Status</th>
+                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for plan in subscription_plans %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-bold text-white">{{ plan.name }}</td>
+                        <td class="px-6 py-4 text-white/70">{{ plan.category|title }}</td>
+                        <td class="px-6 py-4 text-white/70">GHS {{ plan.price }} / {{ plan.duration_days }} days</td>
+                        <td class="px-6 py-4">
+                            {% if plan.is_active %}<span class="status-pill status-pill-success">Active</span>{% else %}<span class="status-pill status-pill-error">Inactive</span>{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="openEditSubscriptionPlanModal('{{ plan.id }}', '{{ plan.name }}', '{{ plan.category }}', '{{ plan.price }}', '{{ plan.duration_days }}', '{{ plan.is_active }}')" class="text-primary hover:text-primary-light text-xs font-bold uppercase tracking-widest transition-colors">Edit</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-6 py-8 text-center text-white/50">No subscription plans found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Categories Section -->
+<div class="mt-8 glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900">
+        <h3 class="text-lg font-outfit font-bold">Delivery Categories</h3>
+        {% if request.user.role == 'super_admin' %}
+        <button onclick="document.getElementById('addDeliveryCategoryModal').classList.remove('hidden')" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest">
+            Create Category
+        </button>
+        {% endif %}
+    </div>
+    <div class="p-6 bg-slate-900">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">Category Name</th>
+                        <th class="px-6 py-4 font-bold">Markup %</th>
+                        <th class="px-6 py-4 font-bold">Status</th>
+                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for cat in delivery_categories %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-bold text-white">{{ cat.name }}</td>
+                        <td class="px-6 py-4 text-white/70">{{ cat.markup_percentage }}%</td>
+                        <td class="px-6 py-4">
+                            {% if cat.is_active %}<span class="status-pill status-pill-success">Active</span>{% else %}<span class="status-pill status-pill-error">Inactive</span>{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="openEditDeliveryCategoryModal('{{ cat.id }}', '{{ cat.name }}', '{{ cat.markup_percentage }}', '{{ cat.is_active }}')" class="text-primary hover:text-primary-light text-xs font-bold uppercase tracking-widest transition-colors">Edit</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-white/50">No delivery categories found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for Subscription Plan -->
+<div id="addSubscriptionPlanModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Create Subscription Plan</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_subscription_plan">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Plan Name</label>
+                <input type="text" name="name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Category Code (e.g. 'motorbike')</label>
+                <input type="text" name="category" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Price (GHS)</label>
+                    <input type="number" step="0.01" name="price" value="0.00" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Duration (Days)</label>
+                    <input type="number" name="duration_days" value="30" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="sub_new_is_active" class="rounded bg-black border-white/20 text-primary" checked>
+                <label for="sub_new_is_active" class="text-xs text-white/70">Plan Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('addSubscriptionPlanModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editSubscriptionPlanModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Edit Subscription Plan</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_subscription_plan">
+            <input type="hidden" name="id" id="edit_sub_id">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Plan Name</label>
+                <input type="text" name="name" id="edit_sub_name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Category Code</label>
+                <input type="text" name="category" id="edit_sub_category" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Price (GHS)</label>
+                    <input type="number" step="0.01" name="price" id="edit_sub_price" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Duration (Days)</label>
+                    <input type="number" name="duration_days" id="edit_sub_duration" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="edit_sub_is_active" class="rounded bg-black border-white/20 text-primary">
+                <label for="edit_sub_is_active" class="text-xs text-white/70">Plan Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('editSubscriptionPlanModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modals for Delivery Category -->
+<div id="addDeliveryCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Create Delivery Category</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_delivery_category">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Name</label>
+                <input type="text" name="name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Markup Percentage (%)</label>
+                <input type="number" step="0.1" name="markup_percentage" value="0.0" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" class="rounded bg-black border-white/20 text-primary" checked>
+                <label class="text-xs text-white/70">Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('addDeliveryCategoryModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editDeliveryCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Edit Delivery Category</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_delivery_category">
+            <input type="hidden" name="id" id="edit_del_cat_id">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Name</label>
+                <input type="text" name="name" id="edit_del_cat_name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Markup Percentage (%)</label>
+                <input type="number" step="0.1" name="markup_percentage" id="edit_del_cat_markup" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="edit_del_cat_is_active" class="rounded bg-black border-white/20 text-primary">
+                <label class="text-xs text-white/70">Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('editDeliveryCategoryModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function generateSlug(name, targetId) {
+        const slug = name.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)+/g, '');
+        document.getElementById(targetId).value = slug;
+    }
+    
+    function openEditCategoryModal(id, slug, displayName, baseFare, multiplier, isActive) {
+        document.getElementById('edit_category_id').value = id;
+        document.getElementById('edit_slug').value = slug;
+        document.getElementById('edit_display_name').value = displayName;
+        document.getElementById('edit_base_fare').value = baseFare;
+        document.getElementById('edit_multiplier').value = multiplier;
+        document.getElementById('edit_is_active').checked = (isActive === 'True');
+        
+        document.getElementById('editCategoryModal').classList.remove('hidden');
+    }
+
+    function openEditSubscriptionPlanModal(id, name, category, price, duration, isActive) {
+        document.getElementById('edit_sub_id').value = id;
+        document.getElementById('edit_sub_name').value = name;
+        document.getElementById('edit_sub_category').value = category;
+        document.getElementById('edit_sub_price').value = price;
+        document.getElementById('edit_sub_duration').value = duration;
+        document.getElementById('edit_sub_is_active').checked = (isActive === 'True');
+        document.getElementById('editSubscriptionPlanModal').classList.remove('hidden');
+    }
+    
+    function openEditDeliveryCategoryModal(id, name, markup, isActive) {
+        document.getElementById('edit_del_cat_id').value = id;
+        document.getElementById('edit_del_cat_name').value = name;
+        document.getElementById('edit_del_cat_markup').value = markup;
+        document.getElementById('edit_del_cat_is_active').checked = (isActive === 'True');
+        document.getElementById('editDeliveryCategoryModal').classList.remove('hidden');
+    }
+</script>
+
+
+<!-- Subscription Plans Section -->
+<div class="mt-8 glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900">
+        <h3 class="text-lg font-outfit font-bold">Subscription Plans</h3>
+        {% if request.user.role == 'super_admin' %}
+        <button onclick="document.getElementById('addSubscriptionPlanModal').classList.remove('hidden')" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest">
+            Create Plan
+        </button>
+        {% endif %}
+    </div>
+    <div class="p-6 bg-slate-900">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">Plan Name</th>
+                        <th class="px-6 py-4 font-bold">Category</th>
+                        <th class="px-6 py-4 font-bold">Price & Duration</th>
+                        <th class="px-6 py-4 font-bold">Status</th>
+                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for plan in subscription_plans %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-bold text-white">{{ plan.name }}</td>
+                        <td class="px-6 py-4 text-white/70">{{ plan.category|title }}</td>
+                        <td class="px-6 py-4 text-white/70">GHS {{ plan.price }} / {{ plan.duration_days }} days</td>
+                        <td class="px-6 py-4">
+                            {% if plan.is_active %}<span class="status-pill status-pill-success">Active</span>{% else %}<span class="status-pill status-pill-error">Inactive</span>{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="openEditSubscriptionPlanModal('{{ plan.id }}', '{{ plan.name }}', '{{ plan.category }}', '{{ plan.price }}', '{{ plan.duration_days }}', '{{ plan.is_active }}')" class="text-primary hover:text-primary-light text-xs font-bold uppercase tracking-widest transition-colors">Edit</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-6 py-8 text-center text-white/50">No subscription plans found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delivery Categories Section -->
+<div class="mt-8 glass-panel rounded-2xl overflow-hidden">
+    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900">
+        <h3 class="text-lg font-outfit font-bold">Delivery Categories</h3>
+        {% if request.user.role == 'super_admin' %}
+        <button onclick="document.getElementById('addDeliveryCategoryModal').classList.remove('hidden')" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg transition-colors text-xs uppercase tracking-widest">
+            Create Category
+        </button>
+        {% endif %}
+    </div>
+    <div class="p-6 bg-slate-900">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                    <tr>
+                        <th class="px-6 py-4 font-bold">Category Name</th>
+                        <th class="px-6 py-4 font-bold">Markup %</th>
+                        <th class="px-6 py-4 font-bold">Status</th>
+                        <th class="px-6 py-4 font-bold text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    {% for cat in delivery_categories %}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-6 py-4 font-bold text-white">{{ cat.name }}</td>
+                        <td class="px-6 py-4 text-white/70">{{ cat.markup_percentage }}%</td>
+                        <td class="px-6 py-4">
+                            {% if cat.is_active %}<span class="status-pill status-pill-success">Active</span>{% else %}<span class="status-pill status-pill-error">Inactive</span>{% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="openEditDeliveryCategoryModal('{{ cat.id }}', '{{ cat.name }}', '{{ cat.markup_percentage }}', '{{ cat.is_active }}')" class="text-primary hover:text-primary-light text-xs font-bold uppercase tracking-widest transition-colors">Edit</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-6 py-8 text-center text-white/50">No delivery categories found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for Subscription Plan -->
+<div id="addSubscriptionPlanModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Create Subscription Plan</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_subscription_plan">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Plan Name</label>
+                <input type="text" name="name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Category Code (e.g. 'motorbike')</label>
+                <input type="text" name="category" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Price (GHS)</label>
+                    <input type="number" step="0.01" name="price" value="0.00" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Duration (Days)</label>
+                    <input type="number" name="duration_days" value="30" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="sub_new_is_active" class="rounded bg-black border-white/20 text-primary" checked>
+                <label for="sub_new_is_active" class="text-xs text-white/70">Plan Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('addSubscriptionPlanModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editSubscriptionPlanModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Edit Subscription Plan</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_subscription_plan">
+            <input type="hidden" name="id" id="edit_sub_id">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Plan Name</label>
+                <input type="text" name="name" id="edit_sub_name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Category Code</label>
+                <input type="text" name="category" id="edit_sub_category" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Price (GHS)</label>
+                    <input type="number" step="0.01" name="price" id="edit_sub_price" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs text-white/50 uppercase mb-1">Duration (Days)</label>
+                    <input type="number" name="duration_days" id="edit_sub_duration" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="edit_sub_is_active" class="rounded bg-black border-white/20 text-primary">
+                <label for="edit_sub_is_active" class="text-xs text-white/70">Plan Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('editSubscriptionPlanModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modals for Delivery Category -->
+<div id="addDeliveryCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Create Delivery Category</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_delivery_category">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Name</label>
+                <input type="text" name="name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Markup Percentage (%)</label>
+                <input type="number" step="0.1" name="markup_percentage" value="0.0" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" class="rounded bg-black border-white/20 text-primary" checked>
+                <label class="text-xs text-white/70">Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('addDeliveryCategoryModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Create</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editDeliveryCategoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 mx-4">
+        <h3 class="text-lg font-outfit font-bold mb-4">Edit Delivery Category</h3>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_delivery_category">
+            <input type="hidden" name="id" id="edit_del_cat_id">
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Name</label>
+                <input type="text" name="name" id="edit_del_cat_name" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div>
+                <label class="block text-xs text-white/50 uppercase mb-1">Markup Percentage (%)</label>
+                <input type="number" step="0.1" name="markup_percentage" id="edit_del_cat_markup" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-white/10 text-white text-sm" required>
+            </div>
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" name="is_active" id="edit_del_cat_is_active" class="rounded bg-black border-white/20 text-primary">
+                <label class="text-xs text-white/70">Active</label>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-white/5">
+                <button type="button" onclick="document.getElementById('editDeliveryCategoryModal').classList.add('hidden')" class="bg-white/10 hover:bg-white/20 text-white font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Cancel</button>
+                <button type="submit" class="bg-primary hover:bg-primary-light text-black font-bold py-2 px-4 rounded-lg text-xs uppercase tracking-widest">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}

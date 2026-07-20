@@ -66,4 +66,63 @@
     </div>
     {% endif %}
 </div>
+
+<div class="glass-panel rounded-2xl overflow-hidden mt-8">
+    <div class="p-6 border-b border-white/10">
+        <h3 class="text-lg font-outfit font-bold">Pending Secondary Vehicles</h3>
+        <p class="text-white/50 text-xs mt-1">Vehicles added by already verified drivers that require approval.</p>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
+                <tr>
+                    <th class="px-6 py-4 font-bold">Driver Name</th>
+                    <th class="px-6 py-4 font-bold">Vehicle Info</th>
+                    <th class="px-6 py-4 font-bold">Category</th>
+                    <th class="px-6 py-4 font-bold">Status</th>
+                    <th class="px-6 py-4 font-bold text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+                {% for vehicle in secondary_vehicles %}
+                <tr class="hover:bg-white/5 transition-colors group">
+                    <td class="px-6 py-4 font-bold text-white">{{ vehicle.driver.full_name|default:"Unnamed Driver" }}</td>
+                    <td class="px-6 py-4">
+                        <div class="text-white font-bold">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</div>
+                        <div class="text-white/50 text-xs font-mono">{{ vehicle.license_plate }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-white/70">{{ vehicle.type|title }}</td>
+                    <td class="px-6 py-4">
+                        <span class="status-pill status-pill-warning">Pending Review</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end space-x-2">
+                            <form method="POST" action="{% url 'staff_portal:review_secondary_vehicle' vehicle.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="approve">
+                                <button type="submit" class="text-brand-green hover:text-brand-green/80 font-bold text-xs uppercase tracking-widest transition-colors">
+                                    Approve
+                                </button>
+                            </form>
+                            <span class="text-white/20">|</span>
+                            <form method="POST" action="{% url 'staff_portal:review_secondary_vehicle' vehicle.id %}" onsubmit="return confirm('Are you sure you want to reject and delete this vehicle?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <button type="submit" class="text-red-500 hover:text-red-400 font-bold text-xs uppercase tracking-widest transition-colors">
+                                    Reject
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-white/50">No pending secondary vehicles at this time.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

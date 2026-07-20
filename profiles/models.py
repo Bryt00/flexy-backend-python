@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from notification.utils import send_notification
 from integrations.email_service import EmailService
+from core_settings.models import get_assigned_categories
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, related_name='profile')
@@ -82,15 +83,6 @@ class DriverVerification(models.Model):
         ('REJECTED', 'Rejected'),
     )
     
-    RIDE_CATEGORY_CHOICES = (
-        ('none', 'Not Assigned'),
-        ('go', 'Flexy Go'),
-        ('comfort', 'Flexy Comfort'),
-        ('xl', 'Flexy XL'),
-        ('exec', 'Flexy Executive'),
-        ('pragya', 'Flexy Pragya'),
-    )
-    
     driver = models.OneToOneField(Profile, on_delete=models.CASCADE, primary_key=True, related_name='verification')
     license_number = models.CharField(max_length=50, blank=True, null=True)
     license_url = models.TextField(blank=True, null=True)
@@ -103,7 +95,7 @@ class DriverVerification(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     assigned_category = models.CharField(
         max_length=20, 
-        choices=RIDE_CATEGORY_CHOICES, 
+        choices=get_assigned_categories, 
         default='none',
         help_text="Category assigned to the driver upon verification"
     )

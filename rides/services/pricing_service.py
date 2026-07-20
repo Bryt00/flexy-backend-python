@@ -12,13 +12,18 @@ class PricingService:
         return FareCalculator.get_surge_multiplier(lat=lat, lng=lng, radius=radius)
 
     @staticmethod
-    def calculate_fare_estimates(dist_km, duration_sec, lat=None, lng=None, num_stops=0, duration_in_traffic_sec=None):
+    def calculate_fare_estimates(dist_km, duration_sec, lat=None, lng=None, d_lat=None, d_lng=None, num_stops=0, duration_in_traffic_sec=None):
         """
         Calculates fare estimates for all active vehicle categories.
         """
         from core_settings.models import VehicleCategory
+        from django.contrib.gis.geos import Point
+        
         categories = VehicleCategory.objects.filter(is_active=True)
         estimates = {}
+        
+        pickup_point = Point(float(lng), float(lat), srid=4326) if lat and lng else None
+        dropoff_point = Point(float(d_lng), float(d_lat), srid=4326) if d_lat and d_lng else None
         
         # Calculate global surge once for this estimate request
         surge = FareCalculator.get_surge_multiplier(
@@ -28,6 +33,28 @@ class PricingService:
         )
         
         for category in categories:
+            if not category.is_passenger_allowed:
+                # If it's a restricted vehicle (e.g. e-bike), check geofence exceptions
+                if not pickup_point or not dropoff_point:
+                    continue
+                
+                allowed_areas = category.allowed_service_areas.all()
+                if not allowed_areas:
+                    continue
+                
+                pickup_allowed = False
+                dropoff_allowed = False
+                for area in allowed_areas:
+                    if area.polygon.contains(pickup_point):
+                        pickup_allowed = True
+                    if area.polygon.contains(dropoff_point):
+                        dropoff_allowed = True
+                    if pickup_allowed and dropoff_allowed:
+                        break
+                        
+                if not (pickup_allowed and dropoff_allowed):
+                    continue
+                    
             ledger = FareCalculator.compute_final_fare(
                 dist_km, 
                 category.slug, 

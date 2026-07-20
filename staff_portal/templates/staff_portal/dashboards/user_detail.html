@@ -133,6 +133,33 @@
             </div>
         </div>
 
+        <!-- Reassign Driver Category -->
+        {% if target_user.role == 'driver' and verification %}
+        <div class="glass-panel rounded-2xl overflow-hidden mt-6">
+            <div class="p-6 border-b border-white/10 bg-black/20">
+                <h3 class="text-lg font-outfit font-bold">Driver Category Reassignment</h3>
+                <p class="text-white/50 text-xs mt-1">Change the driver's vehicle category (updates all their active vehicles).</p>
+            </div>
+            <div class="p-6">
+                <form method="POST" class="flex items-end space-x-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reassign_category">
+                    <div class="flex-1">
+                        <label class="block text-white/50 text-xs font-bold uppercase tracking-widest mb-2">Select Category</label>
+                        <select name="category" class="cyber-input w-full py-3 px-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-primary transition-colors appearance-none">
+                            {% for cat in vehicle_categories %}
+                                <option value="{{ cat.slug }}" {% if verification.assigned_category == cat.slug %}selected{% endif %}>{{ cat.display_name }} ({{ cat.slug }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-brand-green/20 hover:bg-brand-green/40 text-brand-green border border-brand-green/50 font-bold py-3 px-8 rounded-xl transition-colors uppercase tracking-widest text-xs h-[50px]">
+                        Reassign
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Send Notification Card (Feature 1) -->
         <div class="glass-panel rounded-2xl overflow-hidden mt-6">
             <div class="p-6 border-b border-white/10 bg-black/20">

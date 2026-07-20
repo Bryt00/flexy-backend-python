@@ -72,7 +72,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     # Computed cross-model fields consumed by the Flutter app
     is_verified = serializers.SerializerMethodField()
     is_subscribed = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(source='is_online', required=False)
+    is_active = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -90,7 +90,25 @@ class ProfileSerializer(serializers.ModelSerializer):
             'referral_code', 'referred_by', 'total_referrals', 'total_referral_earnings',
             'created_at',
         )
-        read_only_fields = ('user', 'created_at', 'rating', 'referral_code', 'total_referrals', 'total_referral_earnings')
+        read_only_fields = ('user', 'created_at', 'rating', 'referral_code', 'total_referrals', 'total_referral_earnings', 'is_online')
+
+    def get_is_active(self, obj):
+        """Returns true only if the driver is online AND eligible to be online."""
+        if not getattr(obj, 'is_online', False):
+            return False
+            
+        if not hasattr(obj, 'user') or obj.user.role != 'driver':
+            return False
+            
+        verification = getattr(obj, 'verification', None)
+        if not verification or not verification.is_verified:
+            return False
+            
+        subscription = getattr(obj, 'subscription', None)
+        if not subscription or not subscription.can_go_online:
+            return False
+            
+        return True
 
     def get_is_verified(self, obj):
         """True only when DriverVerification.is_verified is True."""

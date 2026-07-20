@@ -1,20 +1,13 @@
 import uuid
 from django.db import models
 from profiles.models import Profile
+from core_settings.models import get_vehicle_categories
 
 class Vehicle(models.Model):
     STATUS_CHOICES = (
         ('offline', 'Offline'),
         ('available', 'Available'),
         ('riding', 'Riding'),
-    )
-
-    TYPE_CHOICES = (
-        ('go', 'Flexy Go'),
-        ('comfort', 'Flexy Comfort'),
-        ('xl', 'Flexy XL'),
-        ('exec', 'Flexy Executive'),
-        ('pragya', 'Flexy Pragya'),
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -24,7 +17,7 @@ class Vehicle(models.Model):
     year = models.IntegerField(blank=True, null=True)
     license_plate = models.CharField(max_length=20, blank=True, null=True)
     color = models.CharField(max_length=50, blank=True, null=True)
-    type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='go')
+    type = models.CharField(max_length=50, choices=get_vehicle_categories, default='go')
     
     # Document URLs
     license_url = models.URLField(max_length=1000, blank=True, null=True)

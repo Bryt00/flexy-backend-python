@@ -60,6 +60,34 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(f"Error broadcasting delivery discovery removal: {e}")
 
+    def _broadcast_delivery_update(self, delivery, message_type, data=None):
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'delivery_{delivery.id}',
+                {
+                    'type': 'delivery_broadcast',
+                    'message_type': message_type,
+                    'data': data or DeliverySerializer(delivery).data
+                }
+            )
+        except Exception as e:
+            print(f"Error broadcasting delivery {message_type}: {e}")
+
+    def _broadcast_discovery(self, message_type, data):
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                'delivery_discovery',
+                {
+                    'type': 'delivery_broadcast',
+                    'message_type': message_type,
+                    'data': data
+                }
+            )
+        except Exception as e:
+            print(f"Error broadcasting discovery {message_type}: {e}")
+
     def get_queryset(self):
         self._check_and_expire_deliveries()
         # Passengers see their requested deliveries, drivers see assigned ones OR PENDING ones
@@ -115,25 +143,22 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         )
         
         # Broadcast to available drivers (Discovery stream)
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            'delivery_discovery',
-            {
-                'type': 'delivery_broadcast',
-                'message_type': 'new_delivery',
-                'data': DeliverySerializer(delivery).data
-            }
-        )
+        self._broadcast_discovery('new_delivery', DeliverySerializer(delivery).data)
 
         # Notify active delivery drivers via push notifications within 15km
         try:
             from profiles.models import Profile
             from notification.utils import send_notification
+            from django.db.models import Q
+            from core_settings.models import VehicleCategory
+            from django.contrib.gis.geos import Point
+            
+            restricted_slugs = list(VehicleCategory.objects.filter(is_passenger_allowed=False).values_list('slug', flat=True))
             
             eligible_drivers = Profile.objects.filter(
-                is_online=True,
-                receive_deliveries=True
-            ).select_related('user')
+                Q(receive_deliveries=True) |
+                Q(vehicles__type__in=restricted_slugs, vehicles__is_active=True)
+            ).filter(is_online=True).select_related('user').distinct()
             
             for driver in eligible_drivers:
                 if driver.last_lat and driver.last_lng and pickup_lat and pickup_lng:
@@ -143,6 +168,32 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                     ) / 1000.0
                     if dist > 15.0: # 15km radius
                         continue
+                
+                # Geofence check for deliveries
+                geofence_passed = True
+                active_vehicle = driver.vehicles.filter(is_active=True).first()
+                if active_vehicle:
+                    try:
+                        category = VehicleCategory.objects.get(slug=active_vehicle.type)
+                        if category.is_delivery_geofenced:
+                            pickup_point = Point(float(pickup_lng), float(pickup_lat), srid=4326) if pickup_lat and pickup_lng else None
+                            dropoff_point = Point(float(dropoff_lng), float(dropoff_lat), srid=4326) if dropoff_lat and dropoff_lng else None
+                            if not pickup_point or not dropoff_point:
+                                geofence_passed = False
+                            else:
+                                allowed_areas = category.allowed_service_areas.all()
+                                if allowed_areas.exists():
+                                    pickup_in = any(area.polygon.contains(pickup_point) for area in allowed_areas)
+                                    dropoff_in = any(area.polygon.contains(dropoff_point) for area in allowed_areas)
+                                    if not (pickup_in and dropoff_in):
+                                        geofence_passed = False
+                                else:
+                                    geofence_passed = False
+                    except VehicleCategory.DoesNotExist:
+                        pass
+                
+                if not geofence_passed:
+                    continue
                 
                 send_notification(
                     user=driver.user,
@@ -207,15 +258,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             delivery.save()
             
             # Broadcast status update
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                f'delivery_{delivery.id}',
-                {
-                    'type': 'delivery_broadcast',
-                    'message_type': 'status_update',
-                    'data': DeliverySerializer(delivery).data
-                }
-            )
+            self._broadcast_delivery_update(delivery, 'status_update')
 
             # Send push notification to passenger
             try:
@@ -248,30 +291,20 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         if request.user.role != 'driver':
             return Response({"error": "Only drivers can accept deliveries"}, status=status.HTTP_403_FORBIDDEN)
             
-        delivery.driver = request.user.profile
+        profile = getattr(request.user, 'profile', None)
+        if not profile:
+            from profiles.models import Profile
+            profile, _ = Profile.objects.get_or_create(user=request.user)
+            
+        delivery.driver = profile
         delivery.status = 'ACCEPTED'
         delivery.save()
 
         # Broadcast acceptance update to subscriber tracking group
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'delivery_{delivery.id}',
-            {
-                'type': 'delivery_broadcast',
-                'message_type': 'status_update',
-                'data': DeliverySerializer(delivery).data
-            }
-        )
+        self._broadcast_delivery_update(delivery, 'status_update')
 
         # Broadcast removal to discovery stream
-        async_to_sync(channel_layer.group_send)(
-            'delivery_discovery',
-            {
-                'type': 'delivery_broadcast',
-                'message_type': 'delivery_taken',
-                'data': {'delivery_id': str(delivery.id)}
-            }
-        )
+        self._broadcast_discovery('delivery_taken', {'delivery_id': str(delivery.id)})
 
         # Send push notification to passenger
         try:
@@ -336,15 +369,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         delivery.save()
         
         # Broadcast status update
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'delivery_{delivery.id}',
-            {
-                'type': 'delivery_broadcast',
-                'message_type': 'status_update',
-                'data': DeliverySerializer(delivery).data
-            }
-        )
+        self._broadcast_delivery_update(delivery, 'status_update')
 
         # Send push notification to passenger
         try:
@@ -380,8 +405,27 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         """
         self._check_and_expire_deliveries()
         user = request.user
-        if user.role != 'driver' or not hasattr(user, 'profile') or not user.profile.receive_deliveries:
-            return Response([]) # Only opted-in drivers see available deliveries
+        
+        has_restricted_vehicle = False
+        is_delivery_geofenced = False
+        allowed_areas = []
+        if hasattr(user, 'profile'):
+            from core_settings.models import VehicleCategory
+            restricted_slugs = list(VehicleCategory.objects.filter(is_passenger_allowed=False).values_list('slug', flat=True))
+            has_restricted_vehicle = user.profile.vehicles.filter(type__in=restricted_slugs, is_active=True).exists()
+            
+            active_vehicle = user.profile.vehicles.filter(is_active=True).first()
+            if active_vehicle:
+                try:
+                    category = VehicleCategory.objects.get(slug=active_vehicle.type)
+                    if category.is_delivery_geofenced:
+                        is_delivery_geofenced = True
+                        allowed_areas = list(category.allowed_service_areas.all())
+                except VehicleCategory.DoesNotExist:
+                    pass
+
+        if user.role != 'driver' or not hasattr(user, 'profile') or (not user.profile.receive_deliveries and not has_restricted_vehicle):
+            return Response([]) # Only opted-in drivers or restricted vehicle drivers see available deliveries
 
         driver_lat = user.profile.last_lat
         driver_lng = user.profile.last_lng
@@ -389,13 +433,31 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         available_deliveries = Delivery.objects.select_related('passenger', 'driver').prefetch_related('proofs').filter(status='PENDING').order_by('-created_at')
         
         filtered_deliveries = []
-        if driver_lat and driver_lng:
-            for delivery in available_deliveries:
+        
+        from django.contrib.gis.geos import Point
+        
+        for delivery in available_deliveries:
+            # 1. Proximity check
+            if driver_lat and driver_lng:
                 dist = GeospatialUtils.calculate_haversine_distance(driver_lat, driver_lng, delivery.pickup_lat, delivery.pickup_lng) / 1000.0
-                if dist <= 15.0: # 15km radius
-                    filtered_deliveries.append(delivery)
-        else:
-            filtered_deliveries = available_deliveries # Fallback if no driver location
+                if dist > 15.0:
+                    continue
+            
+            # 2. Geofence check
+            if is_delivery_geofenced:
+                pickup_point = Point(float(delivery.pickup_lng), float(delivery.pickup_lat), srid=4326) if delivery.pickup_lat and delivery.pickup_lng else None
+                dropoff_point = Point(float(delivery.dropoff_lng), float(delivery.dropoff_lat), srid=4326) if delivery.dropoff_lat and delivery.dropoff_lng else None
+                
+                if not pickup_point or not dropoff_point or not allowed_areas:
+                    continue
+                    
+                pickup_in = any(area.polygon.contains(pickup_point) for area in allowed_areas)
+                dropoff_in = any(area.polygon.contains(dropoff_point) for area in allowed_areas)
+                
+                if not (pickup_in and dropoff_in):
+                    continue
+                    
+            filtered_deliveries.append(delivery)
 
         serializer = DeliverySerializer(filtered_deliveries, many=True)
         return Response(serializer.data)

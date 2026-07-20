@@ -1,10 +1,14 @@
 import requests
 from django.conf import settings
 import logging
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 class GoogleMapsService:
+    # Class-level in-memory cache to skip cache server lookups and network roundtrips
+    _mem_cache = {}
+
     @staticmethod
     def get_trip_metrics(origin_lat, origin_lng, dest_lat, dest_lng, waypoints=None):
         """
@@ -21,17 +25,37 @@ class GoogleMapsService:
                 for w in waypoints
             ])
             
-        cache_key = f"trip_metrics_{round(float(origin_lat), 3)}_{round(float(origin_lng), 3)}_{round(float(dest_lat), 3)}_{round(float(dest_lng), 3)}{wp_part}"
-        cached = cache.get(cache_key)
-        if cached:
-            return cached
+        coords_key = f"{round(float(origin_lat), 3)}_{round(float(origin_lng), 3)}_{round(float(dest_lat), 3)}_{round(float(dest_lng), 3)}{wp_part}"
+        cache_key = f"trip_metrics_{coords_key}"
+        now = datetime.now()
+
+        # 1. Check in-memory fallback cache first (extremely fast)
+        if coords_key in GoogleMapsService._mem_cache:
+            val, expiry = GoogleMapsService._mem_cache[coords_key]
+            if now < expiry:
+                logger.info(f"GoogleMaps In-Memory Cache Hit: {val}")
+                return val
+
+        # 2. Check Django cache (Redis) with try-except for tolerance
+        try:
+            cached = cache.get(cache_key)
+            if cached:
+                logger.info(f"GoogleMaps Redis Cache Hit: {cached}")
+                GoogleMapsService._mem_cache[coords_key] = (cached, now + timedelta(minutes=15))
+                return cached
+        except Exception as e:
+            logger.warning(f"GoogleMaps cache service unavailable: {e}")
 
         api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
         
         if not api_key:
             logger.warning("Google Maps API Key not configured. Using fallback estimation.")
             fallback_res = GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
-            cache.set(cache_key, fallback_res, timeout=900)
+            try:
+                cache.set(cache_key, fallback_res, timeout=900)
+            except Exception as e:
+                logger.warning(f"Failed to write fallback to cache: {e}")
+            GoogleMapsService._mem_cache[coords_key] = (fallback_res, now + timedelta(minutes=15))
             return fallback_res
 
         # If waypoints exist, we must use Directions API to get total route metrics
@@ -49,7 +73,7 @@ class GoogleMapsService:
             }
             
             try:
-                response = requests.get(url, params=params, timeout=5)
+                response = requests.get(url, params=params, timeout=3)
                 data = response.json()
                 
                 if data['status'] == 'OK':
@@ -66,7 +90,11 @@ class GoogleMapsService:
                             total_traffic_s += leg['duration']['value']
                     
                     result = (total_distance_m / 1000.0, total_duration_s, total_traffic_s)
-                    cache.set(cache_key, result, timeout=900)
+                    try:
+                        cache.set(cache_key, result, timeout=900)
+                    except Exception as e:
+                        logger.warning(f"Failed to write metric to cache: {e}")
+                    GoogleMapsService._mem_cache[coords_key] = (result, now + timedelta(minutes=15))
                     return result
                 else:
                     logger.error(f"Directions API Error: {data.get('status')}")
@@ -74,7 +102,11 @@ class GoogleMapsService:
                 logger.error(f"Directions API Exception: {e}")
             
             fallback_res = GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
-            cache.set(cache_key, fallback_res, timeout=900)
+            try:
+                cache.set(cache_key, fallback_res, timeout=900)
+            except Exception as e:
+                logger.warning(f"Failed to write fallback to cache: {e}")
+            GoogleMapsService._mem_cache[coords_key] = (fallback_res, now + timedelta(minutes=15))
             return fallback_res
 
         # Simple point-to-point can still use Distance Matrix
@@ -88,7 +120,7 @@ class GoogleMapsService:
         }
 
         try:
-            response = requests.get(url, params=params, timeout=5)
+            response = requests.get(url, params=params, timeout=3)
             data = response.json()
 
             if data['status'] == 'OK':
@@ -100,7 +132,11 @@ class GoogleMapsService:
                     if 'duration_in_traffic' in element:
                         duration_in_traffic = element['duration_in_traffic']['value']
                     result = (distance_km, duration_seconds, duration_in_traffic)
-                    cache.set(cache_key, result, timeout=900)
+                    try:
+                        cache.set(cache_key, result, timeout=900)
+                    except Exception as e:
+                        logger.warning(f"Failed to write metric to cache: {e}")
+                    GoogleMapsService._mem_cache[coords_key] = (result, now + timedelta(minutes=15))
                     return result
                 else:
                     logger.error(f"Google Maps Element Error: {element['status']}")
@@ -110,7 +146,11 @@ class GoogleMapsService:
             logger.error(f"Google Maps Request Exception: {str(e)}")
 
         fallback_res = GoogleMapsService._get_fallback_metrics(origin_lat, origin_lng, dest_lat, dest_lng)
-        cache.set(cache_key, fallback_res, timeout=900)
+        try:
+            cache.set(cache_key, fallback_res, timeout=900)
+        except Exception as e:
+            logger.warning(f"Failed to write fallback to cache: {e}")
+        GoogleMapsService._mem_cache[coords_key] = (fallback_res, now + timedelta(minutes=15))
         return fallback_res
 
     @staticmethod

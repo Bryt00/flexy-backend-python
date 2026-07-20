@@ -188,6 +188,19 @@ def user_detail(request, user_id):
                 messages.success(request, f"Push notification successfully sent to {target_user.email}.")
             else:
                 messages.error(request, "Title and body are required for sending notifications.")
+
+        elif action == 'reassign_category' and is_support(request.user):
+            new_cat = request.POST.get('category')
+            if new_cat and hasattr(target_user, 'profile') and hasattr(target_user.profile, 'verification'):
+                verification = target_user.profile.verification
+                verification.assigned_category = new_cat
+                verification.save()
+                
+                from vehicles.models import Vehicle
+                Vehicle.objects.filter(driver=target_user.profile).update(type=new_cat)
+                messages.success(request, f"Reassigned driver to category '{new_cat}'.")
+            else:
+                messages.error(request, "Driver verification not found or no category provided.")
             
         return redirect('staff_portal:user_detail', user_id=target_user.id)
         
@@ -212,7 +225,9 @@ def user_detail(request, user_id):
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_admin_or_super, login_url='staff_portal:login')
 def platform_settings(request):
-    from core_settings.models import SiteSetting, PricingRule
+    from core_settings.models import SiteSetting, PricingRule, VehicleCategory, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType
+    from subscriptions.models import SubscriptionPlan
+    from django.shortcuts import get_object_or_404
     
     if request.method == 'POST' and request.user.role == 'super_admin':
         action = request.POST.get('action')
@@ -246,12 +261,143 @@ def platform_settings(request):
                 messages.success(request, f"Pricing rule updated successfully.")
             except ValueError:
                 messages.error(request, "Invalid numeric values provided.")
+
+        elif action == 'create_vehicle_category':
+            slug = request.POST.get('slug', '').strip()
+            display_name = request.POST.get('display_name', '').strip()
+            try:
+                base_fare = float(request.POST.get('base_fare', 0.0))
+                multiplier = float(request.POST.get('multiplier', 1.0))
+            except ValueError:
+                base_fare = 0.0
+                multiplier = 1.0
+            is_active = request.POST.get('is_active') == 'on'
+            image = request.FILES.get('image')
+            
+            if slug and display_name:
+                try:
+                    VehicleCategory.objects.create(
+                        slug=slug,
+                        display_name=display_name,
+                        base_fare=base_fare,
+                        multiplier=multiplier,
+                        is_active=is_active,
+                        image=image
+                    )
+                    messages.success(request, f"Vehicle category '{display_name}' created successfully.")
+                except Exception as e:
+                    messages.error(request, f"Error creating category: {e}")
+            else:
+                messages.error(request, "Slug and display name are required.")
+
+        elif action == 'update_vehicle_category':
+            cat_id = request.POST.get('category_id')
+            category = get_object_or_404(VehicleCategory, id=cat_id)
+            
+            try:
+                category.display_name = request.POST.get('display_name', category.display_name).strip()
+                category.base_fare = float(request.POST.get('base_fare', category.base_fare))
+                category.multiplier = float(request.POST.get('multiplier', category.multiplier))
+                category.is_active = request.POST.get('is_active') == 'on'
                 
+                if request.FILES.get('image'):
+                    category.image = request.FILES.get('image')
+                    
+                category.save()
+                messages.success(request, f"Vehicle category '{category.display_name}' updated successfully.")
+            except Exception as e:
+                messages.error(request, f"Error updating category: {e}")
+
+        elif action == 'delete_vehicle_category':
+            cat_id = request.POST.get('category_id')
+            category = get_object_or_404(VehicleCategory, id=cat_id)
+            try:
+                category.delete()
+                messages.success(request, f"Vehicle category deleted successfully.")
+            except Exception as e:
+                messages.error(request, f"Error deleting category: {e}")
+                
+        
+        elif action == 'create_delivery_category':
+            DeliveryCategory.objects.create(
+                name=request.POST.get('name', '').strip(),
+                markup_percentage=float(request.POST.get('markup_percentage', 0.0)),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Delivery Category created.')
+        elif action == 'update_delivery_category':
+            cat = get_object_or_404(DeliveryCategory, id=request.POST.get('id'))
+            cat.name = request.POST.get('name', cat.name).strip()
+            cat.markup_percentage = float(request.POST.get('markup_percentage', cat.markup_percentage))
+            cat.is_active = request.POST.get('is_active') == 'on'
+            cat.save()
+            messages.success(request, 'Delivery Category updated.')
+        elif action == 'create_delivery_weight_tier':
+            DeliveryWeightTier.objects.create(
+                name=request.POST.get('name', '').strip(),
+                min_weight=float(request.POST.get('min_weight', 0.0)),
+                max_weight=float(request.POST.get('max_weight', 0.0)),
+                markup_percentage=float(request.POST.get('markup_percentage', 0.0)),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Delivery Weight Tier created.')
+        elif action == 'update_delivery_weight_tier':
+            tier = get_object_or_404(DeliveryWeightTier, id=request.POST.get('id'))
+            tier.name = request.POST.get('name', tier.name).strip()
+            tier.min_weight = float(request.POST.get('min_weight', tier.min_weight))
+            tier.max_weight = float(request.POST.get('max_weight', tier.max_weight))
+            tier.markup_percentage = float(request.POST.get('markup_percentage', tier.markup_percentage))
+            tier.is_active = request.POST.get('is_active') == 'on'
+            tier.save()
+            messages.success(request, 'Delivery Weight Tier updated.')
+        elif action == 'create_delivery_vehicle_type':
+            DeliveryVehicleType.objects.create(
+                name=request.POST.get('name', '').strip(),
+                base_fare=float(request.POST.get('base_fare', 0.0)),
+                per_km_rate=float(request.POST.get('per_km_rate', 0.0)),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Delivery Vehicle Type created.')
+        elif action == 'update_delivery_vehicle_type':
+            vt = get_object_or_404(DeliveryVehicleType, id=request.POST.get('id'))
+            vt.name = request.POST.get('name', vt.name).strip()
+            vt.base_fare = float(request.POST.get('base_fare', vt.base_fare))
+            vt.per_km_rate = float(request.POST.get('per_km_rate', vt.per_km_rate))
+            vt.is_active = request.POST.get('is_active') == 'on'
+            vt.save()
+            messages.success(request, 'Delivery Vehicle Type updated.')
+        elif action == 'create_subscription_plan':
+            SubscriptionPlan.objects.create(
+                name=request.POST.get('name', '').strip(),
+                category=request.POST.get('category', '').strip(),
+                price=float(request.POST.get('price', 0.0)),
+                duration_days=int(request.POST.get('duration_days', 30)),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Subscription Plan created.')
+        elif action == 'update_subscription_plan':
+            plan = get_object_or_404(SubscriptionPlan, id=request.POST.get('id'))
+            plan.name = request.POST.get('name', plan.name).strip()
+            plan.category = request.POST.get('category', plan.category).strip()
+            plan.price = float(request.POST.get('price', plan.price))
+            plan.duration_days = int(request.POST.get('duration_days', plan.duration_days))
+            plan.is_active = request.POST.get('is_active') == 'on'
+            plan.save()
+            messages.success(request, 'Subscription Plan updated.')
         return redirect('staff_portal:platform_settings')
 
     settings = SiteSetting.objects.all()
     pricing_rules = PricingRule.objects.all()
-    return render(request, 'staff_portal/dashboards/platform_settings.html', {'settings': settings, 'pricing_rules': pricing_rules})
+    vehicle_categories = VehicleCategory.objects.all().order_by('multiplier')
+    return render(request, 'staff_portal/dashboards/platform_settings.html', {
+        'settings': settings,
+        'pricing_rules': pricing_rules,
+        'vehicle_categories': vehicle_categories,
+        'delivery_categories': DeliveryCategory.objects.all(),
+        'delivery_weight_tiers': DeliveryWeightTier.objects.all(),
+        'delivery_vehicle_types': DeliveryVehicleType.objects.all(),
+        'subscription_plans': SubscriptionPlan.objects.all()
+    })
 
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_finance, login_url='staff_portal:login')
@@ -379,7 +525,30 @@ def driver_verifications(request):
     paginator = Paginator(verifications_qs, 20)
     page_number = request.GET.get('page')
     verifications = paginator.get_page(page_number)
-    return render(request, 'staff_portal/dashboards/verifications.html', {'verifications': verifications})
+    
+    from vehicles.models import Vehicle
+    secondary_vehicles = Vehicle.objects.filter(is_verified=False, driver__verification__is_verified=True).select_related('driver', 'driver__user')
+    
+    return render(request, 'staff_portal/dashboards/verifications.html', {'verifications': verifications, 'secondary_vehicles': secondary_vehicles})
+
+@login_required(login_url='staff_portal:login')
+@user_passes_test(is_support, login_url='staff_portal:login')
+def review_secondary_vehicle(request, vehicle_id):
+    from vehicles.models import Vehicle
+    from django.shortcuts import get_object_or_404, redirect
+    from django.contrib import messages
+    vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'approve':
+            vehicle.is_verified = True
+            vehicle.is_active = True
+            vehicle.save()
+            messages.success(request, f"Vehicle {vehicle.license_plate} approved.")
+        elif action == 'reject':
+            vehicle.delete()
+            messages.success(request, f"Vehicle {vehicle.license_plate} rejected and deleted.")
+    return redirect('staff_portal:driver_verifications')
 
 @login_required(login_url='staff_portal:login')
 @user_passes_test(is_support, login_url='staff_portal:login')
@@ -442,11 +611,15 @@ def review_document(request, pk):
 
     vehicles = verification.driver.vehicles.all()
     driver_rides = Ride.objects.filter(driver=verification.driver.user).order_by('-created_at')[:10]
+    
+    from core_settings.models import VehicleCategory
+    categories = VehicleCategory.objects.filter(is_active=True).order_by('multiplier')
 
     context = {
         'verification': verification,
         'vehicles': vehicles,
         'driver_rides': driver_rides,
+        'categories': categories,
     }
     return render(request, 'staff_portal/dashboards/document_review.html', context)
 

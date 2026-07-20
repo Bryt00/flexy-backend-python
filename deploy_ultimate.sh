@@ -18,7 +18,7 @@ DOMAIN="flexyridegh.com"  # Update this if your domain is different (e.g. .gh)
 USER="patmac"
 GROUP="www-data"
 APP_REPLICAS=5
-DB_REPLICAS=0
+DB_REPLICAS=5
 REPLICATION_USER="flexy_replica"
 REPLICATION_PASSWORD="flexy_replica_pass"
 BACKUP_RETENTION_DAYS=30
@@ -406,14 +406,24 @@ EOF
 
 # Add Celery workers
 cat >> /etc/supervisor/conf.d/$APP_NAME.conf << EOF
-[program:${APP_NAME}_celery]
-command=$VENV_DIR/bin/celery -A flexy_backend worker -l info --concurrency=4
+[program:${APP_NAME}_celery_high]
+command=$VENV_DIR/bin/celery -A flexy_backend worker -l info --concurrency=4 -Q high_priority
 directory=$APP_DIR
 user=$USER
 autostart=true
 autorestart=true
 redirect_stderr=true
-stdout_logfile=$APP_DIR/logs/celery.log
+stdout_logfile=$APP_DIR/logs/celery_high.log
+environment=PATH="$VENV_DIR/bin"
+
+[program:${APP_NAME}_celery_default]
+command=$VENV_DIR/bin/celery -A flexy_backend worker -l info --concurrency=4 -Q default
+directory=$APP_DIR
+user=$USER
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=$APP_DIR/logs/celery_default.log
 environment=PATH="$VENV_DIR/bin"
 
 [program:${APP_NAME}_celery_beat]
@@ -743,7 +753,8 @@ pkill -f "gunicorn" || true
 supervisorctl reread
 supervisorctl update
 supervisorctl restart ${APP_NAME}_replicas:*
-supervisorctl restart ${APP_NAME}_celery
+supervisorctl restart ${APP_NAME}_celery_high
+supervisorctl restart ${APP_NAME}_celery_default
 supervisorctl restart ${APP_NAME}_celery_beat
 systemctl enable redis-server
 systemctl start redis-server

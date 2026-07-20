@@ -73,11 +73,12 @@ class LoginView(views.APIView):
         # Use __iexact to ensure login works regardless of email capitalization
         user = User.objects.filter(email__iexact=email).first()
         if user and user.check_password(password):
-            # Auto-repair empty, invalid, or passenger roles
+            # Ensure users with blank or invalid legacy roles default to rider
+            # Do NOT trust requested_role for existing users (Privilege Escalation)
             user_updated = False
             current_role = getattr(user, 'role', None)
             if not current_role or current_role == '' or current_role == 'passenger':
-                user.role = requested_role
+                user.role = 'rider'
                 user_updated = True
             if user_updated:
                 user.save()
@@ -356,11 +357,12 @@ class SocialAuthView(views.APIView):
                     user.save()
 
             if user:
-                # Auto-repair empty, invalid, or passenger roles
+                # Ensure existing users with blank or invalid legacy roles default to rider
+                # Do NOT trust role from payload for existing users (Privilege Escalation)
                 user_updated = False
                 current_role = getattr(user, 'role', None)
                 if not current_role or current_role == '' or current_role == 'passenger':
-                    user.role = role
+                    user.role = 'rider'
                     user_updated = True
                 if user_updated:
                     user.save()

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
+from django.conf import settings
 
 from .models import SubscriptionPlan, DriverSubscription, SubscriptionPayment
 from .serializers import SubscriptionPlanSerializer, DriverSubscriptionSerializer, SubscriptionPaymentSerializer
@@ -69,7 +70,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             email=request.user.email,
             amount=plan.price,
             metadata=metadata,
-            callback_url="https://flexyride.com/payment-callback"
+            callback_url=f"{settings.SITE_URL}/payment-callback"
         )
         
         if response.get('status'):

@@ -121,7 +121,8 @@ supervisorctl restart ${APP_NAME}_replicas:*
 echo -e "${GREEN}✓ Application replicas restarted${NC}"
 
 echo -e "${YELLOW}3. Restarting Celery Services...${NC}"
-supervisorctl restart ${APP_NAME}_celery
+supervisorctl restart ${APP_NAME}_celery_high
+supervisorctl restart ${APP_NAME}_celery_default
 supervisorctl restart ${APP_NAME}_celery_beat
 echo -e "${GREEN}✓ Celery services restarted${NC}"
 

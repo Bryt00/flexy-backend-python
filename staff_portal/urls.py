@@ -33,4 +33,9 @@ urlpatterns = [
     path('ads/', views.ad_dashboard, name='ad_dashboard'),
     path('ads/review/<uuid:ad_id>/', views.ad_review, name='ad_review'),
     path('ads/config/', views.ad_slot_config, name='ad_slot_config'),
+    path('master/live-ops/', views.live_ops_map, name='live_ops_map'),
+    path('master/live-ops/data/', views.live_ops_data, name='live_ops_data'),
+    path('master/geofencing/', views.geofencing_dashboard, name='geofencing'),
+    path('master/geofencing/delete/<uuid:area_id>/', views.delete_geofence, name='delete_geofence'),
+    path('master/infra-tuning/', views.infra_tuning, name='infra_tuning'),
 ]

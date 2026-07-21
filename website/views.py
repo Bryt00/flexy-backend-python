@@ -10,16 +10,25 @@ from .models import (
     WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner
 )
 
+from django.core.cache import cache
+
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
 def get_global_context():
-    settings = WebsiteSettings.objects.first()
+    # Cache global context for 15 minutes to reduce DB load
+    settings = cache.get('global_website_settings')
     if not settings:
-        settings = WebsiteSettings(
-            total_riders_count="500k+",
-            total_drivers_count="10k+",
-            foundation_year=2024,
-            mission_statement="To provide safe, reliable, and affordable transportation for every Ghanaian...",
-            vision_statement="To become the backbone of urban infrastructure in West Africa..."
-        )
+        settings = WebsiteSettings.objects.first()
+        if not settings:
+            settings = WebsiteSettings(
+                total_riders_count="500k+",
+                total_drivers_count="10k+",
+                foundation_year=2024,
+                mission_statement="To provide safe, reliable, and affordable transportation for every Ghanaian...",
+                vision_statement="To become the backbone of urban infrastructure in West Africa..."
+            )
+        cache.set('global_website_settings', settings, 60 * 15)
     return {'site_settings': settings}
 
 class HomeView(TemplateView):
@@ -28,15 +37,26 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_global_context())
-        context['latest_posts'] = BlogPost.objects.filter(is_published=True).order_by('-published_at')[:3]
-        cities = City.objects.filter(is_active=True)
-        context['cities_count'] = cities.count()
-        context['cities'] = cities
-        context['testimonials'] = Testimonial.objects.all().order_by('-created_at')[:3]
-        context['features'] = BrandFeature.objects.all()
-        context['hero'] = HeroBanner.objects.filter(page_name='home').first()
+        home_context = cache.get('website_home_context')
+        if home_context is None:
+            latest_posts = list(BlogPost.objects.filter(is_published=True).order_by('-published_at')[:3])
+            cities = list(City.objects.filter(is_active=True))
+            testimonials = list(Testimonial.objects.all().order_by('-created_at')[:3])
+            features = list(BrandFeature.objects.all())
+            hero = HeroBanner.objects.filter(page_name='home').first()
+            home_context = {
+                'latest_posts': latest_posts,
+                'cities': cities,
+                'cities_count': len(cities),
+                'testimonials': testimonials,
+                'features': features,
+                'hero': hero,
+            }
+            cache.set('website_home_context', home_context, 60 * 15)
+        context.update(home_context)
         return context
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class AboutView(TemplateView):
     template_name = 'website/about.html'
 
@@ -52,10 +72,17 @@ class ServicesView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_global_context())
-        context['services'] = ServiceCategory.objects.filter(is_active=True)
-        context['hero'] = HeroBanner.objects.filter(page_name='services').first()
+        services_context = cache.get('website_services_context')
+        if services_context is None:
+            services_context = {
+                'services': list(ServiceCategory.objects.filter(is_active=True)),
+                'hero': HeroBanner.objects.filter(page_name='services').first()
+            }
+            cache.set('website_services_context', services_context, 60 * 15)
+        context.update(services_context)
         return context
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class HowItWorksView(TemplateView):
     template_name = 'website/how_it_works.html'
     
@@ -64,6 +91,7 @@ class HowItWorksView(TemplateView):
         context.update(get_global_context())
         return context
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class DriveWithUsView(TemplateView):
     template_name = 'website/drive_with_us.html'
 
@@ -73,6 +101,7 @@ class DriveWithUsView(TemplateView):
         context['cities'] = City.objects.filter(is_active=True).order_by('name')
         return context
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class SafetyView(TemplateView):
     template_name = 'website/safety.html'
 
@@ -139,7 +168,10 @@ class FAQView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_global_context())
-        faqs = FAQItem.objects.filter(is_active=True)
+        faqs = cache.get('website_faqs')
+        if faqs is None:
+            faqs = list(FAQItem.objects.filter(is_active=True))
+            cache.set('website_faqs', faqs, 60 * 15)
         # Group by category
         grouped = {}
         for faq in faqs:
@@ -148,7 +180,7 @@ class FAQView(TemplateView):
                 grouped[label] = []
             grouped[label].append(faq)
         context['grouped_faqs'] = grouped
-        context['total_count'] = faqs.count()
+        context['total_count'] = len(faqs)
         return context
 
 class CareersView(TemplateView):
@@ -157,7 +189,10 @@ class CareersView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_global_context())
-        openings = JobOpening.objects.filter(is_active=True)
+        openings = cache.get('website_job_openings')
+        if openings is None:
+            openings = list(JobOpening.objects.filter(is_active=True))
+            cache.set('website_job_openings', openings, 60 * 15)
         # Group by department
         grouped = {}
         for job in openings:
@@ -166,7 +201,7 @@ class CareersView(TemplateView):
                 grouped[label] = []
             grouped[label].append(job)
         context['grouped_jobs'] = grouped
-        context['total_openings'] = openings.count()
+        context['total_openings'] = len(openings)
         context['hero'] = HeroBanner.objects.filter(page_name='careers').first()
         return context
 
@@ -185,6 +220,7 @@ class JobDetailView(DetailView):
         context['other_jobs'] = JobOpening.objects.filter(is_active=True).exclude(id=self.object.id).order_by('?')[:3]
         return context
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class PressView(TemplateView):
     template_name = 'website/press.html'
 
@@ -194,6 +230,7 @@ class PressView(TemplateView):
         context['press_posts'] = BlogPost.objects.filter(is_published=True, category='company').order_by('-published_at')[:5]
         return context
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class CorporateView(TemplateView):
     template_name = 'website/corporate.html'
 
@@ -233,6 +270,7 @@ class ContactView(FormView):
         return context
 
 # Legal Pages
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class LegalDocumentView(TemplateView):
     template_name = 'website/legal/detail.html'
 
@@ -275,6 +313,7 @@ class CookiesView(LegalDocumentView):
         kwargs['doc_type'] = 'cookies'
         return super().get_context_data(**kwargs)
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class DownloadView(TemplateView):
     template_name = 'website/download.html'
 
@@ -283,6 +322,7 @@ class DownloadView(TemplateView):
         context.update(get_global_context())
         return context
 
+@method_decorator(cache_page(60 * 60 * 24), name='dispatch')
 class RobotsView(TemplateView):
     def get(self, request, *args, **kwargs):
         content = (

@@ -37,23 +37,7 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Determine if we should use GIS (GeoDjango)
-# We disable it locally if GDAL is not installed to allow development on Windows without binary hell.
-USE_GIS = True
-if env('DJANGO_ENV', default='production') == 'local':
-    # Try to auto-locate GDAL on Linux (Docker) to avoid ImproperlyConfigured
-    import platform
-    if platform.system() == 'Linux':
-        import glob
-        gdal_libs = glob.glob('/usr/lib/libgdal.so*') + glob.glob('/usr/lib/x86_64-linux-gnu/libgdal.so*')
-        if gdal_libs:
-            os.environ['GDAL_LIBRARY_PATH'] = gdal_libs[0]
-
-    try:
-        from django.contrib.gis import gdal
-        USE_GIS = True
-    except Exception:
-        USE_GIS = False
+USE_GIS = False
 
 INSTALLED_APPS = [
     'daphne',

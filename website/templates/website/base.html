@@ -56,10 +56,10 @@
     <style type="text/tailwindcss">
         @layer components {
             .ui-card {
-                @apply bg-dark-800 border border-white/10 rounded-[32px] p-8 transition-all duration-500;
+                @apply bg-dark-800 border border-white/10 rounded-2xl p-8 transition-all duration-300;
             }
             .ui-card:hover {
-                @apply border-brand/30 shadow-2xl shadow-brand/5;
+                @apply border-white/20;
             }
             .form-input {
                 @apply w-full px-6 py-4 bg-dark-900 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all duration-300;
@@ -76,19 +76,16 @@
                 hover:file:bg-brand/20 transition-all cursor-pointer;
             }
             .btn {
-                @apply inline-block px-8 py-4 rounded-full font-bold transition-all duration-300 text-center cursor-pointer tracking-wide;
+                @apply inline-block px-8 py-4 rounded-xl font-bold transition-all duration-200 text-center cursor-pointer tracking-wide;
             }
             .btn-primary {
-                @apply bg-brand text-dark-900 hover:bg-brand-dark hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(140,198,63,0.3)];
+                @apply bg-brand text-dark-900 hover:bg-brand-dark hover:-translate-y-0.5;
             }
             .btn-outline {
-                @apply bg-dark-800 text-white border-2 border-white/20 hover:border-brand hover:text-brand hover:bg-brand/10 hover:-translate-y-1;
+                @apply bg-dark-800 text-white border-2 border-white/20 hover:border-white/40 hover:bg-white/5 hover:-translate-y-0.5;
             }
             .hero-gradient-text {
-                background: linear-gradient(45deg, #8CC63F, #FFFFFF);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
+                @apply text-brand;
             }
             .container {
                 @apply max-w-7xl mx-auto px-6;
@@ -162,9 +159,6 @@
 
     <!-- Footer -->
     <footer class="bg-dark-800 pt-24 pb-12 mt-20 border-t border-white/5 relative overflow-hidden">
-        <!-- Subtle background glow -->
-        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-brand/5 rounded-full blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
-        
         <div class="container">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20">
                 <!-- Column 1: Brand & Contact -->
@@ -288,6 +282,7 @@
 
         // Initialize Lucide Icons
         lucide.createIcons();
+
 
         // Smooth Scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

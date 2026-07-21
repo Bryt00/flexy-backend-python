@@ -1,0 +1,210 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Service Areas & Geofencing - FlexyRide Headquarters{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-6">
+    <!-- Left Sidebar: List & Creator -->
+    <div class="w-full md:w-96 flex flex-col gap-5 flex-shrink-0 h-full overflow-hidden">
+        <!-- Creator Form -->
+        <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-outfit font-black tracking-widest text-primary uppercase mb-4">Create Geofence Zone</h3>
+            
+            <form id="geofenceForm" method="POST" action="{% url 'staff_portal:geofencing' %}" class="space-y-4">
+                {% csrf_token %}
+                <!-- Zone Name -->
+                <div>
+                    <label class="block text-xs font-bold text-white/50 uppercase tracking-widest mb-1.5">Zone Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Accra Central, Airport Zone" class="cyber-input w-full py-2 px-3 rounded bg-slate-950 border border-slate-700 text-white text-sm focus:border-primary focus:outline-none">
+                </div>
+                
+                <!-- Coordinate Cache (Hidden) -->
+                <input type="hidden" id="coordsInput" name="coords">
+                
+                <!-- Drawing Status Alert -->
+                <div id="drawStatus" class="p-3 rounded-xl border bg-slate-950 border-slate-800 text-[10px] text-white/60 text-center leading-relaxed">
+                    Use the polygon drawing tool at the top of the map to draw your coverage zone.
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="submitBtn" disabled class="w-full bg-slate-800 border border-slate-700 text-white/50 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-not-allowed">
+                    Save Geofenced Zone
+                </button>
+            </form>
+        </div>
+
+        <!-- Existing Geofences List -->
+        <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800 flex-1 flex flex-col overflow-hidden">
+            <h3 class="text-sm font-outfit font-black tracking-widest text-primary uppercase mb-4">Active Coverage Areas</h3>
+            
+            <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+                {% if areas %}
+                    {% for area in areas %}
+                    <div class="p-3 bg-slate-950 border border-slate-850 rounded-xl flex items-center justify-between group hover:border-slate-700 transition-all">
+                        <div class="min-w-0">
+                            <p class="text-xs font-bold text-white truncate">{{ area.name }}</p>
+                            <span class="text-[9px] text-white/40 block mt-0.5">Created: {{ area.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <!-- Toggle Active (Placeholder) -->
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#0F2D1F] text-brand-green border border-brand-green/20 uppercase">
+                                Active
+                            </span>
+                            
+                            <!-- Delete Trigger -->
+                            <a href="{% url 'staff_portal:delete_geofence' area.id %}" onclick="return confirm('Are you sure you want to delete the geofence zone \'{{ area.name }}\'?')" class="text-white/40 hover:text-error p-1 rounded transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-xs text-white/40 text-center italic py-8">No service areas defined yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Interactive Drawing Map -->
+    <div class="flex-1 rounded-2xl overflow-hidden border border-slate-800 relative bg-slate-950 h-full min-h-[400px]">
+        <div id="map" class="w-full h-full"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let map;
+    let drawingManager;
+    let currentOverlay = null;
+    const existingPolygons = [];
+
+    // Dark Map Style JSON
+    const darkMapStyle = [
+        { "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] },
+        { "elementType": "labels.text.fill", "stylers": [{ "color": "#475569" }] },
+        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#020617" }] },
+        { "featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{ "color": "#334155" }] },
+        { "featureType": "administrative.land_parcel", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "administrative.neighborhood", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+        { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
+        { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+        { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#334155" }] },
+        { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+        { "featureType": "transit", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#020617" }] }
+    ];
+
+    // Load Existing Zones Data from Django Backend Context
+    const backendAreas = JSON.parse('{{ map_areas_json|escapejs }}');
+
+    function initMap() {
+        // Initial map focus
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 5.6037, lng: -0.1870 }, // Accra default fallback
+            zoom: 13,
+            styles: darkMapStyle,
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: false,
+            scaleControl: true,
+            streetViewControl: false
+        });
+
+        // 1. Draw existing zones as static overlays
+        renderExistingGeofences();
+
+        // 2. Initialize drawing manager for creating new geofences
+        drawingManager = new google.maps.VisualDrawingManager ? new google.maps.VisualDrawingManager() : new google.maps.drawing.DrawingManager({
+            drawingMode: null,
+            drawingControl: true,
+            drawingControlOptions: {
+                position: google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [google.maps.drawing.OverlayType.POLYGON]
+            },
+            polygonOptions: {
+                fillColor: '#00B4FF',
+                fillOpacity: 0.3,
+                strokeColor: '#00B4FF',
+                strokeWeight: 2,
+                editable: true,
+                draggable: false
+            }
+        });
+        drawingManager.setMap(map);
+
+        // 3. Attach complete listener
+        google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
+            // Remove previous unsaved drawing if drawing another one
+            if (currentOverlay) {
+                currentOverlay.setMap(null);
+            }
+            
+            // Switch drawing mode off
+            drawingManager.setDrawingMode(null);
+            
+            currentOverlay = event.overlay;
+            
+            // Extract coordinates
+            updateCoordsInput(currentOverlay);
+            
+            // Listen for edits/drags on the drawn shape
+            google.maps.event.addListener(currentOverlay.getPath(), 'set_at', () => updateCoordsInput(currentOverlay));
+            google.maps.event.addListener(currentOverlay.getPath(), 'insert_at', () => updateCoordsInput(currentOverlay));
+        });
+    }
+
+    function renderExistingGeofences() {
+        backendAreas.forEach(area => {
+            if (!area.coords || area.coords.length === 0) return;
+            
+            const poly = new google.maps.Polygon({
+                paths: area.coords,
+                strokeColor: '#A3E635',
+                strokeOpacity: 0.6,
+                strokeWeight: 1.5,
+                fillColor: '#A3E635',
+                fillOpacity: 0.1,
+                map: map
+            });
+
+            // Focus map boundary if existing geofences are found
+            const bounds = new google.maps.LatLngBounds();
+            area.coords.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds);
+
+            existingPolygons.push(poly);
+        });
+    }
+
+    function updateCoordsInput(polygon) {
+        const path = polygon.getPath();
+        const coords = [];
+        
+        for (let i = 0; i < path.getLength(); i++) {
+            const xy = path.getAt(i);
+            coords.push({
+                lat: xy.lat(),
+                lng: xy.lng()
+            });
+        }
+
+        // Cache coordinates to form hidden field
+        const coordsJson = JSON.stringify(coords);
+        document.getElementById('coordsInput').value = coordsJson;
+        
+        // Update UI styling
+        const statusBox = document.getElementById('drawStatus');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        statusBox.className = "p-3 rounded-xl border border-brand-greendark bg-[#122F1E] text-brand-green text-[10px] text-center font-semibold leading-relaxed";
+        statusBox.textContent = `✓ Polygon drawn successfully with ${coords.length} vertices. Fill out the zone name to save.`;
+        
+        submitBtn.disabled = false;
+        submitBtn.className = "w-full bg-primary hover:bg-primary/95 text-slate-950 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer";
+    }
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=drawing&callback=initMap&v=weekly"></script>
+{% endblock %}

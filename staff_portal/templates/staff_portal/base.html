@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -66,13 +67,21 @@
             background-color: #030712;
         }
 
-        /* Solid Panel and Component Styling (No transparency or glassmorphism) */
+        /* Solid Panel and Component Styling */
         .glass-panel, .solid-panel {
             background-color: #0F172A !important;
-            border: 1px solid #334155 !important;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
+            border: 1px solid #1E293B !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        /* Background Helpers for dashboards */
+        .bg-slate-950, .bg-slate-950\/80, .bg-slate-950\/85, .bg-slate-950\/90, .bg-slate-950\/95 {
+            background-color: #020617 !important;
+        }
+
+        .bg-slate-900 {
+            background-color: #0f172a !important;
         }
 
         .bg-white\/5 {
@@ -87,10 +96,7 @@
         .bg-black\/20 {
             background-color: #0F172A !important;
         }
-        .bg-black\/30 {
-            background-color: #0B0F19 !important;
-        }
-        .bg-black\/40 {
+        .bg-black\/30, .bg-black\/40 {
             background-color: #0B0F19 !important;
         }
         .bg-black\/50 {
@@ -120,17 +126,10 @@
         .bg-\[\#0b0f19\]\/95 {
             background-color: #0B0F19 !important;
         }
-        .bg-slate-950\/80 {
-            background-color: #020617 !important;
-        }
-        .bg-slate-950\/85 {
-            background-color: #020617 !important;
-        }
-        .bg-slate-950\/90 {
-            background-color: #020617 !important;
-        }
-        .bg-slate-950\/95 {
-            background-color: #020617 !important;
+
+        /* Border Helpers */
+        .border-slate-800, .border-slate-850 {
+            border-color: #1e293b !important;
         }
 
         .border-white\/5 {
@@ -157,25 +156,24 @@
             -webkit-backdrop-filter: none !important;
         }
 
+        /* Standardized Buttons */
         .cyber-button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 1rem;
-            font-weight: 900;
-            letter-spacing: 0.1em;
-            transition: all 0.3s;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            transition: all 0.2s;
             cursor: pointer;
             color: white;
             border: 1px solid #005691;
-            background: linear-gradient(135deg, #00B4FF 0%, #005691 100%);
-            box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+            background-color: #005691;
         }
         .cyber-button:hover {
-            box-shadow: 0 0 25px rgba(0, 180, 255, 0.5);
-            transform: translateY(-2px);
+            background-color: #004b7f;
+            transform: translateY(-0.5px);
         }
 
         .status-pill {
@@ -189,47 +187,76 @@
             display: inline-block;
         }
         .status-pill-success {
+            background-color: #dcfce7;
+            color: #15803d;
+            border-color: #bbf7d0;
+        }
+        .dark .status-pill-success {
             background-color: #14532D;
             color: #A3E635;
             border-color: #15803D;
         }
         .status-pill-warning {
+            background-color: #fef3c7;
+            color: #b45309;
+            border-color: #fde68a;
+        }
+        .dark .status-pill-warning {
             background-color: #78350F;
             color: #F59E0B;
             border-color: #B45309;
         }
 
-        /* Sidebar Item Hover */
+        /* Sidebar Navigation links */
         .sidebar-link {
+            color: rgba(255, 255, 255, 0.7) !important;
             transition: all 0.2s ease-in-out;
         }
         .sidebar-link:hover {
-            background-color: #1E293B;
-            color: #00B4FF;
-            border-left: 3px solid #00B4FF;
+            background-color: #1E293B !important;
+            color: #00B4FF !important;
+            border-left: 3px solid #00B4FF !important;
         }
 
         /* Solid Input Overrides */
         .cyber-input {
             background-color: #020617 !important;
             border-color: #1E293B !important;
+            color: #ffffff !important;
+        }
+
+        /* Color Adaptiveness */
+        .text-white {
+            color: #ffffff !important;
+        }
+        .text-white\/70 {
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+        .text-white\/60 {
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .text-white\/50 {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        .text-white\/40 {
+            color: rgba(255, 255, 255, 0.4) !important;
         }
     </style>
 </head>
 <body>
     <div class="orbital-bg"></div>
-    <div class="flex h-screen bg-[#0A0F1C] text-white font-sans overflow-hidden">
+    <div class="flex h-screen bg-slate-50 dark:bg-[#0A0F1C] text-slate-900 dark:text-white font-sans overflow-hidden transition-colors duration-200">
 
         <!-- Mobile Overlay -->
         <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen fixed md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <aside id="sidebar" class="w-64 bg-slate-100 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-screen fixed md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6">
-                <h1 class="text-2xl font-outfit text-white tracking-widest uppercase">
+                <h1 class="text-2xl font-outfit text-slate-900 dark:text-white tracking-widest uppercase">
                     Flexy<span class="text-primary">Ride</span>
                 </h1>
-                <p class="text-xs text-white/50 mt-1 uppercase tracking-widest font-bold">{{ request.user.role }} PORTAL</p>
+                <p class="text-xs text-slate-500 dark:text-white/50 mt-1 uppercase tracking-widest font-bold">{{ request.user.role }} PORTAL</p>
             </div>
 
             <nav class="flex-1 mt-6 overflow-y-auto">
@@ -249,6 +276,20 @@
                             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             Platform Settings
                         </a>
+                        <a href="{% url 'staff_portal:live_ops_map' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                            Live Ops Map
+                        </a>
+                        <a href="{% url 'staff_portal:geofencing' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                            Service Areas (Geofences)
+                        </a>
+                        {% if request.user.role == 'super_admin' %}
+                        <a href="{% url 'staff_portal:infra_tuning' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            Cluster &amp; Dispatch Tuning
+                        </a>
+                        {% endif %}
                         <a href="/headquarters/core_settings/vehiclecategory/" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
                             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 011-1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path></svg>
                             Vehicle Categories
@@ -306,8 +347,12 @@
                     <li>
                         <p class="px-6 text-[10px] font-black text-brand-green/50 tracking-[0.2em] uppercase mb-3">Support Center</p>
                         <a href="{% url 'staff_portal:support_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
+                            <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            Support Overview
+                        </a>
+                        <a href="{% url 'staff_portal:live_ops_map' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
                             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                            Live Operations Map
+                            Live Ops Map
                         </a>
                         <a href="{% url 'staff_portal:driver_verifications' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
                             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
@@ -315,7 +360,7 @@
                         </a>
                         <a href="{% url 'staff_portal:disputes_dashboard' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
                             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            Active Disputes
+                            Incidents &amp; SOS
                         </a>
                         <a href="{% url 'staff_portal:ride_history' %}" class="sidebar-link flex items-center px-6 py-2.5 text-white/70">
                             <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -353,45 +398,48 @@
             <!-- Top Navbar -->
             <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900 z-30 relative">
                 <div class="flex items-center">
-                    <button id="mobileMenuBtn" class="md:hidden mr-4 text-white/70 hover:text-white">
+                    <button id="mobileMenuBtn" class="md:hidden mr-4 text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
-                    <h2 class="text-lg font-outfit font-bold tracking-widest text-white/70 hidden sm:block">FLEXY<span class="text-primary">RIDE</span> HEADQUARTERS</h2>
+                    <h2 class="text-lg font-outfit font-bold tracking-widest text-slate-700 dark:text-white/70 hidden sm:block">FLEXY<span class="text-primary">RIDE</span> HEADQUARTERS</h2>
                 </div>
                 
                 <!-- Profile Dropdown Container -->
                 <div class="flex items-center space-x-4">
-                    <!-- Audio Alert Status (Muted by browser autoplay policy) -->
-                    <button id="audioEnableBtn" class="hidden items-center space-x-1.5 bg-[#3F141A] px-2.5 py-1 rounded-full border border-error/20 text-[10px] font-bold text-error hover:bg-error/10 transition-all duration-300 cursor-pointer">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
-                        <span class="uppercase tracking-wider">Unmute Alerts</span>
+                    <!-- Audio Alert Status: subtle icon, only shows when browser blocks audio -->
+                    <button id="audioEnableBtn" class="hidden items-center justify-center w-8 h-8 rounded-lg text-amber-400 hover:bg-amber-400/10 transition-colors cursor-pointer" title="Browser blocked alert audio — click to enable">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
                     </button>
 
-                    <!-- WebSocket Status Indicator -->
-                    <div id="wsStatusBadge" class="flex items-center space-x-1.5 bg-[#3F200F] px-2.5 py-1 rounded-full border border-orange-500/20 text-[10px] font-bold text-orange-500 transition-all duration-300">
-                        <span id="wsStatusDot" class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping"></span>
-                        <span id="wsStatusText" class="uppercase tracking-wider">Connecting...</span>
+                    <!-- WebSocket Status: compact dot indicator with tooltip -->
+                    <div id="wsStatusBadge" class="relative group flex items-center justify-center w-8 h-8 cursor-default">
+                        <span id="wsStatusDot" class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-ping absolute"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-orange-500 relative"></span>
+                        <!-- Tooltip -->
+                        <div class="absolute right-0 top-10 hidden group-hover:flex items-center gap-1.5 bg-slate-800 border border-slate-700 text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap z-50">
+                            <span id="wsStatusText">Connecting...</span>
+                        </div>
                     </div>
 
                     <!-- Static Profile Info -->
                     <div class="text-right hidden sm:block">
-                        <p class="text-xs font-bold text-white">{{ request.user.email }}</p>
+                        <p class="text-xs font-bold text-slate-900 dark:text-white">{{ request.user.email }}</p>
                         <p class="text-[10px] text-primary uppercase tracking-widest">{{ request.user.role }}</p>
                     </div>
                     
                     <!-- Dropdown Toggle Button (Avatar & Chevron only) -->
                     <div class="relative">
-                        <button id="profileDropdownBtn" class="flex items-center space-x-2 text-white/70 hover:text-white focus:outline-none py-2">
-                            <div class="w-8 h-8 rounded-full bg-[#002f4a] text-primary flex items-center justify-center font-bold border border-primary/30">
+                        <button id="profileDropdownBtn" class="flex items-center space-x-2 text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white focus:outline-none py-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-[#002f4a] text-primary flex items-center justify-center font-bold border border-slate-300 dark:border-primary/30">
                                 {{ request.user.email|make_list|first|upper }}
                             </div>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </button>
                         
                         <!-- Dropdown Menu -->
-                        <div id="profileDropdownMenu" class="absolute right-0 mt-2 w-48 bg-[#0A0F1C] border border-slate-800 rounded-lg shadow-xl overflow-hidden hidden transition-all z-50">
-                            <div class="p-4 border-b border-slate-800 sm:hidden">
-                                <p class="text-xs font-bold text-white">{{ request.user.email }}</p>
+                        <div id="profileDropdownMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-[#0A0F1C] border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl overflow-hidden hidden transition-all z-50">
+                            <div class="p-4 border-b border-slate-200 dark:border-slate-800 sm:hidden">
+                                <p class="text-xs font-bold text-slate-900 dark:text-white">{{ request.user.email }}</p>
                                 <p class="text-[10px] text-primary uppercase tracking-widest">{{ request.user.role }}</p>
                             </div>
                             <a href="{% url 'staff_portal:logout' %}" class="flex items-center px-4 py-3 text-sm text-error/80 hover:text-error hover:bg-slate-800 transition-colors">
@@ -450,6 +498,7 @@
             }
         });
 
+
         // WebSocket notifications connection for SOS audio/visual alerts
         (function() {
             // Only connect if the user is authenticated and is a staff member
@@ -465,13 +514,51 @@
             let reconnectInterval = 3000;
             let activeSiren = null;
 
-            // Create alert container if it doesn't exist
+            // Create alert container
             let alertContainer = document.getElementById('sosAlertContainer');
             if (!alertContainer) {
                 alertContainer = document.createElement('div');
                 alertContainer.id = 'sosAlertContainer';
-                alertContainer.className = 'fixed top-4 right-4 z-50 flex flex-col space-y-4 max-w-md w-full';
+                alertContainer.className = 'fixed top-20 right-4 z-[9999] flex flex-col gap-3 w-[360px]';
                 document.body.appendChild(alertContainer);
+            }
+
+            // Alert counter badge fixed in header area
+            let counterBadge = document.getElementById('sosCounterBadge');
+            if (!counterBadge) {
+                counterBadge = document.createElement('div');
+                counterBadge.id = 'sosCounterBadge';
+                counterBadge.className = 'fixed top-3.5 right-36 z-[99999] hidden items-center gap-1.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg animate-pulse';
+                counterBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span><span id="sosCounterText">1 SOS</span>';
+                document.body.appendChild(counterBadge);
+            }
+
+            function updateSosCounter() {
+                const count = alertContainer.querySelectorAll('.sos-card').length;
+                const text = document.getElementById('sosCounterText');
+                if (count > 0) {
+                    counterBadge.classList.remove('hidden');
+                    counterBadge.classList.add('flex');
+                    if (text) text.textContent = count === 1 ? '1 SOS' : count + ' SOS';
+                } else {
+                    counterBadge.classList.add('hidden');
+                    counterBadge.classList.remove('flex');
+                }
+            }
+
+            // Live elapsed timer per card
+            function startElapsedTimer(cardEl, createdAt) {
+                const el = cardEl.querySelector('.sos-elapsed');
+                if (!el) return;
+                const start = new Date(createdAt).getTime();
+                function tick() {
+                    if (!document.body.contains(cardEl)) { clearInterval(id); return; }
+                    const secs = Math.floor((Date.now() - start) / 1000);
+                    const m = Math.floor(secs / 60), s = secs % 60;
+                    el.textContent = m > 0 ? m + 'm ' + s + 's ago' : s + 's ago';
+                }
+                tick();
+                const id = setInterval(tick, 1000);
             }
 
             // Web Audio Unlock & Autoplay checks
@@ -578,33 +665,54 @@
             window.dismissSosAlert = function(buttonEl) {
                 const card = buttonEl.closest('.sos-card');
                 if (card) {
-                    card.remove();
+                    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(24px)';
+                    setTimeout(function() {
+                        card.remove();
+                        updateSosCounter();
+                        if (alertContainer.querySelectorAll('.sos-card').length === 0 && activeSiren) {
+                            activeSiren.stop();
+                            activeSiren = null;
+                        }
+                    }, 300);
                 }
-                // Stop siren if no SOS alerts remain
-                if (alertContainer.children.length === 0 && activeSiren) {
+            };
+
+            window.toggleSosSiren = function(buttonEl) {
+                if (activeSiren) {
                     activeSiren.stop();
                     activeSiren = null;
+                    buttonEl.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg> Unmute';
+                    buttonEl.classList.remove('text-red-400');
+                    buttonEl.classList.add('text-white/40');
+                } else {
+                    activeSiren = playSiren();
+                    buttonEl.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 6.343a8 8 0 010 11.314"></path></svg> Mute';
+                    buttonEl.classList.add('text-red-400');
+                    buttonEl.classList.remove('text-white/40');
                 }
             };
 
             function updateWsStatus(status) {
-                const statusBadge = document.getElementById('wsStatusBadge');
                 const statusDot = document.getElementById('wsStatusDot');
                 const statusText = document.getElementById('wsStatusText');
-                if (!statusBadge || !statusDot || !statusText) return;
+                // The solid inner dot (sibling of the ping dot)
+                const solidDot = statusDot ? statusDot.nextElementSibling : null;
+                if (!statusDot || !statusText) return;
 
                 if (status === 'connected') {
-                    statusBadge.className = "flex items-center space-x-1.5 bg-[#0F2D1F] px-2.5 py-1 rounded-full border border-brand-green/20 text-[10px] font-bold text-brand-green transition-all duration-300";
-                    statusDot.className = "w-1.5 h-1.5 rounded-full bg-brand-green";
-                    statusText.textContent = "Live Link";
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-none absolute';
+                    if (solidDot) solidDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 relative';
+                    statusText.textContent = 'Live';
                 } else if (status === 'connecting') {
-                    statusBadge.className = "flex items-center space-x-1.5 bg-[#3F200F] px-2.5 py-1 rounded-full border border-orange-500/20 text-[10px] font-bold text-orange-500 transition-all duration-300";
-                    statusDot.className = "w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping";
-                    statusText.textContent = "Connecting...";
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping absolute';
+                    if (solidDot) solidDot.className = 'w-2.5 h-2.5 rounded-full bg-orange-400 relative';
+                    statusText.textContent = 'Connecting...';
                 } else {
-                    statusBadge.className = "flex items-center space-x-1.5 bg-[#3F141A] px-2.5 py-1 rounded-full border border-error/20 text-[10px] font-bold text-error transition-all duration-300";
-                    statusDot.className = "w-1.5 h-1.5 rounded-full bg-error animate-pulse";
-                    statusText.textContent = "Offline (Retry)";
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse absolute';
+                    if (solidDot) solidDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500 relative';
+                    statusText.textContent = 'Offline';
                 }
             }
 
@@ -646,66 +754,86 @@
             }
 
             function showSosAlert(data) {
-                // Play siren if not already playing
-                if (!activeSiren) {
-                    activeSiren = playSiren();
-                }
+                if (!activeSiren) { activeSiren = playSiren(); }
 
+                const isAuto = data.reporter_email === 'System (Auto-detected)';
+                const borderCls  = isAuto ? 'border-amber-500'        : 'border-red-500';
+                const accentBar  = isAuto ? 'bg-amber-500'             : 'bg-red-600';
+                const iconBg     = isAuto ? 'background:#1c1200;color:#f59e0b' : 'background:#1c0000;color:#ef4444';
+                const labelColor = isAuto ? 'color:#f59e0b'            : 'color:#f87171';
+                const labelText  = isAuto ? 'AUTO-DETECTED ANOMALY'    : '🆘 EMERGENCY SOS';
+                const tagStyle   = isAuto ? 'background:#1c1200;color:#fcd34d;border-color:#92400e' : 'background:#1c0000;color:#fca5a5;border-color:#991b1b';
                 const disputesUrl = "{% url 'staff_portal:disputes_dashboard' %}";
-                const alertHtml = `
-                    <div class="sos-card glass-panel border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] rounded-2xl p-5 bg-[#0b0f19]/95 flex flex-col relative overflow-hidden transition-all duration-300 border-l-4 border-l-red-500 animate-pulse">
-                        <div class="absolute top-0 left-0 right-0 h-1 bg-red-500"></div>
-                        <div class="flex items-start space-x-3">
-                            <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center flex-shrink-0">
-                                <svg class="w-6 h-6 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                </svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex justify-between items-center">
-                                    <h4 class="text-red-500 font-outfit font-black tracking-widest text-sm uppercase">EMERGENCY SOS ALERT!</h4>
-                                    <button class="text-white/40 hover:text-white transition-colors" onclick="dismissSosAlert(this)">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
-                                </div>
-                                <div class="mt-2 space-y-1 text-xs">
-                                    <p class="text-white/70">
-                                        <span class="text-white/40 font-bold uppercase tracking-wider block text-[9px]">Reporter</span>
-                                        <span class="font-mono text-white font-semibold">${data.reporter_email}</span>
-                                    </p>
-                                    <p class="text-white/70">
-                                        <span class="text-white/40 font-bold uppercase tracking-wider block text-[9px]">Incident Type</span>
-                                        <span class="font-semibold text-red-400">${data.type}</span>
-                                    </p>
-                                    <p class="text-white/70">
-                                        <span class="text-white/40 font-bold uppercase tracking-wider block text-[9px]">Description</span>
-                                        <span class="italic text-white">${data.description}</span>
-                                    </p>
-                                    <p class="text-white/70">
-                                        <span class="text-white/40 font-bold uppercase tracking-wider block text-[9px]">Timestamp</span>
-                                        <span class="text-white/60">${new Date(data.created_at).toLocaleString()}</span>
-                                    </p>
-                                </div>
-                                
-                                <div class="mt-4 flex space-x-2">
-                                    <a href="${disputesUrl}" class="flex-1 text-center bg-red-600 hover:bg-red-500 text-white font-bold py-1.5 px-3 rounded-lg transition-all text-[10px] uppercase tracking-widest">
-                                        Respond / View
-                                    </a>
-                                    <button class="bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-lg transition-all text-[10px] uppercase tracking-widest" onclick="dismissSosAlert(this)">
-                                        Dismiss
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                const mapsUrl = (data.location_lat && data.location_lng)
+                    ? 'https://maps.google.com/?q=' + data.location_lat + ',' + data.location_lng
+                    : null;
+                const timeStr = new Date(data.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+                const iconSvg = isAuto
+                    ? '<svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
+                    : '<svg style="width:14px;height:14px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>';
+                const locationHtml = mapsUrl
+                    ? '<a href="' + mapsUrl + '" target="_blank" style="color:#60a5fa;font-family:monospace;font-size:10px;display:flex;align-items:center;gap:3px;text-decoration:none">' +
+                      '<svg style="width:11px;height:11px;flex-shrink:0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>' +
+                      parseFloat(data.location_lat).toFixed(4) + ', ' + parseFloat(data.location_lng).toFixed(4) + ' ↗</a>'
+                    : '<span style="color:rgba(255,255,255,0.3);font-size:10px">No GPS</span>';
 
-                // Add to container
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = alertHtml.trim();
-                const cardNode = tempDiv.firstChild;
-                alertContainer.appendChild(cardNode);
+                const card = document.createElement('div');
+                card.className = 'sos-card';
+                card.style.cssText = 'opacity:0;transform:translateX(30px);transition:opacity 0.35s ease,transform 0.35s ease';
+                card.innerHTML =
+                    '<div style="background:#0b0f19;border:1px solid;border-left:3px solid;border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5)" class="' + borderCls + '">' +
+                    '  <div style="height:2px;width:100%" class="' + accentBar + '"></div>' +
+                    '  <div style="padding:10px 12px 6px">' +
+                    '    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+                    '      <div style="display:flex;align-items:center;gap:7px">' +
+                    '        <div style="width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;' + iconBg + '">' + iconSvg + '</div>' +
+                    '        <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;' + labelColor + '">' + labelText + '</span>' +
+                    '      </div>' +
+                    '      <div style="display:flex;align-items:center;gap:6px">' +
+                    '        <span class="sos-elapsed" style="font-size:9px;color:rgba(255,255,255,0.25);font-family:monospace">0s ago</span>' +
+                    '        <button onclick="dismissSosAlert(this)" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:rgba(255,255,255,0.3);background:transparent;border:none;cursor:pointer" onmouseover="this.style.color=\'white\';this.style.background=\'rgba(255,255,255,0.1)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.3)\';this.style.background=\'transparent\'">' +
+                    '          <svg style="width:11px;height:11px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>' +
+                    '        </button>' +
+                    '      </div>' +
+                    '    </div>' +
+                    '    <div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap">' +
+                    '      <span style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.8);font-weight:600">' + data.reporter_email + '</span>' +
+                    '      <span style="margin-left:auto;font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 6px;border-radius:4px;border:1px solid;' + tagStyle + '">' + data.type + '</span>' +
+                    '    </div>' +
+                    '    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:7px;padding:7px 9px;margin-bottom:7px">' +
+                    '      <p style="font-size:11px;color:rgba(255,255,255,0.65);line-height:1.5;margin:0;font-style:italic">' + data.description + '</p>' +
+                    '    </div>' +
+                    '    <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">' +
+                    '      <div>' +
+                    '        <span style="display:block;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:rgba(255,255,255,0.2);margin-bottom:2px">Received</span>' +
+                    '        <span style="font-size:10px;color:rgba(255,255,255,0.45);font-family:monospace">' + timeStr + '</span>' +
+                    '      </div>' +
+                    '      <div style="margin-left:auto;text-align:right">' +
+                    '        <span style="display:block;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:rgba(255,255,255,0.2);margin-bottom:2px">Location</span>' +
+                    locationHtml +
+                    '      </div>' +
+                    '    </div>' +
+                    '    <div style="display:flex;gap:6px">' +
+                    '      <a href="' + disputesUrl + '" style="flex:1;text-align:center;background:#dc2626;color:white;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;padding:7px 8px;border-radius:7px;text-decoration:none;transition:background 0.2s" onmouseover="this.style.background=\'#b91c1c\'" onmouseout="this.style.background=\'#dc2626\'">Respond →</a>' +
+                    '      <button onclick="toggleSosSiren(this)" style="display:flex;align-items:center;gap:4px;color:#f87171;font-size:10px;font-weight:700;text-transform:uppercase;padding:7px 9px;border-radius:7px;background:transparent;border:1px solid rgba(255,255,255,0.1);cursor:pointer">' +
+                    '        <svg style="width:12px;height:12px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 6.343a8 8 0 010 11.314"/></svg>Mute' +
+                    '      </button>' +
+                    '      <button onclick="dismissSosAlert(this)" style="font-size:10px;font-weight:700;text-transform:uppercase;padding:7px 9px;border-radius:7px;background:transparent;border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.4);cursor:pointer">Dismiss</button>' +
+                    '    </div>' +
+                    '  </div>' +
+                    '</div>';
+
+                alertContainer.prepend(card);
+                updateSosCounter();
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateX(0)';
+                    });
+                });
+                startElapsedTimer(card, data.created_at);
             }
+
 
             // Start connection
             connect();

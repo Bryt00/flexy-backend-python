@@ -933,6 +933,7 @@ class RideViewSet(viewsets.ModelViewSet):
             ride=ride,
             reporter=request.user,
             type='SOS',
+            status='ACTIVE',
             description=request.data.get('description', 'SOS Triggered'),
             location_lat=request.data.get('lat'),
             location_lng=request.data.get('lng')

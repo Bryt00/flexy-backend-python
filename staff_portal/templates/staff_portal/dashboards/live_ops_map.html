@@ -1,0 +1,382 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Live Operations Map - FlexyRide Headquarters{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-6 relative">
+    <!-- Left Sidebar: Operations Center Stats -->
+    <div class="w-full md:w-80 flex flex-col gap-5 flex-shrink-0">
+        <!-- Telemetry Stats Card -->
+        <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-outfit font-black tracking-widest text-primary uppercase mb-4">Operations Telemetry</h3>
+            
+            <div class="space-y-4">
+                <!-- Online Drivers -->
+                <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-brand-green mr-3"></div>
+                        <span class="text-xs font-bold text-white/70">Online Drivers</span>
+                    </div>
+                    <span id="statOnlineDrivers" class="text-lg font-outfit font-black text-white">0</span>
+                </div>
+                
+                <!-- Active Rides -->
+                <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-primary mr-3"></div>
+                        <span class="text-xs font-bold text-white/70">Active Rides</span>
+                    </div>
+                    <span id="statActiveRides" class="text-lg font-outfit font-black text-white">0</span>
+                </div>
+
+                <!-- Active Deliveries -->
+                <div class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-purple-500 mr-3"></div>
+                        <span class="text-xs font-bold text-white/70">Active Deliveries</span>
+                    </div>
+                    <span id="statActiveDeliveries" class="text-lg font-outfit font-black text-white">0</span>
+                </div>
+                
+                <!-- SOS Alerts -->
+                <div id="sosAlertStatBlock" class="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <div class="flex items-center">
+                        <div id="sosAlertStatDot" class="w-3 h-3 rounded-full bg-slate-600 mr-3"></div>
+                        <span class="text-xs font-bold text-white/70">Active SOS Alerts</span>
+                    </div>
+                    <span id="statSosAlerts" class="text-lg font-outfit font-black text-white">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selected Element Details -->
+        <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800 flex-1 overflow-y-auto">
+            <h3 class="text-sm font-outfit font-black tracking-widest text-primary uppercase mb-4">Unit Telemetry</h3>
+            <div id="telemetryDetail" class="text-xs text-white/60 space-y-4">
+                <p class="italic text-center py-8">Select a driver or a route on the map to inspect live telemetry.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Full Screen Map -->
+    <div class="flex-1 rounded-2xl overflow-hidden border border-slate-800 relative bg-slate-950 h-full min-h-[400px]">
+        <div id="map" class="w-full h-full"></div>
+        
+        <!-- Legend Overlay -->
+        <div class="absolute bottom-4 right-4 bg-slate-900/90 border border-slate-800 p-3 rounded-xl shadow-lg text-[10px] space-y-2 z-10">
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-brand-green inline-block"></span>
+                <span class="text-white/80 font-bold">Online & Idle Driver</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span>
+                <span class="text-white/80 font-bold">Driver with active Delivery</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-primary inline-block"></span>
+                <span class="text-white/80 font-bold">Driver with active Ride</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let map;
+    let markers = {};
+    let polylines = {};
+    let infoWindow;
+    let pollInterval;
+
+    // Dark Map Style JSON
+    const darkMapStyle = [
+        { "elementType": "geometry", "stylers": [{ "color": "#0f172a" }] },
+        { "elementType": "labels.text.fill", "stylers": [{ "color": "#475569" }] },
+        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#020617" }] },
+        { "featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{ "color": "#334155" }] },
+        { "featureType": "administrative.land_parcel", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "administrative.neighborhood", "stylers": [{ "visibility": "off" }] },
+        { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+        { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#64748b" }] },
+        { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+        { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#334155" }] },
+        { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#94a3b8" }] },
+        { "featureType": "transit", "elementType": "geometry", "stylers": [{ "color": "#1e293b" }] },
+        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#020617" }] }
+    ];
+
+    function initMap() {
+        infoWindow = new google.maps.InfoWindow();
+        
+        // Initial map focus on standard central coordinates
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 5.6037, lng: -0.1870 }, // Accra default fallback
+            zoom: 13,
+            styles: darkMapStyle,
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: false,
+            scaleControl: true,
+            streetViewControl: false,
+            rotateControl: false,
+            fullscreenControl: true
+        });
+
+        // Start pulling real-time operations data
+        fetchOperationsData();
+        pollInterval = setInterval(fetchOperationsData, 5000);
+    }
+
+    async function fetchOperationsData() {
+        try {
+            const response = await fetch("{% url 'staff_portal:live_ops_data' %}");
+            const data = await response.json();
+            
+            // 1. Update stats panel
+            document.getElementById('statOnlineDrivers').textContent = data.stats.online_drivers;
+            document.getElementById('statActiveRides').textContent = data.stats.active_rides;
+            document.getElementById('statActiveDeliveries').textContent = data.stats.active_deliveries;
+            
+            const sosCount = data.stats.sos_alerts;
+            const sosText = document.getElementById('statSosAlerts');
+            const sosDot = document.getElementById('sosAlertStatDot');
+            const sosBlock = document.getElementById('sosAlertStatBlock');
+            
+            sosText.textContent = sosCount;
+            if (sosCount > 0) {
+                sosBlock.className = "flex items-center justify-between p-3 bg-red-950 border border-red-500 rounded-xl";
+                sosDot.className = "w-3 h-3 rounded-full bg-red-500 mr-3";
+                sosText.className = "text-lg font-outfit font-black text-red-500";
+            } else {
+                sosBlock.className = "flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl";
+                sosDot.className = "w-3 h-3 rounded-full bg-slate-600 mr-3";
+                sosText.className = "text-lg font-outfit font-black text-white";
+            }
+
+            // 2. Render / Update driver positions
+            updateDriverMarkers(data.drivers, data.rides, data.deliveries);
+
+            // 3. Render / Update active ride routes
+            updateRideRoutes(data.rides);
+
+        } catch (error) {
+            console.error("Error fetching live operations telemetry:", error);
+        }
+    }
+
+    function updateDriverMarkers(drivers, rides, deliveries) {
+        // Collect current driver IDs to prune offline ones later
+        const activeDriverIds = new Set();
+
+        drivers.forEach(driver => {
+            if (driver.lat === null || driver.lng === null) return;
+            
+            const id = driver.user_id;
+            activeDriverIds.add(id);
+            const pos = new google.maps.LatLng(driver.lat, driver.lng);
+
+            // Determine driver's operational status
+            let statusColor = "#A3E635"; // Default online/idle (lime green)
+            let statusLabel = "Available / Idle";
+            
+            const hasRide = rides.some(r => r.driver_name === driver.name);
+            const hasDelivery = deliveries.some(d => d.id === id); // mock check mapping
+            
+            if (hasRide) {
+                statusColor = "#00B4FF"; // Standard Ride color
+                statusLabel = "Active Trip";
+            } else if (hasDelivery) {
+                statusColor = "#F59E0B"; // Delivery color
+                statusLabel = "Courier delivery";
+            }
+
+            // Custom SVG arrow marker
+            const arrowSvg = {
+                path: 'M 0,-15 L -7,8 L 0,3 L 7,8 Z',
+                fillColor: statusColor,
+                fillOpacity: 1,
+                strokeColor: '#FFFFFF',
+                strokeWeight: 1.5,
+                scale: 1.2
+            };
+
+            if (markers[id]) {
+                // Smoothly update coordinate
+                markers[id].setPosition(pos);
+                markers[id].setIcon(arrowSvg);
+            } else {
+                // Create new marker
+                const marker = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    icon: arrowSvg,
+                    title: driver.name,
+                });
+
+                // Attach click listener for details
+                marker.addListener('click', () => {
+                    displayDriverTelemetry(driver, statusLabel, statusColor);
+                    
+                    infoWindow.setContent(`
+                        <div class="p-2 text-slate-900 text-xs font-sans min-w-[180px]">
+                            <a href="/portal/master/users/${driver.user_id}/" class="font-bold text-sm text-primary hover:underline block mb-1.5">${driver.name} ↗</a>
+                            <p class="text-slate-600">Status: <span class="font-bold" style="color: ${statusColor}">${statusLabel}</span></p>
+                            <p class="text-slate-600">Location: <span class="font-mono">${driver.lat.toFixed(5)}, ${driver.lng.toFixed(5)}</span></p>
+                            <p class="text-slate-600 font-semibold">Phone: ${driver.phone || 'N/A'}</p>
+                            <div class="mt-2 pt-1.5 border-t border-slate-100 flex justify-between">
+                                <a href="/portal/master/users/${driver.user_id}/" class="text-xs font-bold text-primary hover:underline">View History &amp; Profile →</a>
+                            </div>
+                        </div>
+                    `);
+                    infoWindow.open(map, marker);
+                });
+
+                markers[id] = marker;
+            }
+        });
+
+        // Remove markers for drivers who went offline
+        for (const id in markers) {
+            if (!activeDriverIds.has(id)) {
+                markers[id].setMap(null);
+                delete markers[id];
+            }
+        }
+    }
+
+    function updateRideRoutes(rides) {
+        const activeRideIds = new Set();
+
+        rides.forEach(ride => {
+            const id = ride.ride_id;
+            activeRideIds.add(id);
+
+            const pickup = new google.maps.LatLng(ride.pickup_lat, ride.pickup_lng);
+            const dropoff = new google.maps.LatLng(ride.dropoff_lat, ride.dropoff_lng);
+
+            if (polylines[id]) {
+                // Route polyline is already rendered, update path coordinates if needed
+                polylines[id].setPath([pickup, dropoff]);
+            } else {
+                // Draw a direct line (as the crow flies) or route polyline between coordinates
+                const polyline = new google.maps.Polyline({
+                    path: [pickup, dropoff],
+                    geodesic: true,
+                    strokeColor: '#00B4FF',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 4,
+                    map: map
+                });
+
+                // Clicking route highlights trip telemetry details
+                polyline.addListener('click', (e) => {
+                    displayRideTelemetry(ride);
+                    infoWindow.setPosition(e.latLng);
+                    infoWindow.setContent(`
+                        <div class="p-2 text-slate-900 text-xs font-sans">
+                            <h4 class="font-bold text-sm text-primary-dark">Ride #${id.substring(0,8)}</h4>
+                            <p class="text-slate-600">Passenger: ${ride.rider_name}</p>
+                            <p class="text-slate-600">Driver: ${ride.driver_name}</p>
+                            <p class="text-slate-600 font-bold">Fare: GHS ${ride.fare.toFixed(2)}</p>
+                        </div>
+                    `);
+                    infoWindow.open(map);
+                });
+
+                polylines[id] = polyline;
+            }
+        });
+
+        // Prune completed or canceled ride polylines
+        for (const id in polylines) {
+            if (!activeRideIds.has(id)) {
+                polylines[id].setMap(null);
+                delete polylines[id];
+            }
+        }
+    }
+
+    function displayDriverTelemetry(driver, statusLabel, statusColor) {
+        const detailBlock = document.getElementById('telemetryDetail');
+        detailBlock.innerHTML = `
+            <div class="space-y-4">
+                <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+                    <a href="/portal/master/users/${driver.user_id}/" class="font-outfit font-black text-sm text-primary hover:underline" title="Click to view history">${driver.name} ↗</a>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold text-black" style="background-color: ${statusColor}">${statusLabel}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-[11px]">
+                    <div>
+                        <span class="text-white/40 block">USER ID</span>
+                        <span class="font-mono text-white/90">${driver.user_id.substring(0, 8)}...</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">PHONE NUMBER</span>
+                        <span class="text-white/90 font-bold">${driver.phone || 'No phone'}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">COURIER OPT-IN</span>
+                        <span class="text-white/90 font-bold">${driver.receive_deliveries ? 'YES' : 'NO'}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">LATITUDE</span>
+                        <span class="font-mono text-white/90">${driver.lat.toFixed(6)}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">LONGITUDE</span>
+                        <span class="font-mono text-white/90">${driver.lng.toFixed(6)}</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <a href="/portal/master/users/${driver.user_id}/" class="flex-grow text-center bg-primary hover:bg-primary-dark text-slate-950 font-bold py-2 rounded-lg text-[10px] uppercase tracking-wider transition-all decoration-none">
+                        View Full History
+                    </a>
+                    <button class="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-2 rounded-lg text-[10px] uppercase transition-all" onclick="alert('Contacting driver...')">
+                        Contact
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function displayRideTelemetry(ride) {
+        const detailBlock = document.getElementById('telemetryDetail');
+        detailBlock.innerHTML = `
+            <div class="space-y-4">
+                <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+                    <span class="font-outfit font-black text-sm text-white">Ride #${ride.ride_id.substring(0, 8)}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary text-black uppercase">${ride.status}</span>
+                </div>
+                <div class="space-y-3 text-[11px]">
+                    <div>
+                        <span class="text-white/40 block">PASSENGER</span>
+                        <span class="text-white/90 font-bold">${ride.rider_name}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">ASSIGNED DRIVER</span>
+                        <span class="text-white/90 font-bold">${ride.driver_name}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">PICKUP ADDRESS</span>
+                        <span class="text-white/80">${ride.pickup}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">DROPOFF ADDRESS</span>
+                        <span class="text-white/80">${ride.dropoff}</span>
+                    </div>
+                    <div>
+                        <span class="text-white/40 block">ESTIMATED FARE</span>
+                        <span class="text-primary font-bold text-sm">GHS ${ride.fare.toFixed(2)}</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button class="flex-1 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-500 font-bold py-2 rounded-lg text-[10px] uppercase tracking-wider transition-all" onclick="alert('Initiating forced recovery for ride ${ride.ride_id.substring(0,8)}')">
+                        Force-Reassign Trip
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&v=weekly"></script>
+{% endblock %}

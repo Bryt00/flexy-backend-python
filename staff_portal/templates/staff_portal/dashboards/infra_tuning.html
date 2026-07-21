@@ -1,0 +1,155 @@
+{% extends 'staff_portal/base.html' %}
+
+{% block title %}Cluster Health & Dispatch Tuning - FlexyRide Headquarters{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Summary -->
+    <div>
+        <h1 class="text-2xl font-outfit font-black tracking-widest text-white uppercase">Cluster Health & Dispatch Tuning</h1>
+        <p class="text-xs text-white/50 uppercase tracking-widest mt-1">Manage dynamic matchmaking algorithms and monitor backend cluster telemetry</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Dispatch Tuning Rules Form -->
+        <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800 lg:col-span-1">
+            <div class="flex items-center space-x-2 mb-6">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                <h3 class="text-sm font-outfit font-black tracking-widest text-primary uppercase">Dispatch Calibration</h3>
+            </div>
+
+            <form method="POST" action="{% url 'staff_portal:infra_tuning' %}" class="space-y-5">
+                {% csrf_token %}
+                
+                <!-- Initial Search Radius -->
+                <div>
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Initial Search Radius (km)</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" name="dispatch_initial_radius" min="0.5" max="5.0" step="0.1" value="{{ dispatch_settings.dispatch_initial_radius }}" oninput="this.nextElementSibling.value = this.value" class="w-full accent-primary bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        <output class="text-xs font-mono font-bold text-primary w-8 text-right">{{ dispatch_settings.dispatch_initial_radius }}</output>
+                    </div>
+                </div>
+
+                <!-- Radius Step Increment -->
+                <div>
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Radius Step Increment (km)</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" name="dispatch_radius_step" min="0.5" max="3.0" step="0.1" value="{{ dispatch_settings.dispatch_radius_step }}" oninput="this.nextElementSibling.value = this.value" class="w-full accent-primary bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        <output class="text-xs font-mono font-bold text-primary w-8 text-right">{{ dispatch_settings.dispatch_radius_step }}</output>
+                    </div>
+                </div>
+
+                <!-- Maximum Search Radius -->
+                <div>
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-wider mb-2">Maximum Search Radius (km)</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="range" name="dispatch_max_radius" min="3.0" max="15.0" step="0.5" value="{{ dispatch_settings.dispatch_max_radius }}" oninput="this.nextElementSibling.value = this.value" class="w-full accent-primary bg-slate-950 h-1.5 rounded-lg appearance-none cursor-pointer">
+                        <output class="text-xs font-mono font-bold text-primary w-8 text-right">{{ dispatch_settings.dispatch_max_radius }}</output>
+                    </div>
+                </div>
+
+                <!-- Driver Response Timeout -->
+                <div>
+                    <label class="block text-xs font-bold text-white/70 uppercase tracking-wider mb-1.5">Driver Accept Timeout (seconds)</label>
+                    <input type="number" name="dispatch_driver_timeout" min="10" max="60" value="{{ dispatch_settings.dispatch_driver_timeout }}" class="cyber-input w-full py-2 px-3 rounded bg-black/50 border border-slate-700 text-white text-sm focus:border-primary focus:outline-none font-mono">
+                    <span class="text-[9px] text-white/40 mt-1 block">Maximum seconds a driver has to accept a ride request before it shifts to the next driver.</span>
+                </div>
+
+                <!-- Save Trigger -->
+                <button type="submit" class="w-full cyber-button text-xs py-2.5 uppercase tracking-widest mt-4">
+                    Save Config Settings
+                </button>
+            </form>
+        </div>
+
+        <!-- Right: Infrastructure Cluster Monitors -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- DB Standby Replication Monitor -->
+            <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-brand-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                        <h3 class="text-sm font-outfit font-black tracking-widest text-brand-green uppercase">Database Replication Health</h3>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-[#0F2D1F] text-brand-green border border-brand-green/20 uppercase">
+                        5 Standby Nodes
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-[11px] text-left border-collapse text-white/80">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-white/40 font-bold uppercase tracking-wider text-[9px]">
+                                <th class="py-2.5">Replica Instance IP</th>
+                                <th class="py-2.5">Sync State</th>
+                                <th class="py-2.5">Sent LSN</th>
+                                <th class="py-2.5">Replay LSN</th>
+                                <th class="py-2.5 text-right">Replay Lag</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-850">
+                            {% for rep in replicas %}
+                            <tr class="hover:bg-slate-950/40 transition-colors">
+                                <td class="py-3 font-mono font-bold text-white">{{ rep.ip }}</td>
+                                <td class="py-3">
+                                    <span class="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase {% if rep.state == 'streaming' %}bg-[#0F2D1F] text-brand-green{% else %}bg-orange-500/10 text-orange-500{% endif %}">
+                                        {{ rep.state }}
+                                    </span>
+                                </td>
+                                <td class="py-3 font-mono text-white/60">{{ rep.sent }}</td>
+                                <td class="py-3 font-mono text-white/60">{{ rep.replay }}</td>
+                                <td class="py-3 text-right font-mono {% if rep.lag_bytes > 0 %}text-orange-500 font-bold{% else %}text-brand-green{% endif %}">
+                                    {% if rep.lag_bytes > 0 %}{{ rep.lag_bytes }} bytes{% else %}✓ Synced{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Celery Workers & Queue Monitor -->
+            <div class="solid-panel rounded-2xl p-6 bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        <h3 class="text-sm font-outfit font-black tracking-widest text-purple-400 uppercase">Queue Broker & Celery Telemetry</h3>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-[#1A102F] text-purple-400 border border-purple-400/20 uppercase">
+                        RabbitMQ Broker
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {% for q in celery_queues %}
+                    <div class="p-4 bg-slate-950 border border-slate-850 rounded-xl relative overflow-hidden">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] text-white/40 block font-bold uppercase tracking-wider">Queue Name</span>
+                                <span class="text-xs font-bold text-white font-mono">{{ q.name }}</span>
+                            </div>
+                            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-[#0F2D1F] text-brand-green border border-brand-green/20 uppercase">
+                                {{ q.status }}
+                            </span>
+                        </div>
+                        
+                        <div class="mt-4 grid grid-cols-2 gap-2 text-[10px]">
+                            <div>
+                                <span class="text-white/40 block">Workers</span>
+                                <span class="text-white font-bold text-sm">{{ q.active_workers }}</span>
+                            </div>
+                            <div>
+                                <span class="text-white/40 block">Backlog</span>
+                                <span class="font-bold text-sm {% if q.backlog_size > 0 %}text-orange-500 animate-pulse{% else %}text-white{% endif %}">{{ q.backlog_size }}</span>
+                            </div>
+                        </div>
+                        <!-- Progress Underline visual indicator -->
+                        <div class="absolute bottom-0 left-0 right-0 h-1 {% if q.backlog_size > 0 %}bg-orange-500{% else %}bg-brand-green{% endif %}"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

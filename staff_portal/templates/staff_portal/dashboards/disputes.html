@@ -1,46 +1,110 @@
 {% extends 'staff_portal/base.html' %}
 
+{% block title %}Safety & Incident Log — FlexyRide Portal{% endblock %}
+
 {% block content %}
-<div class="mb-8">
-    <h2 class="text-3xl font-outfit font-bold tracking-tight text-red-500">Active Disputes (SOS)</h2>
-    <p class="text-white/50 mt-1">Review and manage active emergency and dispute alerts.</p>
+<div class="mb-8 flex items-start justify-between">
+    <div>
+        <h2 class="text-3xl font-outfit font-bold tracking-tight text-red-400">Safety &amp; Incident Log</h2>
+        <p class="text-white/50 mt-1 text-sm">Real-time SOS alerts and automated anomaly reports. Click any row to view details.</p>
+    </div>
+    <div class="flex items-center gap-2 mt-1">
+        <a href="?status=ACTIVE" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors {% if status_filter == 'ACTIVE' or not status_filter %}bg-red-600 border-red-600 text-white{% else %}bg-transparent border-white/10 text-white/50 hover:text-white hover:border-white/30{% endif %}">
+            Active <span class="ml-1 bg-white/20 px-1.5 py-0.5 rounded-full">{{ active_count }}</span>
+        </a>
+        <a href="?status=ALL" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors {% if status_filter == 'ALL' %}bg-slate-700 border-slate-600 text-white{% else %}bg-transparent border-white/10 text-white/50 hover:text-white hover:border-white/30{% endif %}">
+            All Time <span class="ml-1 bg-white/20 px-1.5 py-0.5 rounded-full">{{ total_count }}</span>
+        </a>
+    </div>
 </div>
 
-<div class="glass-panel rounded-2xl overflow-hidden border border-red-500/20">
-    <div class="p-6 border-b border-white/10 flex justify-between items-center bg-red-500/5">
-        <h3 class="text-lg font-outfit font-bold text-red-400">Critical Alerts</h3>
+<div class="rounded-xl overflow-hidden border border-red-500/20" style="background:#0a0f19">
+    <div class="px-6 py-4 border-b border-white/5 flex items-center gap-3" style="background:rgba(239,68,68,0.05)">
+        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+        <h3 class="text-sm font-outfit font-bold text-red-400 uppercase tracking-widest">
+            {% if status_filter == 'ALL' %}All Incidents{% else %}Active Incidents{% endif %}
+        </h3>
     </div>
-    
+
     <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-            <thead class="bg-white/5 text-white/50 uppercase tracking-widest text-xs">
-                <tr>
-                    <th class="px-6 py-4 font-bold">Type</th>
-                    <th class="px-6 py-4 font-bold">Reporter</th>
-                    <th class="px-6 py-4 font-bold">Ride ID</th>
-                    <th class="px-6 py-4 font-bold">Status</th>
-                    <th class="px-6 py-4 font-bold text-right">Time</th>
+            <thead style="background:rgba(255,255,255,0.03)">
+                <tr class="text-white/30 uppercase tracking-widest text-[10px]">
+                    <th class="px-5 py-3 font-black">Type</th>
+                    <th class="px-5 py-3 font-black">Reporter</th>
+                    <th class="px-5 py-3 font-black">Description</th>
+                    <th class="px-5 py-3 font-black">Ride</th>
+                    <th class="px-5 py-3 font-black">Status</th>
+                    <th class="px-5 py-3 font-black text-right">Time</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-white/5">
+            <tbody>
                 {% for incident in incidents %}
-                <tr onclick="window.location='{% url 'staff_portal:dispute_detail' incident.id %}'" class="hover:bg-red-500/10 transition-colors cursor-pointer">
-                    <td class="px-6 py-4 font-bold text-red-500">{{ incident.type }}</td>
-                    <td class="px-6 py-4 font-bold text-white">{{ incident.reporter.email }}</td>
-                    <td class="px-6 py-4 text-white/70 font-mono text-xs">{{ incident.ride.id|stringformat:"s"|slice:":8" }}...</td>
-                    <td class="px-6 py-4">
-                        <span class="status-pill status-pill-error animate-pulse">Needs Action</span>
+                <tr onclick="window.location='{% url 'staff_portal:dispute_detail' incident.id %}'"
+                    class="border-t border-white/5 cursor-pointer transition-colors hover:bg-red-500/5 group">
+
+                    <!-- Type -->
+                    <td class="px-5 py-3">
+                        {% if incident.type == 'SOS' %}
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-red-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-500 {% if incident.status == 'ACTIVE' %}animate-pulse{% endif %}"></span>
+                            SOS
+                        </span>
+                        {% else %}
+                        <span class="text-[10px] font-black uppercase tracking-widest text-amber-400">{{ incident.type }}</span>
+                        {% endif %}
                     </td>
-                    <td class="px-6 py-4 text-white/50 text-right">{{ incident.created_at|timesince }} ago</td>
+
+                    <!-- Reporter -->
+                    <td class="px-5 py-3">
+                        <span class="font-mono text-xs text-white/70">{{ incident.reporter.email|default:"System" }}</span>
+                        {% if incident.reporter.role %}
+                        <span class="block text-[9px] text-white/30 uppercase tracking-wider mt-0.5">{{ incident.reporter.role }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Description (truncated) -->
+                    <td class="px-5 py-3 max-w-[220px]">
+                        <span class="text-xs text-white/60 italic line-clamp-2">{{ incident.description|truncatechars:80 }}</span>
+                    </td>
+
+                    <!-- Ride ID -->
+                    <td class="px-5 py-3">
+                        {% if incident.ride %}
+                        <span class="font-mono text-[10px] text-white/40">{{ incident.ride.id|stringformat:"s"|slice:":8" }}…</span>
+                        {% else %}
+                        <span class="text-white/20 text-xs">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td class="px-5 py-3">
+                        {% if incident.status == 'ACTIVE' %}
+                        <span class="inline-block text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md" style="background:#1c0000;color:#f87171;border:1px solid #991b1b">
+                            ● Needs Action
+                        </span>
+                        {% elif incident.status == 'RESOLVED' %}
+                        <span class="inline-block text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md" style="background:#0f1c0f;color:#86efac;border:1px solid #166534">
+                            ✓ Resolved
+                        </span>
+                        {% else %}
+                        <span class="text-white/30 text-xs">{{ incident.status }}</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Time -->
+                    <td class="px-5 py-3 text-right">
+                        <span class="text-[10px] text-white/40 font-mono">{{ incident.created_at|timesince }} ago</span>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-white/50">
-                        <div class="w-12 h-12 rounded-full bg-brand-green/10 text-brand-green flex items-center justify-center mx-auto mb-3">
+                    <td colspan="6" class="px-6 py-16 text-center">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style="background:rgba(163,230,53,0.1);color:#a3e635">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         </div>
-                        <p class="font-bold uppercase tracking-widest text-xs text-brand-green">All Clear</p>
-                        <p class="mt-1">No active disputes or SOS alerts.</p>
+                        <p class="font-black uppercase tracking-widest text-xs text-green-400">All Clear</p>
+                        <p class="mt-1 text-white/40 text-xs">No active safety incidents or SOS alerts.</p>
                     </td>
                 </tr>
                 {% endfor %}

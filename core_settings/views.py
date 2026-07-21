@@ -28,20 +28,48 @@ class DeliveryCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DeliveryCategorySerializer
     permission_classes = [permissions.AllowAny]
 
+    def list(self, request, *args, **kwargs):
+        return cached_api_response(
+            request, prefix='delivery_categories', timeout=1800,
+            fetcher=lambda: super(DeliveryCategoryViewSet, self).list(request, *args, **kwargs),
+            per_user=False, global_cache=True
+        )
+
 class DeliveryWeightTierViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DeliveryWeightTier.objects.filter(is_active=True)
     serializer_class = DeliveryWeightTierSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        return cached_api_response(
+            request, prefix='delivery_weight_tiers', timeout=1800,
+            fetcher=lambda: super(DeliveryWeightTierViewSet, self).list(request, *args, **kwargs),
+            per_user=False, global_cache=True
+        )
 
 class DeliveryVehicleTypeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DeliveryVehicleType.objects.filter(is_active=True)
     serializer_class = DeliveryVehicleTypeSerializer
     permission_classes = [permissions.AllowAny]
 
+    def list(self, request, *args, **kwargs):
+        return cached_api_response(
+            request, prefix='delivery_vehicle_types', timeout=1800,
+            fetcher=lambda: super(DeliveryVehicleTypeViewSet, self).list(request, *args, **kwargs),
+            per_user=False, global_cache=True
+        )
+
 class ServiceAreaViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ServiceArea.objects.filter(is_active=True)
     serializer_class = ServiceAreaSerializer
     permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        return cached_api_response(
+            request, prefix='service_areas', timeout=1800,
+            fetcher=lambda: super(ServiceAreaViewSet, self).list(request, *args, **kwargs),
+            per_user=False, global_cache=True
+        )
 
 class VehicleCategoryViewSet(viewsets.ModelViewSet):
     queryset = VehicleCategory.objects.all().order_by('slug')

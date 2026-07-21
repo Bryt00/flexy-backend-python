@@ -37,7 +37,7 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-USE_GIS = False
+USE_GIS = env.bool('USE_GIS', default=True)
 
 INSTALLED_APPS = [
     'daphne',

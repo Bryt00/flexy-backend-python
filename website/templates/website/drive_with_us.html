@@ -8,28 +8,39 @@
     <div class="flex flex-col lg:flex-row gap-16 items-start">
         
         <div class="flex-1">
-            <h1 class="text-5xl font-bold mb-6 leading-tight">Turn Your Drive Into Profit</h1>
-            <p class="text-gray-400 text-lg mb-10 leading-relaxed">Drive on your schedule, earn competitive rates, and get paid instantly. FlexyRide is the partner you need to grow your transport business.</p>
+            <h1 class="text-5xl font-bold mb-6 leading-tight">{{ hero.title|default:"Turn Your Drive Into Profit" }}</h1>
+            <p class="text-gray-400 text-lg mb-10 leading-relaxed">{{ hero.subtitle|default:"Drive on your schedule, earn competitive rates, and get paid instantly. FlexyRide is the partner you need to grow your transport business." }}</p>
             
             <div class="space-y-4 mb-12">
-                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                    <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                        <i data-lucide="check" class="w-5 h-5"></i>
+                {% if benefits %}
+                    {% for benefit in benefits %}
+                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </div>
+                        {{ benefit.title }}
                     </div>
-                    Keep 85% of your fares
-                </div>
-                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                    <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                        <i data-lucide="check" class="w-5 h-5"></i>
+                    {% endfor %}
+                {% else %}
+                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </div>
+                        Keep 85% of your fares
                     </div>
-                    Instant daily payouts
-                </div>
-                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                    <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                        <i data-lucide="check" class="w-5 h-5"></i>
+                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </div>
+                        Instant daily payouts
                     </div>
-                    24/7 dedicated driver support
-                </div>
+                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </div>
+                        24/7 dedicated driver support
+                    </div>
+                {% endif %}
             </div>
             
             {% if site_settings.driver_download_url %}

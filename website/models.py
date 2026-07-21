@@ -178,6 +178,11 @@ class WebsiteSettings(models.Model):
     def __str__(self):
         return "Global Website Settings"
 
+    @property
+    def driver_download_url(self):
+        return self.driver_play_store_url or self.driver_app_store_url
+
+
 
 class BrandFeature(models.Model):
     title = models.CharField(max_length=100)
@@ -248,6 +253,7 @@ class HeroBanner(models.Model):
         ('safety', 'Safety'),
         ('careers', 'Careers'),
         ('contact', 'Contact'),
+        ('drive_with_us', 'Drive With Us'),
     ]
     page_name = models.CharField(max_length=50, choices=PAGE_CHOICES, unique=True)
     title = models.CharField(max_length=255)
@@ -259,3 +265,17 @@ class HeroBanner(models.Model):
 
     def __str__(self):
         return f"Hero: {self.get_page_name_display()}"
+
+
+class DriverBenefit(models.Model):
+    title = models.CharField(max_length=255)
+    order = models.IntegerField(default=0, help_text='Lower number = shown first')
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "Driver Benefit"
+        verbose_name_plural = "Driver Benefits"
+
+    def __str__(self):
+        return self.title
+

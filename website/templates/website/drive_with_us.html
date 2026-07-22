@@ -4,94 +4,198 @@
 {% block title %}Drive With Us | FlexyRide{% endblock %}
 
 {% block content %}
-<section class="container animate-fade-in mb-32">
+<section class="container animate-fade-in mb-12">
     <div class="flex flex-col lg:flex-row gap-16 items-start">
-        
+
         <div class="flex-1">
-            <h1 class="text-5xl font-bold mb-6 leading-tight">{{ hero.title|default:"Turn Your Drive Into Profit" }}</h1>
-            <p class="text-gray-400 text-lg mb-10 leading-relaxed">{{ hero.subtitle|default:"Drive on your schedule, earn competitive rates, and get paid instantly. FlexyRide is the partner you need to grow your transport business." }}</p>
-            
+            <h1 class="text-5xl font-bold mb-6 leading-tight">{{ hero.title|default:"Turn Your Drive Into Profit" }}
+            </h1>
+            <p class="text-gray-400 text-lg mb-10 leading-relaxed">{{ hero.subtitle|default:"Drive on your schedule,
+                earn competitive rates, and get paid instantly. FlexyRide is the partner you need to grow your transport
+                business." }}</p>
+
             <div class="space-y-4 mb-12">
                 {% if benefits %}
-                    {% for benefit in benefits %}
-                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                        </div>
-                        {{ benefit.title }}
+                {% for benefit in benefits %}
+                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                    <div
+                        class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                        <i data-lucide="check" class="w-5 h-5"></i>
                     </div>
-                    {% endfor %}
+                    {{ benefit.title }}
+                </div>
+                {% endfor %}
                 {% else %}
-                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                        </div>
-                        Keep 85% of your fares
+                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                    <div
+                        class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                        <i data-lucide="check" class="w-5 h-5"></i>
                     </div>
-                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                        </div>
-                        Instant daily payouts
+                    Keep 85% of your fares
+                </div>
+                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                    <div
+                        class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                        <i data-lucide="check" class="w-5 h-5"></i>
                     </div>
-                    <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
-                        <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
-                            <i data-lucide="check" class="w-5 h-5"></i>
-                        </div>
-                        24/7 dedicated driver support
+                    Instant daily payouts
+                </div>
+                <div class="flex items-center gap-4 text-lg text-gray-300 font-medium">
+                    <div
+                        class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center border border-brand/20">
+                        <i data-lucide="check" class="w-5 h-5"></i>
                     </div>
+                    24/7 dedicated driver support
+                </div>
                 {% endif %}
             </div>
-            
+
             {% if site_settings.driver_download_url %}
-            <a href="{{ site_settings.driver_download_url }}" class="btn btn-primary px-12 py-5 text-lg flex items-center justify-center gap-2 group w-full sm:w-auto" target="_blank">
-                Sign Up to Drive <i data-lucide="arrow-right" class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
+            <a href="{{ site_settings.driver_download_url }}"
+                class="btn btn-primary px-12 py-5 text-lg flex items-center justify-center gap-2 group w-full sm:w-auto"
+                target="_blank">
+                Sign Up to Drive <i data-lucide="arrow-right"
+                    class="w-5 h-5 transition-transform group-hover:translate-x-1"></i>
             </a>
             {% else %}
-            <div class="inline-block px-6 py-3 rounded-2xl bg-brand/10 border border-brand/20 text-brand text-lg font-bold uppercase tracking-widest">
-                 🚀 Launching Soon
+            <div
+                class="inline-flex items-center px-6 py-3 rounded-2xl bg-brand/10 border border-brand/20 text-brand text-lg font-bold uppercase tracking-widest">
+                <i data-lucide="rocket" class="w-5 h-5 mr-2"></i> Launching Soon
             </div>
             {% endif %}
         </div>
-        
+
         <!-- Driver earnings calculator -->
         <div class="flex-1 w-full flex justify-center lg:justify-end">
             <div class="ui-card p-10 lg:p-12 relative overflow-hidden max-w-xl bg-dark-900 border-white/5 shadow-none">
-            <h3 class="text-3xl font-black mb-2">Earnings Estimator</h3>
-            <p class="text-gray-500 mb-10">See how much you could make per week.</p>
-            
-            <div class="space-y-8">
-                <div class="space-y-3">
-                    <label class="form-label" for="calc-city">Your City</label>
-                    <div class="relative">
-                        <select id="calc-city" class="form-input appearance-none">
-                            {% for city in cities %}
-                            <option value="{{ city.name|lower }}">{{ city.name }}</option>
-                            {% empty %}
-                            <option value="accra">Accra</option>
-                            <option value="kumasi">Kumasi</option>
-                            <option value="tamale">Tamale</option>
-                            {% endfor %}
-                        </select>
-                        <i data-lucide="chevron-down" class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"></i>
+                <h3 class="text-3xl font-black mb-2">Earnings Estimator</h3>
+                <p class="text-gray-500 mb-10">See how much you could make per week.</p>
+
+                <div class="space-y-8">
+                    <div class="space-y-3">
+                        <label class="form-label" for="calc-city">Your City</label>
+                        <div class="relative">
+                            <select id="calc-city" class="form-input appearance-none">
+                                {% for city in cities %}
+                                <option value="{{ city.name|lower }}">{{ city.name }}</option>
+                                {% empty %}
+                                <option value="accra">Accra</option>
+                                <option value="kumasi">Kumasi</option>
+                                <option value="tamale">Tamale</option>
+                                {% endfor %}
+                            </select>
+                            <i data-lucide="chevron-down"
+                                class="absolute right-5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"></i>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <label class="form-label" for="calc-hours">Hours per week</label>
-                        <div class="text-brand font-black text-xl" id="hours-display">40 hours</div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="form-label" for="calc-hours">Hours per week</label>
+                            <div class="text-brand font-black text-xl" id="hours-display">40 hours</div>
+                        </div>
+                        <input type="range" id="calc-hours" min="5" max="60" value="40" step="1"
+                            class="w-full h-2 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-brand">
                     </div>
-                    <input type="range" id="calc-hours" min="5" max="60" value="40" step="1" class="w-full h-2 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-brand">
-                </div>
-                
-                <div class="bg-brand/10 border border-brand/20 rounded-3xl p-10 text-center mt-12 transition-all duration-500 hover:border-brand/40">
-                    <span class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 block mb-3">Estimated Weekly Earnings</span>
-                    <h2 id="earnings-result" class="text-6xl font-black text-brand mb-0 tracking-tighter">GH₵ 1,200</h2>
+
+                    <div
+                        class="bg-brand/10 border border-brand/20 rounded-3xl p-10 text-center mt-12 transition-all duration-500 hover:border-brand/40">
+                        <span class="text-xs font-black uppercase tracking-[0.2em] text-gray-500 block mb-3">Estimated
+                            Weekly Earnings</span>
+                        <h2 id="earnings-result" class="text-6xl font-black text-brand mb-0 tracking-tighter">GH₵ 1,200
+                        </h2>
+                    </div>
                 </div>
             </div>
+
+        </div>
+</section>
+
+<!-- Passenger Benefits Section -->
+<section class="container animate-fade-in mb-16">
+    <div class="text-center mb-10">
+        <div
+            class="inline-block px-4 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-sm font-bold uppercase tracking-widest mb-4">
+            Passenger Benefits
+        </div>
+        <h2 class="text-4xl md:text-5xl font-bold mb-4">Why Passengers Choose FlexyRide</h2>
+        <p class="text-gray-400 max-w-2xl mx-auto text-lg">Every driver partner helps deliver exceptional, safe, and
+            reliable experiences for riders across Ghana.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {% if passenger_benefits %}
+        {% for benefit in passenger_benefits %}
+        <div class="ui-card p-8 hover:border-brand/30 transition-colors group">
+            <div
+                class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors">
+                <i data-lucide="{{ benefit.icon_name|default:'shield-check' }}" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3 group-hover:text-brand transition-colors">{{ benefit.title }}</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">{{ benefit.description }}</p>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="ui-card p-8 hover:border-brand/30 transition-colors group">
+            <div
+                class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors">
+                <i data-lucide="shield-check" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3 group-hover:text-brand transition-colors">Top Safety Standards</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Background-checked drivers, real-time GPS tracking, and
+                in-app SOS support guarantee complete peace of mind.</p>
         </div>
 
+        <div class="ui-card p-8 hover:border-brand/30 transition-colors group">
+            <div
+                class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors">
+                <i data-lucide="clock" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3 group-hover:text-brand transition-colors">Fast 3-Min Pickups</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Smart driver matching ensures passengers get picked up
+                within minutes, anywhere in the city.</p>
+        </div>
+
+        <div class="ui-card p-8 hover:border-brand/30 transition-colors group">
+            <div
+                class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors">
+                <i data-lucide="banknote" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3 group-hover:text-brand transition-colors">Affordable Fares</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Upfront pricing with no surprise charges. Flexible payment
+                options via cash, wallet, or mobile money.</p>
+        </div>
+
+        <div class="ui-card p-8 hover:border-brand/30 transition-colors group">
+            <div
+                class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors">
+                <i data-lucide="star" class="w-7 h-7"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-3 group-hover:text-brand transition-colors">5-Star Quality</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Well-maintained vehicles and professional drivers committed
+                to delivering comfortable, premium rides.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Passenger CTA Banner -->
+<section class="container animate-fade-in mb-20">
+    <div
+        class="ui-card p-12 md:p-16 border-brand/20 bg-gradient-to-r from-brand/10 via-dark-800 to-dark-800 flex flex-col md:flex-row items-center justify-between gap-8">
+        <div class="space-y-4 max-w-xl text-center md:text-left">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/20 text-brand text-xs font-bold uppercase tracking-wider">
+                <i data-lucide="user" class="w-3.5 h-3.5"></i> Looking for a Ride?
+            </div>
+            <h3 class="text-3xl font-bold text-white">Not a driver? Ride with FlexyRide today!</h3>
+            <p class="text-gray-400 leading-relaxed">Enjoy comfortable, affordable, and safe rides across town at the
+                tap of a button.</p>
+        </div>
+        <a href="{% url 'download' %}"
+            class="btn btn-primary px-10 py-4 text-lg whitespace-nowrap shadow-lg shadow-brand/10 flex items-center gap-2">
+            Get Passenger App <i data-lucide="arrow-right" class="w-5 h-5"></i>
+        </a>
     </div>
 </section>
 
@@ -111,9 +215,9 @@
         const city = citySelect.value || 'accra';
         const hours = parseInt(calcHours.value);
         const rate = baseHourlyRate[city] || 30;
-        
+
         const total = hours * rate;
-        
+
         hoursDisplay.textContent = hours + ' hours';
         earningsResult.textContent = 'GH₵ ' + total.toLocaleString();
     }

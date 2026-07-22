@@ -629,6 +629,11 @@ UNFOLD = {
                         "link": "/headquarters/website/brandfeature/",
                     },
                     {
+                        "title": "Passenger Benefits",
+                        "icon": "verified",
+                        "link": "/headquarters/website/passengerbenefit/",
+                    },
+                    {
                         "title": "Website Global Settings",
                         "icon": "tune",
                         "link": "/headquarters/website/websitesettings/",

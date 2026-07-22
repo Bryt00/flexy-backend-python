@@ -69,7 +69,7 @@
                         {% endif %}
 
                         {% if booking.status == 'REJECTED' %}
-                            <span class="text-xs text-red-400 font-bold ml-2">— {{ booking.rejection_reason }}</span>
+                            <span class="text-xs text-red-400 font-bold ml-2">&mdash; {{ booking.rejection_reason }}</span>
                         {% endif %}
 
                         <a href="{% url 'advertise_preview' %}?token={{ current_token }}&ad_id={{ booking.id }}" 

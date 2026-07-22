@@ -2,7 +2,7 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import (
     BlogPost, ContactInquiry, City, Testimonial, FAQItem, JobOpening,
-    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit
+    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit, PassengerBenefit
 )
 
 @admin.register(WebsiteSettings)
@@ -54,6 +54,12 @@ class DriverBenefitAdmin(ModelAdmin):
     list_per_page = 20
     list_display = ('title', 'order')
     list_editable = ('order',)
+
+@admin.register(PassengerBenefit)
+class PassengerBenefitAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('title', 'icon_name', 'order', 'is_active')
+    list_editable = ('order', 'is_active')
 
 @admin.register(BlogPost)
 class BlogPostAdmin(ModelAdmin):

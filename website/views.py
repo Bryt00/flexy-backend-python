@@ -7,7 +7,7 @@ from django import forms
 from django.db.models import Q
 from .models import (
     BlogPost, City, ContactInquiry, Testimonial, FAQItem, JobOpening,
-    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit
+    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit, PassengerBenefit
 )
 
 from django.core.cache import cache
@@ -101,6 +101,7 @@ class DriveWithUsView(TemplateView):
         context['cities'] = City.objects.filter(is_active=True).order_by('name')
         context['hero'] = HeroBanner.objects.filter(page_name='drive_with_us').first()
         context['benefits'] = list(DriverBenefit.objects.all())
+        context['passenger_benefits'] = list(PassengerBenefit.objects.filter(is_active=True))
         return context
 
 @method_decorator(cache_page(60 * 15), name='dispatch')

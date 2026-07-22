@@ -2,13 +2,23 @@
 {% load static %}
 
 {% block title %}FAQ | FlexyRide{% endblock %}
-{% block meta_description %}Got questions? Find answers to the most common questions about FlexyRide â€” for riders, drivers, payments, and safety.{% endblock %}
+{% block meta_description %}Got questions? Find answers to the most common questions about FlexyRide &mdash; for riders, drivers, payments, and safety.{% endblock %}
 {% block og_title %}FAQ | FlexyRide{% endblock %}
-{% block og_description %}Got questions? Find answers to the most common questions about FlexyRide â€” for riders, drivers, payments, and safety.{% endblock %}
+{% block og_description %}Got questions? Find answers to the most common questions about FlexyRide &mdash; for riders, drivers, payments, and safety.{% endblock %}
+
+{% block extra_css %}
+<style>
+.faq-hero {
+    background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <!-- Hero -->
-<section class="relative py-24 flex items-center overflow-hidden text-center" style="background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+<section class="faq-hero relative py-24 flex items-center overflow-hidden text-center">
     <div class="container animate-fade-in">
         <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Got Questions?</h1>
         <p class="text-xl text-gray-400 max-w-2xl mx-auto">Everything you need to know about riding and driving with FlexyRide.</p>
@@ -72,7 +82,7 @@ function toggleFAQ(btn) {
     const icon = btn.querySelector('.faq-icon');
     const isOpen = !answer.classList.contains('hidden');
     answer.classList.toggle('hidden', isOpen);
-    icon.textContent = isOpen ? '+' : 'âˆ’';
+    icon.textContent = isOpen ? '+' : '-';
     icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(45deg)';
     btn.setAttribute('aria-expanded', String(!isOpen));
 }

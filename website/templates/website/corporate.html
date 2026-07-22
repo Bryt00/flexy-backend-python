@@ -1,11 +1,25 @@
-﻿{% extends 'website/base.html' %}
+{% extends 'website/base.html' %}
 {% load static %}
 
 {% block title %}Corporate & Business Rides | FlexyRide{% endblock %}
 {% block meta_description %}FlexyRide Corporate offers dedicated fleet solutions for businesses. Reliable staff transport, invoicing, and fleet management for companies across Ghana.{% endblock %}
 
+{% block extra_css %}
+<style>
+.corporate-hero {
+    background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+.corporate-cta {
+    background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="relative min-h-[55vh] flex items-center text-center" style="background: linear-gradient(rgba(13,13,13,0.85), rgba(13,13,13,0.85)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+<section class="corporate-hero relative min-h-[55vh] flex items-center text-center">
     <div class="container animate-fade-in">
         <div class="inline-block px-4 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-sm font-bold uppercase tracking-widest mb-6">For Businesses</div>
         <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">Move Your Team,<br>Not Your Budget.</h1>
@@ -17,32 +31,32 @@
 <section class="container animate-fade-in">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="ui-card p-10 hover:border-brand/30 transition-colors group">
-            <div class="text-5xl mb-6">ðŸ§¾</div>
+            <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors"><i data-lucide="file-text" class="w-8 h-8"></i></div>
             <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Monthly Invoicing</h3>
             <p class="text-gray-400 leading-relaxed">Get consolidated invoices for all corporate rides. Simplify your accounting with clear, itemized billing.</p>
         </div>
         <div class="ui-card p-10 hover:border-brand/30 transition-colors group">
-            <div class="text-5xl mb-6">ðŸš—</div>
+            <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors"><i data-lucide="car" class="w-8 h-8"></i></div>
             <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Dedicated Fleet</h3>
             <p class="text-gray-400 leading-relaxed">Reserve vehicles exclusively for your staff. Guaranteed availability at peak hours, even during events.</p>
         </div>
         <div class="ui-card p-10 hover:border-brand/30 transition-colors group">
-            <div class="text-5xl mb-6">ðŸ“Š</div>
+            <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors"><i data-lucide="bar-chart-3" class="w-8 h-8"></i></div>
             <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Usage Dashboard</h3>
             <p class="text-gray-400 leading-relaxed">Track rides, costs, and usage patterns across your entire organization in one admin panel.</p>
         </div>
         <div class="ui-card p-10 hover:border-brand/30 transition-colors group">
-            <div class="text-5xl mb-6">ðŸ›¡ï¸</div>
+            <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors"><i data-lucide="shield-check" class="w-8 h-8"></i></div>
             <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Verified Drivers Only</h3>
             <p class="text-gray-400 leading-relaxed">Every corporate driver is fully background-checked, licensed, and assigned exclusively to business accounts.</p>
         </div>
         <div class="ui-card p-10 hover:border-brand/30 transition-colors group">
-            <div class="text-5xl mb-6">ðŸŽ¯</div>
+            <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors"><i data-lucide="user-check" class="w-8 h-8"></i></div>
             <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Account Manager</h3>
             <p class="text-gray-400 leading-relaxed">Every corporate client gets a dedicated account manager available during business hours for any support.</p>
         </div>
         <div class="ui-card p-10 hover:border-brand/30 transition-colors group">
-            <div class="text-5xl mb-6">ðŸ’°</div>
+            <div class="w-14 h-14 rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-6 group-hover:bg-brand group-hover:text-dark-900 transition-colors"><i data-lucide="percent" class="w-8 h-8"></i></div>
             <h3 class="text-2xl font-bold mb-4 group-hover:text-brand transition-colors">Volume Discounts</h3>
             <p class="text-gray-400 leading-relaxed">Businesses with high ride volumes get preferential per-kilometer rates negotiated directly with our team.</p>
         </div>
@@ -54,13 +68,14 @@
         <div class="flex-1 space-y-6">
             <h2 class="text-4xl font-bold leading-tight">Who is this for?</h2>
             <div class="space-y-3">
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>Banks &amp; Financial Services</div>
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>Hotels &amp; Hospitality</div>
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>Hospitals &amp; Healthcare</div>
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>Law Firms &amp; Professional Services</div>
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>NGOs &amp; Embassies</div>
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>Manufacturing Companies</div>
-                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">âœ“</span>Schools &amp; Universities</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Banks &amp; Financial Services</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Hotels &amp; Hospitality</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Hospitals &amp; Healthcare</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Law Firms &amp; Professional Services</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>NGOs &amp; Embassies</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Manufacturing Companies</div>
+                    <div class="flex items-center gap-3 text-gray-300 text-lg"><span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-sm font-bold">✓</span>Schools &amp; Universities</div>
+                </div>an>Schools &amp; Universities</div>
                 </div>
         </div>
         <div class="flex-1 ui-card bg-brand/5 border-brand/20 p-10 text-center">

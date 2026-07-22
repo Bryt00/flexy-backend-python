@@ -279,3 +279,19 @@ class DriverBenefit(models.Model):
     def __str__(self):
         return self.title
 
+
+class PassengerBenefit(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    icon_name = models.CharField(max_length=50, default="shield-check", help_text="Lucide icon name (e.g. shield-check, clock, banknote, star)")
+    order = models.IntegerField(default=0, help_text='Lower number = shown first')
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        verbose_name = "Passenger Benefit"
+        verbose_name_plural = "Passenger Benefits"
+
+    def __str__(self):
+        return self.title
+

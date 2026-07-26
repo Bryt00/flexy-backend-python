@@ -316,7 +316,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             
             send_notification(
                 profile.user,
-                title="Welcome Bonus! 🎁",
+                title="Welcome Bonus!",
                 body=f"Enjoy GH₵ 5.00 off your first ride with promo code {welcome_code_str}.",
                 type='PUSH'
             )
@@ -328,7 +328,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
             friend_display_name = profile.full_name or profile.user.email
             send_notification(
                 referrer_profile.user,
-                title="Friend Joined! 👥",
+                title="Friend Joined!",
                 body=f"Your friend {friend_display_name} just linked your referral code! You will get GH₵ 5.00 off once they complete their first ride.",
                 type='PUSH'
             )

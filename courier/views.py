@@ -197,7 +197,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 
                 send_notification(
                     user=driver.user,
-                    title="📦 New Delivery Opportunity!",
+                    title="New Delivery Opportunity!",
                     body=f"Pickup: {delivery.pickup_address}\nDropoff: {delivery.dropoff_address}",
                     type='PUSH',
                     ref_id=str(delivery.id),
@@ -321,11 +321,11 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 driver_name = delivery.driver.full_name if (delivery.driver and delivery.driver.full_name) else 'Your courier'
                 
                 status_notifications = {
-                    'AT_PICKUP': ("📦 Courier Arrived!", f"{driver_name} has arrived at the pickup location."),
-                    'PACKAGE_COLLECTED': ("📦 Package Picked Up!", f"{driver_name} has collected your package."),
-                    'EN_ROUTE_TO_DROPOFF': ("📦 En Route to Destination!", f"{driver_name} is on the way to the dropoff location."),
-                    'ARRIVED_AT_DROPOFF': ("📦 Courier Arrived at Dropoff!", f"{driver_name} has arrived at the dropoff location."),
-                    'DELIVERED': ("📦 Package Delivered!", f"Your package has been delivered successfully!")
+                    'AT_PICKUP': ("Courier Arrived!", f"{driver_name} has arrived at the pickup location."),
+                    'PACKAGE_COLLECTED': ("Package Picked Up!", f"{driver_name} has collected your package."),
+                    'EN_ROUTE_TO_DROPOFF': ("En Route to Destination!", f"{driver_name} is on the way to the dropoff location."),
+                    'ARRIVED_AT_DROPOFF': ("Courier Arrived at Dropoff!", f"{driver_name} has arrived at the dropoff location."),
+                    'DELIVERED': ("Package Delivered!", f"Your package has been delivered successfully!")
                 }
                 
                 if new_status in status_notifications:
@@ -386,7 +386,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             from notification.utils import send_notification
             send_notification(
                 user=delivery.passenger,
-                title="📦 Courier Assigned!",
+                title="Courier Assigned!",
                 body=f"{request.user.profile.full_name or 'A courier'} has accepted your delivery request.",
                 type='PUSH',
                 ref_id=str(delivery.id),
@@ -460,7 +460,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             save_in_db = (delivery.status == 'DELIVERED')
             send_notification(
                 user=delivery.passenger,
-                title="📦 Delivery Update",
+                title="Delivery Update",
                 body=body_msg,
                 type='PUSH',
                 ref_id=str(delivery.id),

@@ -93,7 +93,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                     from notification.utils import send_notification
                     send_notification(
                         user,
-                        title="Welcome Bonus! 🎁",
+                        title="Welcome Bonus!",
                         body=f"Enjoy GH₵ 5.00 off your first ride with promo code {welcome_code_str}.",
                         type='PUSH'
                     )
@@ -117,7 +117,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 try:
                     send_notification(
                         referrer_profile.user,
-                        title="Referral Successful! 🎉",
+                        title="Referral Successful!",
                         body=f"Your friend just joined! Here is GH₵ 5.00 off your next ride. Promo code: {referrer_code_str}",
                         type='PUSH'
                     )

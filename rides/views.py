@@ -631,7 +631,7 @@ class RideViewSet(viewsets.ModelViewSet):
                         )
                         send_notification(
                             ride.rider,
-                            title="Referral Bonus! 🎉",
+                            title="Referral Bonus!",
                             body=f"Enjoy GH₵ 5.00 off your next ride with promo code {rider_code_str}.",
                             type='PUSH'
                         )
@@ -648,7 +648,7 @@ class RideViewSet(viewsets.ModelViewSet):
                         )
                         send_notification(
                             referrer.user,
-                            title="Referral Reward! 🎁",
+                            title="Referral Reward!",
                             body=f"Your friend took their first ride! Here is GH₵ 5.00 off: {referrer_code_str}.",
                             type='PUSH'
                         )
@@ -1212,7 +1212,7 @@ class RideViewSet(viewsets.ModelViewSet):
                 from notification.utils import send_notification
                 send_notification(
                     user=ride.driver,
-                    title="📍 Route Updated",
+                    title="Route Updated",
                     body=f"The passenger has updated the destination or stop locations.",
                     type='PUSH',
                     ref_id=str(ride.id),

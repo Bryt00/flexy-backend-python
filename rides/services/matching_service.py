@@ -268,7 +268,7 @@ class MatchingService:
                 from notification.utils import send_notification
                 send_notification(
                     user=next_driver.user,
-                    title="🚨 New Ride Request!",
+                    title="New Ride Request!",
                     body=f"Pickup: {ride.pickup_address}",
                     type='PUSH',
                     ref_id=str(ride.id),

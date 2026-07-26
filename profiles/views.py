@@ -55,6 +55,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
             profile.notification_preferences = request.data['notification_preferences']
         if 'is_2fa_enabled' in request.data:
             profile.is_2fa_enabled = request.data['is_2fa_enabled']
+        if 'is_biometric_enabled' in request.data:
+            profile.is_biometric_enabled = request.data['is_biometric_enabled']
             
         profile.save()
         serializer = self.get_serializer(profile)

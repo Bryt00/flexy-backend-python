@@ -249,32 +249,99 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def _process_delivery_completion(self, delivery):
+        if not delivery.driver or not delivery.driver.user:
+            return
+
+        fare_amount = float(delivery.final_fare if (delivery.final_fare and delivery.final_fare > 0) else delivery.estimated_fare)
+        
+        # 1. Process earnings for driver synchronously
+        from payments.tasks import process_ride_earnings_sync
+        process_ride_earnings_sync(
+            str(delivery.driver.user.id),
+            fare_amount,
+            str(delivery.id),
+            metadata={
+                "pickup_address": delivery.pickup_address,
+                "dropoff_address": delivery.dropoff_address,
+                "delivery_id": str(delivery.id),
+                "type": "courier_delivery"
+            }
+        )
+        
+        # 2. Update total rides on profile
+        try:
+            profile = delivery.driver
+            profile.total_rides += 1
+            profile.save(update_fields=['total_rides'])
+        except Exception as e:
+            print(f"Error updating delivery profile count: {e}")
+            
+        # 3. Reset driver active ride status
+        try:
+            from profiles.services.tracking_service import TrackingService
+            TrackingService.set_driver_ride_status(str(delivery.driver.user.id), is_riding=False)
+        except Exception as e:
+            print(f"Error resetting driver ride status on delivery completion: {e}")
+
+        # 4. Invalidate earnings cache
+        try:
+            from core_auth.cache_utils import invalidate_user_cache
+            invalidate_user_cache(delivery.driver.user.id, 'earnings')
+        except Exception:
+            pass
+
     @action(detail=True, methods=['post', 'patch'])
     def status(self, request, pk=None):
         delivery = self.get_object()
+        old_status = delivery.status
         new_status = request.data.get('status')
         if new_status in [choice[0] for choice in Delivery.STATUS_CHOICES]:
             delivery.status = new_status
+            
+            # If transitioning to terminal states (DELIVERED/CANCELLED) from active states
+            if new_status == 'DELIVERED' and old_status != 'DELIVERED':
+                self._process_delivery_completion(delivery)
+            elif new_status == 'CANCELLED' and old_status in ['ACCEPTED', 'AT_PICKUP', 'PACKAGE_COLLECTED', 'EN_ROUTE_TO_DROPOFF', 'ARRIVED_AT_DROPOFF']:
+                if delivery.driver and delivery.driver.user:
+                    try:
+                        from profiles.services.tracking_service import TrackingService
+                        TrackingService.set_driver_ride_status(str(delivery.driver.user.id), is_riding=False)
+                    except Exception:
+                        pass
+
             delivery.save()
             
             # Broadcast status update
             self._broadcast_delivery_update(delivery, 'status_update')
 
-            # Send push notification to passenger
+            # Send push notification to passenger for milestone transitions
             try:
                 from notification.utils import send_notification
-                if new_status == 'AT_PICKUP':
+                driver_name = delivery.driver.full_name if (delivery.driver and delivery.driver.full_name) else 'Your courier'
+                
+                status_notifications = {
+                    'AT_PICKUP': ("📦 Courier Arrived!", f"{driver_name} has arrived at the pickup location."),
+                    'PACKAGE_COLLECTED': ("📦 Package Picked Up!", f"{driver_name} has collected your package."),
+                    'EN_ROUTE_TO_DROPOFF': ("📦 En Route to Destination!", f"{driver_name} is on the way to the dropoff location."),
+                    'ARRIVED_AT_DROPOFF': ("📦 Courier Arrived at Dropoff!", f"{driver_name} has arrived at the dropoff location."),
+                    'DELIVERED': ("📦 Package Delivered!", f"Your package has been delivered successfully!")
+                }
+                
+                if new_status in status_notifications:
+                    title, body = status_notifications[new_status]
+                    save_in_db = (new_status == 'DELIVERED')
                     send_notification(
                         user=delivery.passenger,
-                        title="📦 Courier Arrived!",
-                        body=f"{delivery.driver.full_name if (delivery.driver and delivery.driver.full_name) else 'Your courier'} has arrived at the pickup location.",
+                        title=title,
+                        body=body,
                         type='PUSH',
                         ref_id=str(delivery.id),
-                        android_channel_id='high_priority_rides',
-                        android_sound='horn',
-                        ios_sound='horn.wav',
+                        android_channel_id='high_priority_rides' if new_status in ['AT_PICKUP', 'ARRIVED_AT_DROPOFF'] else None,
+                        android_sound='horn' if new_status in ['AT_PICKUP', 'ARRIVED_AT_DROPOFF'] else None,
+                        ios_sound='horn.wav' if new_status in ['AT_PICKUP', 'ARRIVED_AT_DROPOFF'] else None,
                         extra_data={'notification_type': 'DELIVERY_ACTIVE'},
-                        save_in_db=False
+                        save_in_db=save_in_db
                     )
             except Exception as e:
                 print(f"Error sending delivery status push notification: {e}")
@@ -299,6 +366,14 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         delivery.driver = profile
         delivery.status = 'ACCEPTED'
         delivery.save()
+
+        # Mark driver active status in tracking service
+        if request.user:
+            try:
+                from profiles.services.tracking_service import TrackingService
+                TrackingService.set_driver_ride_status(str(request.user.id), is_riding=True)
+            except Exception as e:
+                print(f"Error setting driver ride status on delivery accept: {e}")
 
         # Broadcast acceptance update to subscriber tracking group
         self._broadcast_delivery_update(delivery, 'status_update')
@@ -359,12 +434,15 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         )
         
         # Advance state
+        old_status = delivery.status
         if proof_type == 'PICKUP':
             delivery.status = 'PACKAGE_COLLECTED'
         else: # DROPOFF
             delivery.status = 'DELIVERED'
             if image_url:
                 delivery.proof_photo_url = image_url
+            if old_status != 'DELIVERED':
+                self._process_delivery_completion(delivery)
                 
         delivery.save()
         

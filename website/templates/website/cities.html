@@ -3,6 +3,16 @@
 
 {% block title %}Covered Cities | FlexyRide{% endblock %}
 
+{% block extra_css %}
+<style>
+.cities-cta {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="container animate-fade-in mb-20">
     <div class="text-center mb-16">
@@ -15,7 +25,8 @@
         <a href="{% url 'city_detail' slug=city.name|slugify %}" class="ui-card p-0 overflow-hidden group transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,200,150,0.2)] block w-full sm:w-[280px]">
             <div class="h-48 relative overflow-hidden">
                 <img src="{% if city.cover_image %}{{ city.cover_image.url }}{% elif city.cover_image_url %}{{ city.cover_image_url }}{% else %}{% static 'img/hero_main.png' %}{% endif %}" 
-                     onerror="this.src='{% static 'img/hero_main.png' %}'; this.onerror=null;"
+                     data-fallback="{% static 'img/hero_main.png' %}"
+                     onerror="this.src=this.dataset.fallback; this.onerror=null;"
                      alt="{{ city.name }}" 
                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                 <div class="absolute inset-0 bg-gradient-to-t from-dark-900/90 via-dark-900/40 to-transparent flex items-end p-6">
@@ -43,7 +54,7 @@
 
 <!-- Bottom CTA -->
 <section class="container animate-fade-in mb-32">
-    <div class="relative rounded-[40px] overflow-hidden py-24 px-8 text-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="cities-cta relative rounded-[40px] overflow-hidden py-24 px-8 text-center">
         <div class="max-w-2xl mx-auto relative z-10">
             <h2 class="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">Ride with confidence.</h2>
             <p class="text-xl text-gray-200 mb-10 leading-relaxed">Join the thousands of riders choosing FlexyRide for their daily commute across Ghana.</p>

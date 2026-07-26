@@ -53,6 +53,7 @@ class Profile(models.Model):
     # Preferences & Security
     notification_preferences = models.JSONField(default=dict, blank=True)
     is_2fa_enabled = models.BooleanField(default=False)
+    is_biometric_enabled = models.BooleanField(default=False)
     auto_navigate = models.BooleanField(default=False)
     receive_deliveries = models.BooleanField(default=False, help_text="Opt-in to receive courier delivery requests")
 

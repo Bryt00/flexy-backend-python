@@ -107,9 +107,10 @@ class LoginView(views.APIView):
                 }, status=status.HTTP_403_FORBIDDEN)
             
             update_last_login(None, user)
-            import uuid
-            user.session_key = uuid.uuid4()
-            user.save(update_fields=['session_key'])
+            if not user.session_key:
+                import uuid
+                user.session_key = uuid.uuid4()
+                user.save(update_fields=['session_key'])
             refresh = RefreshToken.for_user(user)
             refresh['session_key'] = str(user.session_key)
             return Response({
@@ -259,6 +260,15 @@ class OTPVerifyView(views.APIView):
                 "refresh_token": str(refresh),
                 "status": "success"
             })
+
+        if otp_type == 'password_reset':
+            from django.core import signing
+            reset_token = signing.dumps({'user_id': str(user.id), 'email': user.email})
+            return Response({
+                "message": "OTP verified successfully",
+                "reset_token": reset_token,
+                "status": "success"
+            })
             
         return Response({"message": "OTP verified successfully", "status": "success"})
 
@@ -275,32 +285,73 @@ class PasswordResetView(views.APIView):
         serializer = PasswordResetSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data['email'].strip()
-        otp = serializer.validated_data['otp']
+        email = serializer.validated_data['email'].strip().lower()
+        otp = serializer.validated_data.get('otp')
+        reset_token = serializer.validated_data.get('reset_token')
         new_password = serializer.validated_data['new_password']
         
-        try:
-            user = User.objects.get(email__iexact=email)
-            otp_obj = OTPCode.objects.filter(
-                user=user, 
-                code=otp, 
-                type='password_reset', 
-                is_used=False,
-                expires_at__gt=timezone.now()
-            ).latest('created_at')
-        except (User.DoesNotExist, OTPCode.DoesNotExist):
-            return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        otp_obj.is_used = True
-        otp_obj.save()
-        
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        is_verified = False
+
+        # 1. Verification via signed reset_token (15 minute max_age)
+        if reset_token:
+            from django.core import signing
+            try:
+                data = signing.loads(reset_token, max_age=900)
+                if data.get('email', '').lower() == email or data.get('user_id') == str(user.id):
+                    is_verified = True
+            except Exception:
+                return Response({"error": "Invalid or expired reset token. Please request a new code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 2. Fallback verification via OTP code
+        if not is_verified and otp:
+            try:
+                otp_obj = OTPCode.objects.filter(
+                    user=user, 
+                    code=otp, 
+                    type='password_reset', 
+                    is_used=False,
+                    expires_at__gt=timezone.now()
+                ).latest('created_at')
+                otp_obj.is_used = True
+                otp_obj.save()
+                is_verified = True
+            except OTPCode.DoesNotExist:
+                pass
+
+        if not is_verified:
+            return Response({"error": "Invalid or expired OTP code or reset token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Revoke previous sessions on all devices for security
+        import uuid
+        user.session_key = uuid.uuid4()
         user.set_password(new_password)
         if not user.is_email_verified:
             user.is_email_verified = True
             user.is_active = True
         user.save()
-        
-        return Response({"message": "Password reset successfully", "status": "success"})
+
+        # Invalidate old unused OTPs
+        OTPCode.objects.filter(user=user, type='password_reset', is_used=False).update(is_used=True)
+
+        # Send security notification email
+        from integrations.email_service import EmailService
+        EmailService.send_password_reset_success_email(user.email)
+
+        # Generate fresh JWT tokens so app can auto-login user
+        refresh = RefreshToken.for_user(user)
+        refresh['session_key'] = str(user.session_key)
+
+        return Response({
+            "message": "Password reset successfully",
+            "status": "success",
+            "user": UserSerializer(user).data,
+            "token": str(refresh.access_token),
+            "refresh_token": str(refresh)
+        }, status=status.HTTP_200_OK)
 
 class SocialAuthView(views.APIView):
     permission_classes = [permissions.AllowAny]
@@ -383,9 +434,10 @@ class SocialAuthView(views.APIView):
                 from integrations.email_service import EmailService
                 EmailService.send_welcome_email(user)
 
-            import uuid
-            user.session_key = uuid.uuid4()
-            user.save(update_fields=['session_key'])
+            if not user.session_key:
+                import uuid
+                user.session_key = uuid.uuid4()
+                user.save(update_fields=['session_key'])
             refresh = RefreshToken.for_user(user)
             refresh['session_key'] = str(user.session_key)
             return Response({
@@ -446,7 +498,21 @@ class ChangePasswordView(views.APIView):
         if not user.check_password(current_password):
             return Response({"error": "Incorrect current password"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Run Django password validation
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError
+        try:
+            validate_password(new_password, user=user)
+        except ValidationError as e:
+            return Response({"error": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+        import uuid
+        user.session_key = uuid.uuid4()
         user.set_password(new_password)
         user.save()
+
+        # Send security notification email
+        from integrations.email_service import EmailService
+        EmailService.send_password_reset_success_email(user.email)
         
         return Response({"message": "Password updated successfully", "status": "success"}, status=status.HTTP_200_OK)

@@ -6,10 +6,24 @@
 {% block og_title %}About Us | FlexyRide{% endblock %}
 {% block og_description %}Learn more about FlexyRide, Ghana's leading ride-hailing service dedicated to safety, affordability, and reliability.{% endblock %}
 
+{% block extra_css %}
+<style>
+.about-hero {
+    background: linear-gradient(rgba(13,13,13,0.8), rgba(13,13,13,0.8)), url('{% if hero.background_image %}{{ hero.background_image.url }}{% elif hero.background_image_url %}{{ hero.background_image_url }}{% else %}{% static "img/hero_main.png" %}{% endif %}');
+    background-size: cover;
+    background-position: center;
+}
+.about-cta {
+    background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Hero Section -->
-<section class="relative min-h-[50vh] flex items-center overflow-hidden" 
-         style="background: linear-gradient(rgba(13,13,13,0.8), rgba(13,13,13,0.8)), url('{% if hero.background_image %}{{ hero.background_image.url }}{% elif hero.background_image_url %}{{ hero.background_image_url }}{% else %}{% static "img/hero_main.png" %}{% endif %}'); background-size: cover; background-position: center;">
+<section class="about-hero relative min-h-[50vh] flex items-center overflow-hidden">
     <div class="container relative z-10 text-center animate-fade-in">
         <h1 class="text-6xl md:text-7xl font-bold mb-6 hero-gradient-text leading-tight">{{ hero.title|default:"Our Journey" }}</h1>
         <p class="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto">{{ hero.subtitle|default:"Revolutionizing urban mobility across Ghana, one ride at a time." }}</p>
@@ -73,7 +87,7 @@
 
 <!-- Bottom CTA -->
 <section class="container animate-fade-in mb-32">
-    <div class="relative rounded-[50px] overflow-hidden py-24 px-8 text-center border border-white/5 shadow-2xl" style="background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="about-cta relative rounded-[50px] overflow-hidden py-24 px-8 text-center border border-white/5 shadow-2xl">
         <div class="max-w-2xl mx-auto relative z-10">
             <h2 class="text-4xl md:text-5xl font-bold mb-8 text-white leading-tight">Be part of Ghana's <br><span class="hero-gradient-text">mobility revolution.</span></h2>
             <div class="flex flex-col sm:flex-row gap-6 justify-center">

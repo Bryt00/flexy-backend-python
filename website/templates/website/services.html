@@ -1,10 +1,26 @@
-﻿{% extends 'website/base.html' %}
+{% extends 'website/base.html' %}
 {% load static %}
 
 {% block title %}Our Services | FlexyRide{% endblock %}
 {% block meta_description %}Explore the wide range of ride-hailing and mobility services offered by FlexyRide.{% endblock %}
 {% block og_title %}Our Services | FlexyRide{% endblock %}
 {% block og_description %}Explore the wide range of ride-hailing and mobility services offered by FlexyRide.{% endblock %}
+
+{% block extra_css %}
+<style>
+.services-card-default {
+    background-image: url('{% if service.image %}{{ service.image.url }}{% elif service.image_url %}{{ service.image_url }}{% else %}{% static "img/hero_main.png" %}{% endif %}');
+}
+.services-card-go {
+    background-image: url('{% static "img/vehicle_go.png" %}');
+}
+.services-cta {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <section class="container animate-fade-in mb-20">
@@ -19,8 +35,7 @@
             <div class="ui-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
                 <h3 class="text-2xl font-bold text-brand mb-2">{{ service.name }}</h3>
                 <p class="text-gray-400 mb-6 flex-grow">{{ service.description }}</p>
-                <div class="h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105" 
-                     style="background-image: url('{% if service.image %}{{ service.image.url }}{% elif service.image_url %}{{ service.image_url }}{% else %}{% static "img/hero_main.png" %}{% endif %}');"></div>
+                <div class="services-card-default h-48 w-full bg-cover bg-center rounded-xl transition-transform duration-500 group-hover:scale-105"></div>
             </div>
             {% endfor %}
         {% else %}
@@ -28,7 +43,7 @@
             <div class="ui-card flex flex-col h-full group transition-transform duration-300 hover:-translate-y-2">
                 <h3 class="text-2xl font-bold text-brand mb-2">Flexy Go</h3>
                 <p class="text-gray-400 mb-6 flex-grow">Affordable everyday rides. Perfect for short trips around the city or your daily commute.</p>
-                <div class="h-48 w-full bg-cover bg-center rounded-xl" style="background-image: url('{% static "img/vehicle_go.png" %}');"></div>
+                <div class="services-card-go h-48 w-full bg-cover bg-center rounded-xl"></div>
             </div>
             <!-- ... other placeholders can be omitted or kept ... -->
         {% endif %}
@@ -37,7 +52,7 @@
 
 <!-- Bottom CTA -->
 <section class="container animate-fade-in mb-32">
-    <div class="relative rounded-[40px] overflow-hidden py-24 px-8 text-center" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('{% static "img/hero_main.png" %}'); background-size: cover; background-position: center;">
+    <div class="services-cta relative rounded-[40px] overflow-hidden py-24 px-8 text-center">
         <div class="max-w-2xl mx-auto relative z-10">
             <h2 class="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">Request your first ride today.</h2>
             <p class="text-xl text-gray-200 mb-10 leading-relaxed">Join thousands of riders who choose FlexyRide for their daily commute every single day.</p>

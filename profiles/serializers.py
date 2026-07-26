@@ -86,6 +86,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             'points', 'tier', 'acceptance_rate', 'cancellation_rate', 'total_rides',
             'verification',
             'is_verified', 'is_subscribed', 'is_active', 'is_online', 'auto_navigate',
+            'is_2fa_enabled', 'is_biometric_enabled',
             'receive_deliveries',
             'referral_code', 'referred_by', 'total_referrals', 'total_referral_earnings',
             'created_at',

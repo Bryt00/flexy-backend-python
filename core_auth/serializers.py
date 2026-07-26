@@ -161,8 +161,18 @@ class OTPVerifySerializer(serializers.Serializer):
 
 class PasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    otp = serializers.CharField()
+    otp = serializers.CharField(required=False, allow_blank=True)
+    reset_token = serializers.CharField(required=False, allow_blank=True)
     new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
 
 
 class RefreshTokenRequestSerializer(serializers.Serializer):

@@ -595,16 +595,17 @@ class RideViewSet(viewsets.ModelViewSet):
                 ride.driver_payout_amount = ledger['driver_payout']
                 ride.fare = ledger['total_fare'] - discount_to_apply # User facing fare
                 
-                # Trigger earnings processing
-                from payments.tasks import process_ride_earnings
-                process_ride_earnings.delay(
+                # Trigger earnings processing synchronously
+                from payments.tasks import process_ride_earnings_sync
+                process_ride_earnings_sync(
                     str(ride.driver.id), 
                     float(ride.fare), 
                     str(ride.id),
                     metadata={
                         "pickup_address": ride.pickup_address,
                         "dropoff_address": ride.dropoff_address,
-                        "ride_id": str(ride.id)
+                        "ride_id": str(ride.id),
+                        "type": "passenger_ride"
                     }
                 )
 

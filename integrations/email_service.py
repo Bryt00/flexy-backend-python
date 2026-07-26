@@ -325,3 +325,38 @@ class EmailService:
         # Dispatch the SMTP connection process in a background thread
         threading.Thread(target=send_email_bg, daemon=True).start()
 
+    @staticmethod
+    def send_password_reset_success_email(email):
+        """
+        Sends a security notification email when a user password is changed or reset.
+        """
+        import threading
+        subject = 'Security Alert: Your FlexyRide Password Was Changed'
+        context = {
+            'email': email,
+            'app_name': 'FlexyRide'
+        }
+        
+        try:
+            html_message = render_to_string('emails/password_reset_success.html', context)
+        except Exception:
+            html_message = None
+
+        plain_message = "Your FlexyRide account password was successfully updated. If you did not request this change, please contact support immediately."
+
+        def send_email_bg():
+            try:
+                send_mail(
+                    subject,
+                    plain_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                logger.info(f"Password reset success email sent to {email}")
+            except Exception as e:
+                logger.error(f"Failed to send password reset success email to {email}: {str(e)}")
+
+        threading.Thread(target=send_email_bg, daemon=True).start()
+

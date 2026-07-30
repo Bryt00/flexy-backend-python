@@ -1,0 +1,59 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Account & Data Deletion Request | FlexyRide{% endblock %}
+
+{% block content %}
+<section class="container animate-fade-in max-w-4xl py-16 md:py-24">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-bold uppercase tracking-widest mb-6">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+        Account Management
+    </div>
+
+    <h1 class="text-4xl md:text-6xl font-black mb-6">FlexyRide <span class="text-brand">Account Deletion</span></h1>
+    <p class="text-gray-400 text-lg mb-12">Learn how to delete your FlexyRide account and managed personal data for both Passenger and Driver apps, published by Patmac Tech.</p>
+
+    <div class="space-y-10">
+        <!-- Option 1: In-App Deletion -->
+        <div class="p-8 bg-dark-800/80 rounded-3xl border border-white/5 space-y-4">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="smartphone" class="w-6 h-6 text-brand"></i>
+                Option 1: Request Deletion Directly In-App (Recommended)
+            </h2>
+            <p class="text-gray-300">You can request account deletion at any time directly within the FlexyRide Passenger or FlexyRide Driver mobile app:</p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-400 pl-2">
+                <li>Open the <strong>FlexyRide</strong> mobile app and log in to your account.</li>
+                <li>Navigate to the <strong>Profile</strong> tab.</li>
+                <li>Tap on <strong>Settings</strong> and select <strong>Privacy & Security</strong>.</li>
+                <li>Tap <strong>Delete Account</strong> and confirm your deletion request.</li>
+            </ol>
+        </div>
+
+        <!-- Option 2: Web / Email Request -->
+        <div class="p-8 bg-dark-800/80 rounded-3xl border border-white/5 space-y-4">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="mail" class="w-6 h-6 text-brand"></i>
+                Option 2: Request Deletion via Email
+            </h2>
+            <p class="text-gray-300">If you no longer have access to the mobile application, you can submit an account deletion request by emailing our Support & Privacy team:</p>
+            <div class="p-4 bg-dark-900 rounded-2xl border border-white/5 text-gray-300 font-mono text-sm">
+                To: <a href="mailto:support@flexyridegh.com" class="text-brand underline">support@flexyridegh.com</a><br>
+                Subject: Account Deletion Request - [Your Registered Email]
+            </div>
+            <p class="text-xs text-gray-500">Please send the request from the email address associated with your FlexyRide account so we can verify your identity.</p>
+        </div>
+
+        <!-- Data Retention & Policy -->
+        <div class="p-8 bg-dark-800/80 rounded-3xl border border-white/5 space-y-4 text-gray-300">
+            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                <i data-lucide="database" class="w-6 h-6 text-brand"></i>
+                Data Retention & Deletion Details
+            </h2>
+            <ul class="list-disc list-inside space-y-2 text-gray-400 pl-2">
+                <li><strong class="text-white">Data Deleted Immediately:</strong> Your profile info (name, email, phone number), active login sessions, saved places, and push notification tokens.</li>
+                <li><strong class="text-white">Data Retained (if required by law):</strong> Completed ride financial transactions and tax invoices are retained for up to 5 years strictly for statutory accounting, audit, and tax compliance as mandated by local laws.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

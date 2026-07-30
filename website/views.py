@@ -316,6 +316,14 @@ class CookiesView(LegalDocumentView):
         kwargs['doc_type'] = 'cookies'
         return super().get_context_data(**kwargs)
 
+class DeleteAccountView(TemplateView):
+    template_name = 'website/delete_account.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_global_context())
+        return context
+
 @method_decorator(cache_page(60 * 15), name='dispatch')
 class DownloadView(TemplateView):
     template_name = 'website/download.html'

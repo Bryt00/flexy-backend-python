@@ -132,7 +132,10 @@
                             </div>
                         {% elif booking.payment_status == 'UNPAID' and booking.status == 'APPROVED' %}
                             <button class="btn btn-primary px-10 py-3.5 text-sm flex items-center gap-2 shadow-xl shadow-brand/10" 
-                                    onclick="payWithPaystack('{{ booking.id }}', '{{ booking.contact_email }}', {{ booking.amount }})">
+                                    data-booking-id="{{ booking.id }}"
+                                    data-email="{{ booking.contact_email }}"
+                                    data-amount="{{ booking.amount }}"
+                                    onclick="payWithPaystack(this.dataset.bookingId, this.dataset.email, parseFloat(this.dataset.amount))">
                                 <i data-lucide="credit-card" class="w-5 h-5"></i>
                                 Pay Now
                             </button>

@@ -30,6 +30,7 @@ urlpatterns = [
     path('legal/terms/', views.TermsView.as_view(), name='terms'),
     path('legal/privacy/', views.PrivacyView.as_view(), name='privacy'),
     path('legal/cookies/', views.CookiesView.as_view(), name='cookies'),
+    path('delete-account/', views.DeleteAccountView.as_view(), name='delete_account'),
     path('advertise/', include('advertising.website_urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', views.RobotsView.as_view(), name='robots'),

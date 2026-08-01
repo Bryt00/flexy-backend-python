@@ -108,6 +108,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
         # Mapping frontend keys to backend fields
+        license_number = request.data.get('license_number', request.data.get('license_plate', verification.license_number))
         license_url = request.data.get('license_url', verification.license_url)
         license_expiry_date = request.data.get('license_expiry_date', verification.license_expiry_date)
         id_card_url = request.data.get('id_card_url', verification.id_card_url)
@@ -131,6 +132,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
                     'detail': f'The provided URL does not appear to be a PDF: {url}'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+        if license_number:
+            verification.license_number = license_number
         verification.license_url = license_url
         verification.license_expiry_date = license_expiry_date
         verification.id_card_url = id_card_url

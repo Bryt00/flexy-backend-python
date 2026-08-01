@@ -20,10 +20,10 @@ class Vehicle(models.Model):
     type = models.CharField(max_length=50, choices=get_vehicle_categories, default='go')
     
     # Document URLs
-    license_url = models.URLField(max_length=1000, blank=True, null=True)
-    insurance_url = models.URLField(max_length=1000, blank=True, null=True)
-    roadworthy_url = models.URLField(max_length=1000, blank=True, null=True)
-    video_url = models.URLField(max_length=1000, blank=True, null=True)
+    license_url = models.TextField(blank=True, null=True)
+    insurance_url = models.TextField(blank=True, null=True)
+    roadworthy_url = models.TextField(blank=True, null=True)
+    video_url = models.TextField(blank=True, null=True)
     insurance_expiry = models.DateField(blank=True, null=True)
     roadworthy_expiry = models.DateField(blank=True, null=True)
     

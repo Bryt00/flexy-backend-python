@@ -53,15 +53,34 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         # The mobile app sends 'driverId' in the JSON, but our model uses 'driver' (FK)
-        # perform_create handles the linkage, so we just remove driverId if present
-        # to avoid serializer validation errors if 'driver' is missing.
         data = request.data.copy()
         if 'driverId' in data:
             data.pop('driverId')
         
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        profile = Profile.objects.get(user=request.user)
+        existing_vehicle = Vehicle.objects.filter(driver=profile).first()
+
+        if existing_vehicle:
+            serializer = self.get_serializer(existing_vehicle, data=data, partial=True)
+        else:
+            serializer = self.get_serializer(data=data)
+
+        if not serializer.is_valid():
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Vehicle registration validation error for user {request.user.id}: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if existing_vehicle:
+            serializer.save()
+        else:
+            self.perform_create(serializer)
+
+        invalidate_user_cache(request.user.id, 'vehicles')
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK if existing_vehicle else status.HTTP_201_CREATED,
+            headers=headers,
+        )
 

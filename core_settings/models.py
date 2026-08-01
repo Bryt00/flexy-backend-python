@@ -215,10 +215,10 @@ class DeliveryVehicleType(models.Model):
 
 def get_vehicle_categories():
     try:
-        # Query active categories. If empty (e.g. during migrations), fallback.
         categories = list(VehicleCategory.objects.filter(is_active=True).values_list('slug', 'display_name'))
-        if not categories:
-            return [('go', 'Flexy Go')]
+        slugs = {c[0] for c in categories}
+        if 'go' not in slugs:
+            categories.insert(0, ('go', 'Flexy Go'))
         return categories
     except Exception:
         return [('go', 'Flexy Go')]

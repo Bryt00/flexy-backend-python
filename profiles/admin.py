@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db import models
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils import timezone
@@ -30,8 +31,14 @@ class ProfileAdmin(ModelAdmin):
     online_status.short_description = 'Online Status'
     online_status.allow_tags = True
 
+from django import forms
+from unfold.widgets import UnfoldAdminTextInputWidget
+
 @admin.register(DriverVerification)
 class DriverVerificationAdmin(ModelAdmin):
+    formfield_overrides = {
+        models.TextField: {'widget': UnfoldAdminTextInputWidget},
+    }
     list_per_page = 20
     list_display = ('driver', 'driver_email', 'assigned_category', 'status', 'is_verified', 'license_number', 'updated_at_display')
     list_filter = ('assigned_category', 'status', 'is_verified', 'verified_at', 'license_expiry_date', 'id_card_expiry_date')

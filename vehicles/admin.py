@@ -1,10 +1,12 @@
 from django.contrib import admin
+from django.db import models
 from unfold.admin import ModelAdmin
+from unfold.widgets import UnfoldAdminTextInputWidget
 from .models import Vehicle
-
-
-@admin.register(Vehicle)
 class VehicleAdmin(ModelAdmin):
+    formfield_overrides = {
+        models.TextField: {'widget': UnfoldAdminTextInputWidget},
+    }
     list_per_page = 20
     list_display = ('license_plate', 'make', 'model', 'type', 'status', 'is_active', 'is_verified', 'driver')
     list_filter = ('type', 'status', 'is_active', 'is_verified', 'created_at', 'updated_at')

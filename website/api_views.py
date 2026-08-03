@@ -65,3 +65,29 @@ class LegalDocumentViewSet(viewsets.ModelViewSet):
         if doc_type is not None:
             queryset = queryset.filter(document_type=doc_type)
         return queryset
+
+    def get_object(self):
+        doc_type = self.kwargs.get('document_type')
+        obj = LegalDocument.objects.filter(document_type=doc_type).order_by('-last_updated').first()
+        if not obj:
+            obj = LegalDocument.objects.filter(slug=doc_type).order_by('-last_updated').first()
+        
+        if not obj:
+            defaults = {
+                'privacy': ('Privacy Policy', 'FlexyRide Privacy Policy:\n\nWe respect your privacy and are committed to protecting your personal data. We collect location and account data to provide safe, reliable ride-hailing and logistics services.'),
+                'terms': ('Terms of Service', 'FlexyRide Terms of Service:\n\nWelcome to FlexyRide. By using our services, you agree to these Terms of Service. Please review all terms before requesting rides or services.'),
+                'cookies': ('Cookie Policy', 'FlexyRide Cookie Policy:\n\nWe use essential session tokens and cookies to secure your account and personalize your experience.'),
+                'about': ('About Us', 'About FlexyRide:\n\nFlexyRide is Ghana\'s premier ride-hailing and delivery service offering fast, affordable, and safe mobility.'),
+            }
+            title, content = defaults.get(doc_type, (doc_type.replace('_', ' ').title(), 'Legal document content is currently being updated.'))
+            obj, _ = LegalDocument.objects.get_or_create(
+                document_type=doc_type,
+                defaults={
+                    'title': title,
+                    'slug': doc_type,
+                    'content': content
+                }
+            )
+        self.check_object_permissions(self.request, obj)
+        return obj
+

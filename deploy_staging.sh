@@ -685,13 +685,7 @@ server {
     }
 }
 
-server {
-    listen 443 ssl http2 default_server;
-    server_name _;
-    ssl_certificate /etc/ssl/cloudflare/origin.pem;
-    ssl_certificate_key /etc/ssl/cloudflare/origin-key.pem;
-    return 444;
-}
+
 EOF
 
 ln -sf /etc/nginx/sites-available/$APP_NAME /etc/nginx/sites-enabled/

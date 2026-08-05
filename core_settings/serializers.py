@@ -40,3 +40,10 @@ class VehicleCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleCategory
         fields = '__all__'
+
+from .models import AppVersion
+
+class AppVersionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppVersion
+        fields = ['platform', 'app_type', 'minimum_version', 'latest_version', 'force_update', 'store_url']

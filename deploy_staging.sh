@@ -505,14 +505,14 @@ map \$http_upgrade \$connection_upgrade {
 # Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name $DOMAIN www.$DOMAIN staging.api.$DOMAIN;
+    server_name $DOMAIN www.$DOMAIN api-staging.$DOMAIN;
     return 301 https://\$host\$request_uri;
 }
 
-# 1. API Subdomain (staging.api.$DOMAIN)
+# 1. API Subdomain (api-staging.$DOMAIN)
 server {
     listen 443 ssl http2;
-    server_name staging.api.$DOMAIN;
+    server_name api-staging.$DOMAIN;
 
     ssl_certificate /etc/ssl/cloudflare/origin.pem;
     ssl_certificate_key /etc/ssl/cloudflare/origin-key.pem;
@@ -583,7 +583,7 @@ server {
     }
 
     location /api {
-        return 301 https://staging.api.$DOMAIN/api/;
+        return 301 https://api-staging.$DOMAIN/api/;
     }
 
     # Versioned API routes (mobile app traffic + websockets)
@@ -805,7 +805,7 @@ echo "   ✓ Automatic HTTPS Rewrites"
 echo ""
 echo "📋 Next Steps:"
 echo "1. Update .env:"
-echo "   ALLOWED_HOSTS=$DOMAIN,www.$DOMAIN,staging.api.$DOMAIN,.$DOMAIN
+echo "   ALLOWED_HOSTS=$DOMAIN,www.$DOMAIN,api-staging.$DOMAIN,.$DOMAIN
    REDIS_URL=redis://127.0.0.1:6379/1"
 
 if [ "$REPLICATION_CHOICE" = "1" ]; then

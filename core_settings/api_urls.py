@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import SiteSettingViewSet, DeliveryCategoryViewSet, DeliveryWeightTierViewSet, DeliveryVehicleTypeViewSet, VehicleCategoryViewSet, ServiceAreaViewSet
+from .views import SiteSettingViewSet, DeliveryCategoryViewSet, DeliveryWeightTierViewSet, DeliveryVehicleTypeViewSet, VehicleCategoryViewSet, ServiceAreaViewSet, AppVersionViewSet
 
 router = DefaultRouter()
 router.register(r'site-settings', SiteSettingViewSet, basename='site-settings')
@@ -9,7 +9,7 @@ router.register(r'delivery-weight-tiers', DeliveryWeightTierViewSet, basename='d
 router.register(r'delivery-vehicle-types', DeliveryVehicleTypeViewSet, basename='delivery-vehicle-types')
 router.register(r'vehicle-categories', VehicleCategoryViewSet, basename='vehicle-categories')
 router.register(r'service-areas', ServiceAreaViewSet, basename='service-areas')
-
+router.register(r'app-versions', AppVersionViewSet, basename='app-versions')
 
 urlpatterns = [
     path('', include(router.urls)),

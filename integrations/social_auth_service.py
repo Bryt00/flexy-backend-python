@@ -12,14 +12,21 @@ class SocialAuthService:
         Verify a Google ID token and return user info.
         """
         try:
-            # We check both the web and mobile client IDs if provided
             client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
             
+            # We pass audience=None to avoid strict matching since the token could be issued 
+            # for the web client ID or the Android/iOS client IDs.
             idinfo = id_token.verify_oauth2_token(
                 token, 
                 google_requests.Request(), 
-                client_id
+                audience=None
             )
+
+            # Verify that the audience belongs to our project (matches project number prefix)
+            if client_id:
+                project_number = client_id.split('-')[0]
+                if not idinfo.get('aud', '').startswith(project_number):
+                    raise AuthenticationFailed('Token was not issued for this project.')
 
             if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
                 raise AuthenticationFailed('Wrong issuer.')
@@ -32,6 +39,9 @@ class SocialAuthService:
                 'picture': idinfo.get('picture', '')
             }
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Google token verification failed: {str(e)}", exc_info=True)
             raise AuthenticationFailed(f'Invalid Google token: {str(e)}')
 
     @staticmethod

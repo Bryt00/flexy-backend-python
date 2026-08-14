@@ -230,19 +230,28 @@ class SafetyFeature(models.Model):
 
 class LegalDocument(models.Model):
     DOCUMENT_TYPES = [
-        ('terms', 'Terms of Service'),
+        ('terms', 'Terms and Conditions'),
         ('privacy', 'Privacy Policy'),
         ('cookies', 'Cookie Policy'),
         ('about', 'About Us'),
+        ('driver_terms', 'Driver Terms'),
+        ('delivery_terms', 'Delivery Terms'),
+    ]
+    CATEGORY_CHOICES = [
+        ('rides', 'Rides'),
+        ('drivers', 'Drivers'),
+        ('delivery', 'Delivery'),
+        ('general', 'General & Privacy'),
     ]
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
     content = CKEditor5Field('Content', config_name='extends')
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.get_category_display()})"
 
 
 class HeroBanner(models.Model):

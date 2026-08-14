@@ -40,8 +40,8 @@ class SafetyFeatureAdmin(ModelAdmin):
 @admin.register(LegalDocument)
 class LegalDocumentAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('title', 'document_type', 'last_updated')
-    list_filter = ('document_type', 'last_updated')
+    list_display = ('title', 'category', 'document_type', 'last_updated')
+    list_filter = ('category', 'document_type', 'last_updated')
     prepopulated_fields = {'slug': ('title',)}
 
 @admin.register(HeroBanner)

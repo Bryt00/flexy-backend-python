@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from .models import SiteSetting, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType, VehicleCategory, ServiceArea
-from .serializers import SiteSettingSerializer, DeliveryCategorySerializer, DeliveryWeightTierSerializer, DeliveryVehicleTypeSerializer, VehicleCategorySerializer, ServiceAreaSerializer
+from .serializers import SiteSettingSerializer, DeliveryCategorySerializer, DeliveryWeightTierSerializer, DeliveryVehicleTypeSerializer, VehicleCategorySerializer, ServiceAreaSerializer, AppVersionSerializer
 from core_auth.cache_utils import conditional_api_response, cached_api_response
 
 class AdminOrReadOnly(permissions.BasePermission):
@@ -89,3 +89,26 @@ class VehicleCategoryViewSet(viewsets.ModelViewSet):
             global_cache=True,
         )
 
+from .models import AppVersion
+
+class AppVersionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows checking app version requirements.
+    Filters by platform and app_type query parameters.
+    """
+    queryset = AppVersion.objects.all()
+    serializer_class = AppVersionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def list(self, request, *args, **kwargs):
+        platform = request.query_params.get('platform')
+        app_type = request.query_params.get('app_type')
+        
+        queryset = self.get_queryset()
+        if platform:
+            queryset = queryset.filter(platform=platform)
+        if app_type:
+            queryset = queryset.filter(app_type=app_type)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

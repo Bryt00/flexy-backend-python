@@ -225,3 +225,30 @@ def get_vehicle_categories():
 
 def get_assigned_categories():
     return [('none', 'Not Assigned')] + get_vehicle_categories()
+
+class AppVersion(models.Model):
+    PLATFORM_CHOICES = [
+        ('android', 'Android'),
+        ('ios', 'iOS'),
+    ]
+    APP_TYPE_CHOICES = [
+        ('passenger', 'Passenger App'),
+        ('driver', 'Driver App'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    app_type = models.CharField(max_length=20, choices=APP_TYPE_CHOICES)
+    minimum_version = models.CharField(max_length=50, help_text="e.g. '1.0.0'")
+    latest_version = models.CharField(max_length=50, help_text="e.g. '1.1.0'")
+    force_update = models.BooleanField(default=False, help_text="If True, users on older versions will be forced to update.")
+    store_url = models.URLField(max_length=500, blank=True, null=True, help_text="Link to Play Store or App Store")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('platform', 'app_type')
+        verbose_name_plural = "App Versions"
+
+    def __str__(self):
+        return f"{self.get_app_type_display()} - {self.get_platform_display()} (Min: {self.minimum_version}, Latest: {self.latest_version})"
+

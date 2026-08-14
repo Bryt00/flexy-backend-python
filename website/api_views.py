@@ -75,7 +75,7 @@ class LegalDocumentViewSet(viewsets.ModelViewSet):
         if not obj:
             defaults = {
                 'privacy': ('Privacy Policy', 'FlexyRide Privacy Policy:\n\nWe respect your privacy and are committed to protecting your personal data. We collect location and account data to provide safe, reliable ride-hailing and logistics services.'),
-                'terms': ('Terms of Service', 'FlexyRide Terms of Service:\n\nWelcome to FlexyRide. By using our services, you agree to these Terms of Service. Please review all terms before requesting rides or services.'),
+                'terms': ('Terms and Conditions', 'FlexyRide Terms and Conditions:\n\nWelcome to FlexyRide. By using our services, you agree to these Terms and Conditions. Please review all terms before requesting rides or services.'),
                 'cookies': ('Cookie Policy', 'FlexyRide Cookie Policy:\n\nWe use essential session tokens and cookies to secure your account and personalize your experience.'),
                 'about': ('About Us', 'About FlexyRide:\n\nFlexyRide is Ghana\'s premier ride-hailing and delivery service offering fast, affordable, and safe mobility.'),
             }

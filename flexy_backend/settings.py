@@ -20,7 +20,7 @@ environ.Env.read_env(env_file=os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY', default='django-insecure--2igbe1w0zqjl_(8w2)irn!e-8_+a(rse0z9fe)uzbf1#20^ah')
 
 DEBUG = env('DEBUG', default=False)
-
+APP_ENV = env('APP_ENV', default='production')
 CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://192.168.0.75:8000', 'http://192.168.0.75']
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*', '192.168.1.76'])
 
@@ -243,8 +243,8 @@ SWAGGER_UI_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1800),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=60),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=180),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=210),
     'AUTHORIZATION_HEADER_TYPE': ('Bearer',),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,

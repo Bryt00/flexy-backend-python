@@ -273,6 +273,26 @@ class ContactView(FormView):
         return context
 
 # Legal Pages
+class LegalHubView(TemplateView):
+    template_name = 'website/legal/hub.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_global_context())
+        
+        all_docs = LegalDocument.objects.all().order_by('title')
+        grouped_docs = {}
+        for category_key, category_name in LegalDocument.CATEGORY_CHOICES:
+            docs = [d for d in all_docs if d.category == category_key]
+            if docs:
+                grouped_docs[category_name] = docs
+                
+        if not grouped_docs and all_docs:
+            grouped_docs['General Terms & Policies'] = list(all_docs)
+            
+        context['grouped_docs'] = grouped_docs
+        return context
+
 @method_decorator(cache_page(60 * 15), name='dispatch')
 class LegalDocumentView(TemplateView):
     template_name = 'website/legal/detail.html'
@@ -292,7 +312,7 @@ class LegalDocumentView(TemplateView):
             # Provide a placeholder so the template renders gracefully
             from types import SimpleNamespace
             from django.utils import timezone
-            type_labels = {'terms': 'Terms of Service', 'privacy': 'Privacy Policy', 'cookies': 'Cookie Policy'}
+            type_labels = {'terms': 'Terms and Conditions', 'privacy': 'Privacy Policy', 'cookies': 'Cookie Policy'}
             document = SimpleNamespace(
                 title=type_labels.get(doc_type, 'Legal Document'),
                 content='<p>This document is currently being prepared. Please check back soon.</p>',
@@ -301,15 +321,21 @@ class LegalDocumentView(TemplateView):
         context['document'] = document
         return context
 
-class TermsView(LegalDocumentView):
+class TermsView(LegalHubView):
     def get_context_data(self, **kwargs):
-        kwargs['doc_type'] = 'terms'
-        return super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
+        context['badge_title'] = 'Terms and Conditions'
+        context['page_title'] = 'How can we help?'
+        context['page_subtitle'] = 'Explore terms and conditions documents for FlexyRide services.'
+        return context
 
-class PrivacyView(LegalDocumentView):
+class PrivacyView(LegalHubView):
     def get_context_data(self, **kwargs):
-        kwargs['doc_type'] = 'privacy'
-        return super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
+        context['badge_title'] = 'Privacy Policy at FlexyRide'
+        context['page_title'] = 'How can we help?'
+        context['page_subtitle'] = 'Explore privacy policy documents for FlexyRide services.'
+        return context
 
 class CookiesView(LegalDocumentView):
     def get_context_data(self, **kwargs):

@@ -304,3 +304,68 @@ class PassengerBenefit(models.Model):
     def __str__(self):
         return self.title
 
+
+from django.utils import timezone
+
+class PressRelease(models.Model):
+    CATEGORY_CHOICES = [
+        ('initiatives', 'Initiatives'),
+        ('partnerships', 'Partnerships'),
+        ('events', 'Events'),
+        ('impact', 'Impact Stories'),
+        ('reports', 'Reports'),
+        ('announcements', 'Announcements'),
+    ]
+
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True, max_length=255)
+    subtitle = models.TextField(help_text="Lead paragraph or short summary", blank=True)
+    content = CKEditor5Field('Content', config_name='extends')
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='announcements')
+    location = models.CharField(max_length=100, default='Accra, Ghana')
+    is_immediate_release = models.BooleanField(default=True, help_text="Displays FOR IMMEDIATE RELEASE badge")
+    cover_image = models.ImageField(upload_to='press/', blank=True, null=True)
+    cover_image_url = models.URLField(max_length=500, blank=True, null=True, help_text="External image URL fallback")
+    published_at = models.DateTimeField(default=timezone.now)
+    is_published = models.BooleanField(default=True)
+    
+    # Media Contact Information
+    media_contact_name = models.CharField(max_length=100, default='FlexyRide Media Team')
+    media_contact_email = models.EmailField(default='press@flexyridegh.com')
+    media_contact_phone = models.CharField(max_length=30, default='+233 30 200 0000')
+    
+    # Boilerplate info at bottom of release
+    about_boilerplate = models.TextField(
+        default="FlexyRide is Ghana's leading ride-hailing and urban logistics platform dedicated to providing safe, reliable, and affordable mobility solutions."
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-published_at']
+        verbose_name = 'Press Release'
+        verbose_name_plural = 'Press Releases'
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class PressDownload(models.Model):
+    press_release = models.ForeignKey(PressRelease, on_delete=models.CASCADE, related_name='downloads', blank=True, null=True, help_text="Optionally attach to specific press release")
+    title = models.CharField(max_length=200, help_text="e.g. FlexyRide Impact 2026 Overview (PDF)")
+    file_type = models.CharField(max_length=10, default='PDF', help_text="PDF, ZIP, DOCX, etc.")
+    file = models.FileField(upload_to='press_downloads/', blank=True, null=True)
+    external_url = models.URLField(max_length=500, blank=True, null=True, help_text="External URL if not uploading file directly")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.file_type})"
+
+

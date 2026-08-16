@@ -2,7 +2,8 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import (
     BlogPost, ContactInquiry, City, Testimonial, FAQItem, JobOpening,
-    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit, PassengerBenefit
+    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit, PassengerBenefit,
+    PressRelease, PressDownload
 )
 
 @admin.register(WebsiteSettings)
@@ -135,3 +136,44 @@ class JobOpeningAdmin(ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+@admin.register(PressRelease)
+class PressReleaseAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('title', 'category', 'location', 'is_published', 'published_at')
+    list_filter = ('category', 'is_published', 'published_at', 'location')
+    search_fields = ('title', 'subtitle', 'content', 'location')
+    prepopulated_fields = {'slug': ('title',)}
+    date_hierarchy = 'published_at'
+
+    fieldsets = (
+        ('Article Metadata', {
+            'fields': (
+                ('title', 'slug'),
+                ('category', 'location'),
+                ('published_at', 'is_published', 'is_immediate_release'),
+            ),
+        }),
+        ('Content Body', {
+            'fields': (
+                'subtitle',
+                'content',
+                'cover_image',
+                'cover_image_url',
+            ),
+        }),
+        ('Media Contact & Boilerplate', {
+            'fields': (
+                ('media_contact_name', 'media_contact_email', 'media_contact_phone'),
+                'about_boilerplate',
+            ),
+        }),
+    )
+
+@admin.register(PressDownload)
+class PressDownloadAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('title', 'file_type', 'press_release', 'is_active', 'created_at')
+    list_filter = ('file_type', 'is_active', 'created_at')
+    search_fields = ('title',)
+

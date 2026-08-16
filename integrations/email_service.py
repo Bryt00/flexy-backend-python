@@ -188,7 +188,7 @@ class EmailService:
         """
         subject = f'Your Ad Booking for {business_name} was Approved!' if is_approved else f'Action Required: Your Ad Booking for {business_name}'
         
-        site_url = getattr(settings, 'SITE_URL', 'http://127.0.0.1:8000')
+        site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com').rstrip('/')
         dashboard_url = f"{site_url}/advertise/dashboard/?token={dashboard_token}" if dashboard_token else f"{site_url}/advertise/dashboard/"
         
         from django.utils import timezone

@@ -65,6 +65,10 @@ class AdBooking(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        if not self.dashboard_token:
+            from django.core.signing import TimestampSigner
+            signer = TimestampSigner()
+            self.dashboard_token = signer.sign(str(self.id))
         super().save(*args, **kwargs)
         if self.image:
             self._process_image(self.image.path)
@@ -172,26 +176,34 @@ def create_ad_analytics(sender, instance, created, **kwargs):
 
 @receiver(pre_save, sender=AdBooking)
 def handle_ad_status_change(sender, instance, **kwargs):
+    if not instance.dashboard_token:
+        from django.core.signing import TimestampSigner
+        signer = TimestampSigner()
+        instance.dashboard_token = signer.sign(str(instance.id))
+
     if instance.id:
         try:
             old_instance = AdBooking.objects.get(id=instance.id)
-            if old_instance.status != instance.status:
-                from integrations.email_service import EmailService
-                
-                if instance.status == 'APPROVED':
-                    EmailService.send_ad_status_email(
-                        contact_email=instance.contact_email,
-                        business_name=instance.business_name,
-                        is_approved=True,
-                        dashboard_token=instance.dashboard_token
-                    )
-                elif instance.status == 'REJECTED':
-                    reason = instance.rejection_reason or "Creative does not meet our guidelines."
-                    EmailService.send_ad_status_email(
-                        contact_email=instance.contact_email,
-                        business_name=instance.business_name,
-                        is_approved=False,
-                        reason=reason
-                    )
+            status_changed = old_instance.status != instance.status
         except AdBooking.DoesNotExist:
-            pass
+            status_changed = True
+
+        if status_changed:
+            from integrations.email_service import EmailService
+            
+            if instance.status == 'APPROVED':
+                EmailService.send_ad_status_email(
+                    contact_email=instance.contact_email,
+                    business_name=instance.business_name,
+                    is_approved=True,
+                    dashboard_token=instance.dashboard_token
+                )
+            elif instance.status == 'REJECTED':
+                reason = instance.rejection_reason or "Creative does not meet our guidelines."
+                EmailService.send_ad_status_email(
+                    contact_email=instance.contact_email,
+                    business_name=instance.business_name,
+                    is_approved=False,
+                    reason=reason,
+                    dashboard_token=instance.dashboard_token
+                )

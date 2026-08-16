@@ -31,6 +31,7 @@ urlpatterns = [
     path('v1/deliveries/', include('courier.urls')),
     path('v1/integrations/', include('integrations.urls')),
     path('v1/ads/', include('advertising.urls')),
+    path('api/advertising/', include('advertising.urls')),
     path('v1/website/', include('website.api_urls')),
     path('v1/settings/', include('core_settings.api_urls')),
     path('v1/admin/subscriptions/', include('subscriptions.api_urls')),

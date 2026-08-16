@@ -3,7 +3,7 @@ import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.views.generic import TemplateView
-from django.core.signing import Signer, BadSignature
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
@@ -151,7 +151,7 @@ class AdReviewView(View):
         ad.status = 'PENDING_REVIEW'
         ad.amount = config.price_per_week_ghs
         
-        signer = Signer()
+        signer = TimestampSigner()
         ad.dashboard_token = signer.sign(str(ad.id))
         ad.save()
         
@@ -196,12 +196,24 @@ class AdDashboardView(View):
             messages.error(request, "Invalid or missing access token.")
             return redirect('advertise_landing')
             
-        signer = Signer()
+        signer = TimestampSigner()
         try:
-            ad_id_str = signer.unsign(token)
+            # Enforce 1-hour link expiration (3600 seconds)
+            ad_id_str = signer.unsign(token, max_age=3600)
             base_ad = get_object_or_404(AdBooking, id=uuid.UUID(ad_id_str))
+        except SignatureExpired:
+            # Extract contact email from expired token to streamline resending
+            contact_email = ''
+            try:
+                ad_id_str = signer.unsign(token)
+                expired_ad = AdBooking.objects.filter(id=uuid.UUID(ad_id_str)).first()
+                if expired_ad:
+                    contact_email = expired_ad.contact_email
+            except Exception:
+                pass
+            return render(request, 'advertising/expired_link.html', {'contact_email': contact_email, 'token': token})
         except BadSignature:
-            messages.error(request, "Invalid or expired access token.")
+            messages.error(request, "Invalid access token.")
             return redirect('advertise_landing')
             
         # We fetch all bookings for this email
@@ -221,13 +233,62 @@ class AdPreviewView(View):
         if not token or not ad_id:
             return redirect('advertise_landing')
             
-        signer = Signer()
+        signer = TimestampSigner()
         try:
-            # Verify the token belongs to the requester
-            signer.unsign(token)
+            # Verify the token belongs to the requester within max 1 hour
+            signer.unsign(token, max_age=3600)
             ad = get_object_or_404(AdBooking, id=uuid.UUID(ad_id))
+        except SignatureExpired:
+            contact_email = ''
+            try:
+                ad_id_str = signer.unsign(token)
+                expired_ad = AdBooking.objects.filter(id=uuid.UUID(ad_id_str)).first()
+                if expired_ad:
+                    contact_email = expired_ad.contact_email
+            except Exception:
+                pass
+            return render(request, 'advertising/expired_link.html', {'contact_email': contact_email, 'token': token})
         except (BadSignature, ValueError):
             return redirect('advertise_landing')
             
         return render(request, 'advertising/preview.html', {'ad': ad})
+
+class ResendAdLinkView(View):
+    def post(self, request):
+        contact_email = request.POST.get('contact_email', '').strip()
+        token = request.POST.get('token', '').strip()
+        
+        ad = None
+        signer = TimestampSigner()
+        if token:
+            try:
+                ad_id_str = signer.unsign(token)
+                ad = AdBooking.objects.filter(id=uuid.UUID(ad_id_str)).first()
+            except Exception:
+                pass
+                
+        if not ad and contact_email:
+            ad = AdBooking.objects.filter(contact_email=contact_email).order_by('-created_at').first()
+            
+        if ad:
+            # Generate a fresh 1-hour token
+            ad.dashboard_token = signer.sign(str(ad.id))
+            ad.save()
+            
+            is_approved = ad.status == 'APPROVED'
+            reason = ad.rejection_reason if ad.status == 'REJECTED' else None
+            
+            EmailService.send_ad_status_email(
+                contact_email=ad.contact_email,
+                business_name=ad.business_name,
+                is_approved=is_approved,
+                reason=reason,
+                dashboard_token=ad.dashboard_token
+            )
+            messages.success(request, f"A new 1-hour payment link has been sent to {ad.contact_email}.")
+            return render(request, 'advertising/expired_link.html', {'contact_email': ad.contact_email, 'sent': True})
+        else:
+            messages.error(request, "No matching ad booking was found for that email address.")
+            return render(request, 'advertising/expired_link.html', {'contact_email': contact_email, 'sent': False})
+
 

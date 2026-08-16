@@ -183,7 +183,7 @@
                 // Show instant verification feedback
                 console.log('Payment complete! Verifying transaction with reference: ' + response.reference);
                 
-                fetch('/api/advertising/verify-payment/', {
+                fetch('{% url "ad_verify_payment" %}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

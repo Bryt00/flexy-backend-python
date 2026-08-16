@@ -8,5 +8,6 @@ urlpatterns = [
     path('success/', website_views.AdSuccessView.as_view(), name='advertise_success'),
     path('dashboard/', website_views.AdDashboardView.as_view(), name='advertise_dashboard'),
     path('preview/', website_views.AdPreviewView.as_view(), name='advertise_preview'),
+    path('resend-link/', website_views.ResendAdLinkView.as_view(), name='advertise_resend_link'),
 ]
 

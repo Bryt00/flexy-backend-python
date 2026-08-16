@@ -1,0 +1,228 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}{{ release.title }} | FlexyRide Press Release{% endblock %}
+{% block meta_description %}{{ release.subtitle|default:release.title|truncatewords:25 }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.press-detail-hero {
+    background: linear-gradient(rgba(10, 15, 29, 0.9), rgba(10, 15, 29, 0.95)), url('{% static "img/hero_main.png" %}');
+    background-size: cover;
+    background-position: center;
+}
+.article-body p { margin-bottom: 1.5rem; line-height: 1.8; color: #cbd5e1; font-size: 1.05rem; }
+.article-body blockquote { 
+    border-left: 4px solid #00B4FF; 
+    background: rgba(0, 180, 255, 0.05); 
+    padding: 1.5rem; 
+    border-radius: 0 1rem 1rem 0; 
+    margin: 2rem 0; 
+    font-style: italic; 
+    color: #f8fafc;
+}
+.article-body h2, .article-body h3 { font-family: ui-serif, Georgia, Cambria, serif; font-weight: bold; color: #ffffff; margin-top: 2rem; margin-bottom: 1rem; }
+.article-body h2 { font-size: 1.75rem; }
+.article-body h3 { font-size: 1.35rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<section class="press-detail-hero py-20 border-b border-white/5">
+    <div class="container animate-fade-in">
+        <h1 class="text-4xl md:text-6xl font-serif font-bold text-white mb-4">PRESS RELEASE</h1>
+        <p class="text-xl text-gray-400 font-light">Official News from <span class="text-brand font-semibold">FlexyRide</span></p>
+    </div>
+</section>
+
+<!-- Breadcrumbs Bar -->
+<section class="bg-dark-900 border-b border-white/5 py-4">
+    <div class="container">
+        <nav class="flex text-xs font-semibold uppercase tracking-wider text-gray-500 gap-2 items-center overflow-x-auto">
+            <a href="{% url 'home' %}" class="hover:text-brand transition-colors flex-shrink-0">Home</a>
+            <span>/</span>
+            <span class="text-gray-400 flex-shrink-0">Media</span>
+            <span>/</span>
+            <a href="{% url 'press' %}" class="hover:text-brand transition-colors flex-shrink-0">Press Releases</a>
+            <span>/</span>
+            <span class="text-brand font-bold flex-shrink-0 truncate max-w-xs">{{ release.title }}</span>
+        </nav>
+    </div>
+</section>
+
+<!-- Main Article & Sidebar Grid -->
+<section class="py-16 bg-dark-950">
+    <div class="container animate-fade-in">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            
+            <!-- Left Main Column (Article Content) -->
+            <div class="lg:col-span-8 space-y-8">
+                <div class="ui-card bg-dark-900 border-white/5 p-8 md:p-12 rounded-3xl">
+                    
+                    <!-- Article Meta Header -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-white/5 mb-8">
+                        {% if release.is_immediate_release %}
+                            <span class="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-brand/10 text-brand border border-brand/30">
+                                FOR IMMEDIATE RELEASE
+                            </span>
+                        {% else %}
+                            <span class="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-white/5 text-gray-400 border border-white/10">
+                                {{ release.get_category_display }}
+                            </span>
+                        {% endif %}
+                        
+                        <span class="text-sm font-semibold text-gray-400">
+                            {{ release.published_at|date:"F d, Y" }}
+                        </span>
+                    </div>
+
+                    <!-- Title & Subtitle -->
+                    <h1 class="text-3xl md:text-5xl font-serif font-bold text-white leading-tight mb-6">
+                        {{ release.title }}
+                    </h1>
+                    
+                    {% if release.subtitle %}
+                    <p class="text-xl text-gray-300 font-light leading-relaxed mb-8 border-l-2 border-brand/50 pl-6 py-1">
+                        {{ release.subtitle }}
+                    </p>
+                    {% endif %}
+
+                    <!-- Optional Cover Image -->
+                    {% if release.cover_image or release.cover_image_url %}
+                    <div class="rounded-2xl overflow-hidden mb-10 border border-white/5 shadow-2xl">
+                        <img src="{% if release.cover_image %}{{ release.cover_image.url }}{% else %}{{ release.cover_image_url }}{% endif %}" 
+                             alt="{{ release.title }}" class="w-full h-auto max-h-[480px] object-cover">
+                    </div>
+                    {% endif %}
+
+                    <!-- Article Body Content -->
+                    <div class="article-body font-sans text-gray-300 space-y-6">
+                        <p><strong class="text-white">{{ release.location }} &ndash; {{ release.published_at|date:"F d, Y" }}</strong> &ndash; {{ release.content|safe }}</p>
+                    </div>
+
+                    <!-- End Marker -->
+                    <div class="text-center text-gray-600 font-bold tracking-widest my-10 text-xl">
+                        ###
+                    </div>
+
+                    <!-- About FlexyRide Boilerplate Box -->
+                    <div class="p-8 rounded-2xl bg-dark-950 border border-white/5 my-10 space-y-3">
+                        <h3 class="text-lg font-bold text-white">About FlexyRide</h3>
+                        <p class="text-sm text-gray-400 leading-relaxed font-light">
+                            {{ release.about_boilerplate }}
+                        </p>
+                    </div>
+
+                    <!-- Footer Media Contact & Social Links -->
+                    <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div>
+                            <h4 class="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Media Contact</h4>
+                            <p class="text-sm font-bold text-white">{{ release.media_contact_name }}</p>
+                            <p class="text-xs text-brand font-mono">{{ release.media_contact_email }}</p>
+                            <p class="text-xs text-gray-400 font-mono">{{ release.media_contact_phone }}</p>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xs font-black uppercase tracking-widest text-gray-500 mb-3 md:text-right">Stay Connected</h4>
+                            <div class="flex items-center gap-3">
+                                <a href="{{ site_settings.facebook_url|default:'#' }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-brand hover:text-dark-950 flex items-center justify-center text-gray-400 transition-colors">
+                                    <i data-lucide="facebook" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{{ site_settings.twitter_url|default:'#' }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-brand hover:text-dark-950 flex items-center justify-center text-gray-400 transition-colors">
+                                    <i data-lucide="twitter" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{{ site_settings.instagram_url|default:'#' }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-brand hover:text-dark-950 flex items-center justify-center text-gray-400 transition-colors">
+                                    <i data-lucide="instagram" class="w-4 h-4"></i>
+                                </a>
+                                <a href="{{ site_settings.linkedin_url|default:'#' }}" target="_blank" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-brand hover:text-dark-950 flex items-center justify-center text-gray-400 transition-colors">
+                                    <i data-lucide="linkedin" class="w-4 h-4"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Right Sidebar Column -->
+            <div class="lg:col-span-4 space-y-8">
+                
+                <!-- Media Contact Card -->
+                <div class="ui-card bg-dark-900 border-white/5 p-8 rounded-3xl text-center">
+                    <div class="w-16 h-16 rounded-full bg-brand/10 text-brand flex items-center justify-center mx-auto mb-6 border border-brand/20">
+                        <i data-lucide="user-check" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-serif font-bold text-white mb-2">MEDIA CONTACT</h3>
+                    <p class="text-sm font-semibold text-gray-300 mb-1">{{ release.media_contact_name }}</p>
+                    <a href="mailto:{{ release.media_contact_email }}" class="text-xs font-mono text-brand hover:underline block mb-1">
+                        {{ release.media_contact_email }}
+                    </a>
+                    <p class="text-xs font-mono text-gray-500 mb-6">{{ release.media_contact_phone }}</p>
+                    
+                    <a href="{% url 'contact' %}?category=press" class="btn btn-primary w-full py-3.5 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                        <i data-lucide="mail" class="w-4 h-4"></i>
+                        Contact Us
+                    </a>
+                </div>
+
+                <!-- Related Press Releases Card -->
+                <div class="ui-card bg-dark-900 border-white/5 p-8 rounded-3xl space-y-6">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-gray-400 border-b border-white/5 pb-4">
+                        RELATED PRESS RELEASES
+                    </h3>
+
+                    <div class="space-y-6 divide-y divide-white/5">
+                        {% for related in related_releases %}
+                        <a href="{% url 'press_detail' related.slug %}" class="group block pt-4 first:pt-0">
+                            <p class="text-xs text-gray-500 mb-1">{{ related.published_at|date:"F d, Y" }}</p>
+                            <h4 class="text-sm font-bold text-white group-hover:text-brand transition-colors flex items-center justify-between gap-2">
+                                <span>{{ related.title }}</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-brand flex-shrink-0 group-hover:translate-x-1 transition-transform"></i>
+                            </h4>
+                        </a>
+                        {% empty %}
+                        <p class="text-xs text-gray-500 italic py-2">No related releases found.</p>
+                        {% endfor %}
+                    </div>
+
+                    <a href="{% url 'press' %}" class="btn btn-outline w-full py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 mt-4">
+                        View All Releases
+                    </a>
+                </div>
+
+                <!-- Downloads Card -->
+                <div class="ui-card bg-dark-900 border-white/5 p-8 rounded-3xl space-y-6">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-gray-400 border-b border-white/5 pb-4">
+                        DOWNLOADS
+                    </h3>
+
+                    <div class="space-y-4">
+                        {% for item in downloads %}
+                        <a href="{% if item.file %}{{ item.file.url }}{% else %}{{ item.external_url|default:'#' }}{% endif %}" target="_blank" download
+                           class="p-4 rounded-2xl bg-dark-950 border border-white/5 hover:border-brand/40 transition-colors flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="file-text" class="w-5 h-5 text-brand"></i>
+                                <span class="text-xs font-bold text-gray-300 group-hover:text-white transition-colors">{{ item.title }}</span>
+                            </div>
+                            <i data-lucide="download" class="w-4 h-4 text-gray-500 group-hover:text-brand transition-colors"></i>
+                        </a>
+                        {% empty %}
+                        <a href="mailto:press@flexyridegh.com?subject=Media%20Kit%20Request" 
+                           class="p-4 rounded-2xl bg-dark-950 border border-white/5 hover:border-brand/40 transition-colors flex items-center justify-between group">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="package" class="w-5 h-5 text-brand"></i>
+                                <span class="text-xs font-bold text-gray-300 group-hover:text-white transition-colors">FlexyRide Press Kit (ZIP)</span>
+                            </div>
+                            <i data-lucide="download" class="w-4 h-4 text-gray-500 group-hover:text-brand transition-colors"></i>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

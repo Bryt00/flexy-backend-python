@@ -7,7 +7,8 @@ from django import forms
 from django.db.models import Q
 from .models import (
     BlogPost, City, ContactInquiry, Testimonial, FAQItem, JobOpening,
-    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit, PassengerBenefit
+    WebsiteSettings, BrandFeature, ServiceCategory, SafetyFeature, LegalDocument, HeroBanner, DriverBenefit, PassengerBenefit,
+    PressRelease, PressDownload
 )
 
 from django.core.cache import cache
@@ -223,14 +224,63 @@ class JobDetailView(DetailView):
         context['other_jobs'] = JobOpening.objects.filter(is_active=True).exclude(id=self.object.id).order_by('?')[:3]
         return context
 
-@method_decorator(cache_page(60 * 15), name='dispatch')
-class PressView(TemplateView):
-    template_name = 'website/press.html'
+class PressListView(ListView):
+    model = PressRelease
+    template_name = 'website/press/list.html'
+    context_object_name = 'press_releases'
+    paginate_by = 9
+
+    def get_queryset(self):
+        qs = PressRelease.objects.filter(is_published=True).order_by('-published_at')
+        
+        category = self.request.GET.get('category', '').strip()
+        year = self.request.GET.get('year', '').strip()
+        q = self.request.GET.get('q', '').strip()
+
+        if category:
+            qs = qs.filter(category=category)
+        if year and year.isdigit():
+            qs = qs.filter(published_at__year=int(year))
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(subtitle__icontains=q) | Q(content__icontains=q) | Q(location__icontains=q))
+
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(get_global_context())
-        context['press_posts'] = BlogPost.objects.filter(is_published=True, category='company').order_by('-published_at')[:5]
+        context['q'] = self.request.GET.get('q', '')
+        context['active_category'] = self.request.GET.get('category', '')
+        context['active_year'] = self.request.GET.get('year', '')
+        context['categories'] = PressRelease.CATEGORY_CHOICES
+        
+        from django.db.models.functions import ExtractYear
+        years = PressRelease.objects.filter(is_published=True).annotate(year=ExtractYear('published_at')).values_list('year', flat=True).distinct().order_by('-year')
+        context['years'] = list(years) if years else [2026, 2025, 2024]
+        return context
+
+
+class PressDetailView(DetailView):
+    model = PressRelease
+    template_name = 'website/press/detail.html'
+    context_object_name = 'release'
+
+    def get_queryset(self):
+        return PressRelease.objects.filter(is_published=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(get_global_context())
+        
+        # Related press releases
+        context['related_releases'] = PressRelease.objects.filter(is_published=True).exclude(id=self.object.id).order_by('-published_at')[:3]
+        
+        # Downloads
+        downloads = list(self.object.downloads.filter(is_active=True))
+        if not downloads:
+            downloads = list(PressDownload.objects.filter(is_active=True, press_release__isnull=True)[:2])
+        context['downloads'] = downloads
+        
         return context
 
 @method_decorator(cache_page(60 * 15), name='dispatch')

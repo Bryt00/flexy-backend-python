@@ -41,8 +41,9 @@ class EmailService:
     @staticmethod
     def send_welcome_email(user):
         """
-        Sends a welcome email to a newly registered user.
+        Sends a welcome email to a newly registered user asynchronously.
         """
+        import threading
         subject = 'Welcome to FlexyRide!'
         context = {
             'user': user,
@@ -51,23 +52,32 @@ class EmailService:
         
         try:
             html_message = render_to_string('emails/welcome.html', context)
-            send_mail(
-                subject,
-                '', # Plain text version empty
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            logger.info(f"Welcome email sent to {user.email}")
         except Exception as e:
-            logger.error(f"Failed to send welcome email to {user.email}: {str(e)}")
+            logger.error(f"Failed to render welcome email template: {str(e)}")
+            return
+
+        def send_email_bg():
+            try:
+                send_mail(
+                    subject,
+                    '', # Plain text version empty
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    html_message=html_message,
+                    fail_silently=True,
+                )
+                logger.info(f"Welcome email sent to {user.email}")
+            except Exception as e:
+                logger.error(f"Failed to send welcome email to {user.email}: {str(e)}")
+
+        threading.Thread(target=send_email_bg, daemon=True).start()
 
     @staticmethod
     def send_otp_email(email, otp_code):
         """
-        Sends an OTP code for authentication/verification.
+        Sends an OTP code for authentication/verification asynchronously.
         """
+        import threading
         subject = f'{otp_code} is your FlexyRide verification code'
         context = {
             'otp_code': otp_code,
@@ -76,17 +86,25 @@ class EmailService:
         
         try:
             html_message = render_to_string('emails/otp.html', context)
-            send_mail(
-                subject,
-                f"Your verification code is {otp_code}",
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            logger.info(f"OTP email sent to {email}")
         except Exception as e:
-            logger.error(f"Failed to send OTP email to {email}: {str(e)}")
+            logger.error(f"Failed to render OTP email template: {str(e)}")
+            html_message = None
+
+        def send_email_bg():
+            try:
+                send_mail(
+                    subject,
+                    f"Your verification code is {otp_code}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    html_message=html_message,
+                    fail_silently=True,
+                )
+                logger.info(f"OTP email sent to {email}")
+            except Exception as e:
+                logger.error(f"Failed to send OTP email to {email}: {str(e)}")
+
+        threading.Thread(target=send_email_bg, daemon=True).start()
 
     @staticmethod
     def send_ride_receipt_email(ride, receipt):

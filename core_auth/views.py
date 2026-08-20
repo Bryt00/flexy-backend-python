@@ -423,9 +423,13 @@ class SocialAuthView(views.APIView):
                     **{social_field: social_id}
                 )
                 
-                # Send Welcome Email
-                from integrations.email_service import EmailService
-                EmailService.send_welcome_email(user)
+                # Send Welcome Email safely
+                try:
+                    from integrations.email_service import EmailService
+                    EmailService.send_welcome_email(user)
+                except Exception as email_err:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Could not trigger welcome email: {email_err}")
 
             if not user.session_key:
                 import uuid
@@ -442,7 +446,10 @@ class SocialAuthView(views.APIView):
         except AuthenticationFailed as e:
             return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
-            return Response({"error": "An error occurred during social authentication"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Social auth unexpected error: {str(e)}", exc_info=True)
+            return Response({"error": f"An error occurred during social authentication: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UserMeView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer

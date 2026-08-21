@@ -9,5 +9,7 @@ urlpatterns = [
     path('dashboard/', website_views.AdDashboardView.as_view(), name='advertise_dashboard'),
     path('preview/', website_views.AdPreviewView.as_view(), name='advertise_preview'),
     path('resend-link/', website_views.ResendAdLinkView.as_view(), name='advertise_resend_link'),
+    path('payment/callback/', website_views.AdPaymentCallbackView.as_view(), name='ad_payment_callback'),
 ]
+
 

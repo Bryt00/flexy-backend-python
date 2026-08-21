@@ -200,9 +200,10 @@ class EmailService:
             logger.error(f"Failed to send admin ad notification: {str(e)}")
 
     @staticmethod
-    def send_ad_status_email(contact_email, business_name, is_approved, reason=None, dashboard_token=None):
+    def send_ad_status_email(contact_email, business_name, is_approved, reason=None, dashboard_token=None, payment_url=None):
         """
         Sends an HTML and plaintext email informing the client of ad status updates.
+        When approved, includes a direct Paystack checkout URL for payment.
         """
         subject = f'Your Ad Booking for {business_name} was Approved!' if is_approved else f'Action Required: Your Ad Booking for {business_name}'
         
@@ -215,13 +216,17 @@ class EmailService:
             'is_approved': is_approved,
             'reason': reason,
             'dashboard_url': dashboard_url,
+            'payment_url': payment_url,
             'app_name': 'FlexyRide',
             'now': timezone.now()
         }
 
         html_message = render_to_string('emails/ad_status.html', context)
         if is_approved:
-            plain_message = f"Congratulations! Your ad for {business_name} has been approved.\n\nYou can now proceed to payment in your ad dashboard to go live:\n{dashboard_url}\n\nThank you for choosing FlexyRide."
+            if payment_url:
+                plain_message = f"Congratulations! Your ad for {business_name} has been approved.\n\nComplete your payment to go live:\n{payment_url}\n\nYou can also track your ad status at:\n{dashboard_url}\n\nThank you for choosing FlexyRide."
+            else:
+                plain_message = f"Congratulations! Your ad for {business_name} has been approved.\n\nYou can proceed to payment in your ad dashboard to go live:\n{dashboard_url}\n\nThank you for choosing FlexyRide."
         else:
             plain_message = f"Your ad for {business_name} was not approved.\n\nReason: {reason if reason else 'Creative does not meet our guidelines.'}\n\nPlease update your creative in the dashboard and resubmit."
 

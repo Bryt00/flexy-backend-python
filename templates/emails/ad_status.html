@@ -12,6 +12,8 @@
         .rejected { background-color: #ef4444; color: #ffffff; }
         .btn-container { text-align: center; margin: 30px 0; }
         .btn { display: inline-block; padding: 14px 28px; background-color: #00B4FF; color: #ffffff !important; text-decoration: none; font-weight: 700; border-radius: 8px; font-size: 16px; transition: background-color 0.2s ease; }
+        .btn-pay { background-color: #22c55e; }
+        .btn-secondary { background-color: transparent; color: #00B4FF !important; border: 2px solid #00B4FF; font-size: 13px; padding: 10px 20px; }
         .footer { font-size: 0.8em; color: #888; text-align: center; border-top: 1px solid #eee; padding-top: 20px; margin-top: 20px; }
     </style>
 </head>
@@ -30,11 +32,21 @@
                     <span class="status approved">APPROVED</span>
                 </div>
                 <p>Congratulations! Your ad request has been approved by our team.</p>
-                <p>You can now proceed to payment in your ad dashboard to make the campaign live:</p>
                 
-                <div class="btn-container">
-                    <a href="{{ dashboard_url }}" class="btn" target="_blank">Proceed to Payment Dashboard</a>
-                </div>
+                {% if payment_url %}
+                    <p>Complete your payment below to make your campaign live:</p>
+                    <div class="btn-container">
+                        <a href="{{ payment_url }}" class="btn btn-pay" target="_blank">Complete Payment</a>
+                    </div>
+                    <div class="btn-container" style="margin-top: 10px;">
+                        <a href="{{ dashboard_url }}" class="btn btn-secondary" target="_blank">View Campaign Dashboard</a>
+                    </div>
+                {% else %}
+                    <p>You can proceed to payment in your ad dashboard to make the campaign live:</p>
+                    <div class="btn-container">
+                        <a href="{{ dashboard_url }}" class="btn" target="_blank">Proceed to Payment Dashboard</a>
+                    </div>
+                {% endif %}
             {% else %}
                 <div>
                     <span class="status rejected">REJECTION NOTICE</span>

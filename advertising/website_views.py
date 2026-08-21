@@ -222,7 +222,6 @@ class AdDashboardView(View):
         return render(request, 'advertising/dashboard.html', {
             'bookings': bookings,
             'current_token': token,
-            'paystack_public_key': settings.PAYSTACK_PUBLIC_KEY
         })
 
 class AdPreviewView(View):
@@ -292,3 +291,172 @@ class ResendAdLinkView(View):
             return render(request, 'advertising/expired_link.html', {'contact_email': contact_email, 'sent': False})
 
 
+class AdPaymentCallbackView(View):
+    """
+    Handles the Paystack redirect after a customer completes (or cancels) payment.
+    Paystack appends ?trxref=xxx&reference=xxx to the callback URL.
+    """
+    def get(self, request):
+        reference = request.GET.get('reference') or request.GET.get('trxref')
+        
+        if not reference:
+            messages.error(request, "No payment reference was provided.")
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': 'No payment reference was provided by the payment gateway.',
+            })
+        
+        from integrations.paystack import PaystackService
+        
+        try:
+            paystack = PaystackService()
+            verification = paystack.verify_transaction(reference)
+            
+            if not verification or not verification.get('status'):
+                return render(request, 'advertising/payment_result.html', {
+                    'success': False,
+                    'error_message': 'Transaction verification failed. Please contact support.',
+                })
+            
+            data = verification.get('data', {})
+            tx_status = data.get('status', '')
+            
+            if tx_status != 'success':
+                return render(request, 'advertising/payment_result.html', {
+                    'success': False,
+                    'error_message': f'Payment was not completed. Status: {tx_status}.',
+                })
+            
+            paid_amount = data.get('amount', 0) / 100  # pesewas → cedis
+            metadata = data.get('metadata', {})
+            payment_type = metadata.get('type', '')
+            
+            if payment_type == 'ad_extension':
+                return self._handle_extension_payment(request, reference, paid_amount, metadata)
+            else:
+                return self._handle_booking_payment(request, reference, paid_amount, metadata)
+                
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Payment callback error: {e}")
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': 'An unexpected error occurred during verification. Please contact support.',
+            })
+    
+    def _handle_booking_payment(self, request, reference, paid_amount, metadata):
+        ad_id = metadata.get('ad_id')
+        if not ad_id:
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': 'Could not identify the ad booking for this payment.',
+            })
+        
+        try:
+            ad = AdBooking.objects.get(id=uuid.UUID(ad_id))
+        except AdBooking.DoesNotExist:
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': 'Ad booking not found.',
+            })
+        
+        if ad.payment_status == 'PAID':
+            # Already processed (e.g. user refreshed the callback page)
+            return render(request, 'advertising/payment_result.html', {
+                'success': True,
+                'ad': ad,
+                'already_paid': True,
+            })
+        
+        if paid_amount < float(ad.amount):
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': f'Paid amount (GH₵ {paid_amount:.2f}) is less than required (GH₵ {ad.amount}).',
+            })
+        
+        ad.payment_status = 'PAID'
+        ad.status = 'LIVE'
+        ad.paystack_reference = reference
+        ad.save()
+        
+        # Send activation email
+        site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com')
+        dashboard_url = f"{site_url}/advertise/dashboard/?token={ad.dashboard_token}"
+        subject = f"Ad Campaign Activated: {ad.business_name}"
+        message = f"Hello {ad.business_name},\n\nYour payment has been successfully verified! Your ad campaign '{ad.headline}' is now LIVE for the week of {ad.week_start_date}.\n\nYou can track real-time impressions and clicks in your advertising dashboard here:\n{dashboard_url}\n\nBest regards,\nThe FlexyRide Team"
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [ad.contact_email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        
+        return render(request, 'advertising/payment_result.html', {
+            'success': True,
+            'ad': ad,
+        })
+    
+    def _handle_extension_payment(self, request, reference, paid_amount, metadata):
+        extension_id = metadata.get('extension_id')
+        if not extension_id:
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': 'Could not identify the campaign extension for this payment.',
+            })
+        
+        try:
+            extension = AdExtension.objects.get(id=uuid.UUID(extension_id))
+        except AdExtension.DoesNotExist:
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': 'Campaign extension not found.',
+            })
+        
+        if extension.payment_status == 'PAID':
+            return render(request, 'advertising/payment_result.html', {
+                'success': True,
+                'ad': extension.original_booking,
+                'extension': extension,
+                'already_paid': True,
+            })
+        
+        if paid_amount < float(extension.amount):
+            return render(request, 'advertising/payment_result.html', {
+                'success': False,
+                'error_message': f'Paid amount (GH₵ {paid_amount:.2f}) is less than required (GH₵ {extension.amount}).',
+            })
+        
+        extension.payment_status = 'PAID'
+        extension.status = 'APPROVED'
+        extension.paystack_reference = reference
+        extension.save()
+        
+        booking = extension.original_booking
+        
+        # Send extension activation email
+        site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com')
+        dashboard_url = f"{site_url}/advertise/dashboard/?token={booking.dashboard_token}"
+        subject = f"Ad Campaign Extension Activated: {booking.business_name}"
+        message = f"Hello {booking.business_name},\n\nYour payment has been successfully verified! Your ad campaign '{booking.headline}' has been extended to the week of {extension.extended_week_start}.\n\nYou can track campaign performance in your dashboard:\n{dashboard_url}\n\nBest regards,\nThe FlexyRide Team"
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [booking.contact_email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        
+        return render(request, 'advertising/payment_result.html', {
+            'success': True,
+            'ad': booking,
+            'extension': extension,
+        })

@@ -60,6 +60,7 @@ class AdBooking(models.Model):
     paystack_reference = models.CharField(max_length=100, blank=True, null=True)
     
     dashboard_token = models.CharField(max_length=255, blank=True)
+    paystack_checkout_url = models.URLField(max_length=500, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -149,6 +150,7 @@ class AdExtension(models.Model):
     status = models.CharField(choices=AdBooking.STATUS, default='APPROVED', max_length=20)
     payment_status = models.CharField(choices=AdBooking.PAYMENT_STATUS, default='UNPAID', max_length=20)
     paystack_reference = models.CharField(max_length=100, blank=True, null=True)
+    paystack_checkout_url = models.URLField(max_length=500, blank=True)
     amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -176,9 +178,10 @@ def create_ad_analytics(sender, instance, created, **kwargs):
 
 @receiver(pre_save, sender=AdBooking)
 def handle_ad_status_change(sender, instance, **kwargs):
+    from django.core.signing import TimestampSigner
+    signer = TimestampSigner()
+
     if not instance.dashboard_token:
-        from django.core.signing import TimestampSigner
-        signer = TimestampSigner()
         instance.dashboard_token = signer.sign(str(instance.id))
 
     if instance.id:
@@ -189,14 +192,21 @@ def handle_ad_status_change(sender, instance, **kwargs):
             status_changed = True
 
         if status_changed:
+            # Always regenerate dashboard token on status change so emailed links are fresh
+            instance.dashboard_token = signer.sign(str(instance.id))
+
             from integrations.email_service import EmailService
             
             if instance.status == 'APPROVED':
+                # Initialize Paystack hosted checkout transaction
+                payment_url = _initialize_ad_payment(instance)
+                
                 EmailService.send_ad_status_email(
                     contact_email=instance.contact_email,
                     business_name=instance.business_name,
                     is_approved=True,
-                    dashboard_token=instance.dashboard_token
+                    dashboard_token=instance.dashboard_token,
+                    payment_url=payment_url
                 )
             elif instance.status == 'REJECTED':
                 reason = instance.rejection_reason or "Creative does not meet our guidelines."
@@ -207,3 +217,60 @@ def handle_ad_status_change(sender, instance, **kwargs):
                     reason=reason,
                     dashboard_token=instance.dashboard_token
                 )
+
+
+def _initialize_ad_payment(ad_booking):
+    """
+    Initializes a Paystack hosted checkout transaction for an approved ad booking.
+    Returns the checkout URL or None on failure.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        from integrations.paystack import PaystackService
+        from django.conf import settings
+        
+        paystack = PaystackService()
+        site_url = getattr(settings, 'SITE_URL', 'https://flexyridegh.com').rstrip('/')
+        callback_url = f"{site_url}/advertise/payment/callback/"
+        
+        result = paystack.initialize_transaction(
+            email=ad_booking.contact_email,
+            amount=ad_booking.amount,
+            callback_url=callback_url,
+            metadata={
+                'ad_id': str(ad_booking.id),
+                'type': 'ad_booking',
+                'business_name': ad_booking.business_name,
+                'custom_fields': [
+                    {
+                        'display_name': 'Business Name',
+                        'variable_name': 'business_name',
+                        'value': ad_booking.business_name,
+                    },
+                    {
+                        'display_name': 'Ad Headline',
+                        'variable_name': 'ad_headline',
+                        'value': ad_booking.headline,
+                    },
+                ]
+            }
+        )
+        
+        if result.get('status'):
+            data = result.get('data', {})
+            checkout_url = data.get('authorization_url', '')
+            reference = data.get('reference', '')
+            
+            ad_booking.paystack_checkout_url = checkout_url
+            ad_booking.paystack_reference = reference
+            
+            logger.info(f"Paystack checkout initialized for ad {ad_booking.id}: {checkout_url}")
+            return checkout_url
+        else:
+            logger.error(f"Failed to initialize Paystack checkout for ad {ad_booking.id}: {result.get('message')}")
+            return None
+    except Exception as e:
+        logger.error(f"Exception initializing Paystack checkout for ad {ad_booking.id}: {e}")
+        return None

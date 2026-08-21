@@ -222,6 +222,7 @@ class AdDashboardView(View):
         return render(request, 'advertising/dashboard.html', {
             'bookings': bookings,
             'current_token': token,
+            'paystack_public_key': getattr(settings, 'PAYSTACK_PUBLIC_KEY', ''),
         })
 
 class AdPreviewView(View):
@@ -312,23 +313,36 @@ class AdPaymentCallbackView(View):
             paystack = PaystackService()
             verification = paystack.verify_transaction(reference)
             
+            data = verification.get('data', {}) if (verification and verification.get('status')) else {}
+            metadata = data.get('metadata', {})
+            tx_status = data.get('status', '')
+            
+            ad = None
+            ad_id = metadata.get('ad_id')
+            if ad_id:
+                try:
+                    ad = AdBooking.objects.get(id=uuid.UUID(ad_id))
+                except Exception:
+                    pass
+            if not ad and reference:
+                ad = AdBooking.objects.filter(paystack_reference=reference).first()
+            
             if not verification or not verification.get('status'):
                 return render(request, 'advertising/payment_result.html', {
                     'success': False,
+                    'ad': ad,
                     'error_message': 'Transaction verification failed. Please contact support.',
                 })
             
-            data = verification.get('data', {})
-            tx_status = data.get('status', '')
-            
             if tx_status != 'success':
+                status_display = tx_status.capitalize() if tx_status else 'Canceled/Incomplete'
                 return render(request, 'advertising/payment_result.html', {
                     'success': False,
-                    'error_message': f'Payment was not completed. Status: {tx_status}.',
+                    'ad': ad,
+                    'error_message': f'Payment was not completed. Status: {status_display}.',
                 })
             
             paid_amount = data.get('amount', 0) / 100  # pesewas → cedis
-            metadata = data.get('metadata', {})
             payment_type = metadata.get('type', '')
             
             if payment_type == 'ad_extension':

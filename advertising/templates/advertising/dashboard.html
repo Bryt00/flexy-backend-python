@@ -128,11 +128,12 @@
                             </div>
                         {% elif booking.payment_status == 'UNPAID' and booking.status == 'APPROVED' %}
                             {% if booking.paystack_checkout_url %}
-                                <a href="{{ booking.paystack_checkout_url }}" target="_blank"
-                                   class="btn btn-primary px-10 py-3.5 text-sm flex items-center gap-2 shadow-xl shadow-brand/10">
+                                <button type="button" 
+                                        onclick="payForAd('{{ booking.contact_email }}', '{{ booking.amount }}', '{{ booking.paystack_reference }}', '{{ booking.paystack_checkout_url }}')"
+                                        class="btn btn-primary px-10 py-3.5 text-sm flex items-center gap-2 shadow-xl shadow-brand/10">
                                     <i data-lucide="credit-card" class="w-5 h-5"></i>
                                     Pay Now
-                                </a>
+                                </button>
                             {% else %}
                                 <span class="text-[0.65rem] font-black text-yellow-500 uppercase tracking-widest px-5 py-2.5 bg-yellow-500/10 rounded-full border border-yellow-500/20">Payment Link Pending</span>
                             {% endif %}
@@ -155,4 +156,32 @@
         {% endfor %}
     </div>
 </section>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+function payForAd(email, amount, reference, checkoutUrl) {
+    const publicKey = '{{ paystack_public_key }}';
+    if (typeof PaystackPop !== 'undefined' && reference && publicKey) {
+        const handler = PaystackPop.setup({
+            key: publicKey,
+            email: email,
+            amount: Math.round(parseFloat(amount) * 100),
+            ref: reference,
+            currency: 'GHS',
+            onClose: function() {
+                // Inline modal closed or payment canceled by user
+                console.log("Paystack modal closed by user.");
+            },
+            callback: function(response) {
+                window.location.href = "{% url 'ad_payment_callback' %}?reference=" + (response.reference || reference);
+            }
+        });
+        handler.openIframe();
+    } else if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+    } else {
+        alert("Payment gateway URL is unavailable. Please refresh or contact support.");
+    }
+}
+</script>
 {% endblock %}

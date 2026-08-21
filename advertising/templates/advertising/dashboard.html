@@ -3,10 +3,6 @@
 
 {% block title %}Advertiser Dashboard | FlexyRide{% endblock %}
 
-{% block extra_css %}
-<script src="https://js.paystack.co/v1/inline.js"></script>
-{% endblock %}
-
 {% block content %}
 <section class="container animate-fade-in py-12 md:py-24">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
@@ -131,14 +127,15 @@
                                 PAID
                             </div>
                         {% elif booking.payment_status == 'UNPAID' and booking.status == 'APPROVED' %}
-                            <button class="btn btn-primary px-10 py-3.5 text-sm flex items-center gap-2 shadow-xl shadow-brand/10" 
-                                    data-booking-id="{{ booking.id }}"
-                                    data-email="{{ booking.contact_email }}"
-                                    data-amount="{{ booking.amount }}"
-                                    onclick="payWithPaystack(this.dataset.bookingId, this.dataset.email, parseFloat(this.dataset.amount))">
-                                <i data-lucide="credit-card" class="w-5 h-5"></i>
-                                Pay Now
-                            </button>
+                            {% if booking.paystack_checkout_url %}
+                                <a href="{{ booking.paystack_checkout_url }}" target="_blank"
+                                   class="btn btn-primary px-10 py-3.5 text-sm flex items-center gap-2 shadow-xl shadow-brand/10">
+                                    <i data-lucide="credit-card" class="w-5 h-5"></i>
+                                    Pay Now
+                                </a>
+                            {% else %}
+                                <span class="text-[0.65rem] font-black text-yellow-500 uppercase tracking-widest px-5 py-2.5 bg-yellow-500/10 rounded-full border border-yellow-500/20">Payment Link Pending</span>
+                            {% endif %}
                         {% else %}
                             <span class="text-[0.65rem] font-black text-gray-500 uppercase tracking-widest px-5 py-2.5 bg-dark-900 rounded-full border border-white/5">{{ booking.get_payment_status_display }}</span>
                         {% endif %}
@@ -158,60 +155,4 @@
         {% endfor %}
     </div>
 </section>
-
-{% block extra_js %}
-<script>
-    function payWithPaystack(bookingId, email, amount, extensionId = null) {
-        const payload = {
-            reference: '',
-        };
-        if (extensionId) {
-            payload.extension_id = extensionId;
-        } else {
-            payload.ad_id = bookingId;
-        }
-
-        let handler = PaystackPop.setup({
-            key: '{{ paystack_public_key|default:"pk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }}', 
-            email: email,
-            amount: amount * 100,
-            currency: 'GHS',
-            ref: (extensionId ? 'EXT_' : 'AD_') + bookingId + '_' + Math.floor((Math.random() * 1000000000) + 1),
-            callback: function(response){
-                payload.reference = response.reference;
-                
-                // Show instant verification feedback
-                console.log('Payment complete! Verifying transaction with reference: ' + response.reference);
-                
-                fetch('{% url "ad_verify_payment" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        alert(data.message);
-                        window.location.reload();
-                    } else {
-                        alert('Verification Failed: ' + (data.error || 'Please contact support.'));
-                    }
-                })
-                .catch(err => {
-                    console.error('Error:', err);
-                    alert('An error occurred during verification. Reloading to check status...');
-                    window.location.reload();
-                });
-            },
-            onClose: function(){
-                console.log('Payment modal closed');
-            }
-        });
-        handler.openIframe();
-    }
-</script>
-{% endblock %}
 {% endblock %}

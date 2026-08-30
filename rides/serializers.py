@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Ride, Incident, ChatMessage, FavoriteLocation, Rating, RideStop, PromoCode
 from core_auth.serializers import UserSerializer
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
 
 class RideStopSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +24,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         fields = ('id', 'ride_id', 'sender_id', 'sender_type', 'content', 'timestamp', 'is_quick_message')
         read_only_fields = ('id', 'timestamp')
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_ride_id(self, obj):
         if obj.ride_id:
             return str(obj.ride_id)
@@ -30,9 +32,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             return str(obj.delivery_id)
         return ''
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_sender_type(self, obj):
-        # We assume 'rider' if they are the rider of the linked ride, else 'driver'
-        # Or check user role.
         if obj.sender.role == 'driver':
             return 'driver'
         return 'rider'
@@ -62,6 +63,10 @@ class RideSerializer(serializers.ModelSerializer):
     rider_id = serializers.UUIDField(source='rider.id', read_only=True)
     driver_id = serializers.UUIDField(source='driver.id', read_only=True, allow_null=True)
     
+    # GIS Point field handling for drf-spectacular
+    pickup_point = serializers.CharField(read_only=True, required=False, allow_null=True)
+    dropoff_point = serializers.CharField(read_only=True, required=False, allow_null=True)
+    
     # Enriched Fields (Flattened for App Consumption)
     driver_name = serializers.SerializerMethodField()
     driver_photo = serializers.SerializerMethodField()
@@ -88,48 +93,56 @@ class RideSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'rider', 'driver', 'status', 'created_at', 'updated_at')
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_driver_name(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return obj.driver.profile.full_name
         return None
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_driver_photo(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             pic = obj.driver.profile.profile_picture
             return pic.url if pic else None
         return None
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_driver_phone(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return obj.driver.profile.phone_number
         return None
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_vehicle_info(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
-            # Fetch most recent/active vehicle
             vehicle = obj.driver.profile.vehicles.filter(is_active=True).first()
             if vehicle:
                 return f"{vehicle.color} {vehicle.make} {vehicle.model} ({vehicle.license_plate})"
         return "Standard Vehicle"
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_driver_lat(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return obj.driver.profile.last_lat
         return None
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_driver_lng(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return obj.driver.profile.last_lng
         return None
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_driver_rating(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return float(obj.driver.profile.rating)
         return 5.0
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_rider_name(self, obj):
         return obj.rider_name or (obj.rider.profile.full_name if obj.rider and hasattr(obj.rider, 'profile') else None)
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_rider_photo(self, obj):
         if obj.rider_photo:
             return obj.rider_photo
@@ -138,14 +151,17 @@ class RideSerializer(serializers.ModelSerializer):
             return pic.url if pic else None
         return None
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_rider_phone(self, obj):
         return obj.rider_phone or (obj.rider.profile.phone_number if obj.rider and hasattr(obj.rider, 'profile') else None)
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_matching_attempts(self, obj):
         if obj.dispatch_metadata:
             return obj.dispatch_metadata.get('attempt_count', 0)
         return 0
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_driver_payout_amount(self, obj):
         request = self.context.get('request')
         if request and request.user == obj.driver:
@@ -171,17 +187,20 @@ class LiteRideSerializer(serializers.ModelSerializer):
             'driver_name', 'driver_photo', 'vehicle_info', 'driver_rating'
         )
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_driver_name(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return obj.driver.profile.full_name
         return None
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_driver_photo(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             pic = obj.driver.profile.profile_picture
             return pic.url if pic else None
         return None
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_vehicle_info(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             vehicle = obj.driver.profile.vehicles.filter(is_active=True).first()
@@ -189,6 +208,7 @@ class LiteRideSerializer(serializers.ModelSerializer):
                 return f"{vehicle.color} {vehicle.make} {vehicle.model} ({vehicle.license_plate})"
         return "Standard Vehicle"
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_driver_rating(self, obj):
         if obj.driver and hasattr(obj.driver, 'profile'):
             return float(obj.driver.profile.rating)

@@ -3,12 +3,23 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Profile, DriverVerification
 from .serializers import ProfileSerializer, DriverVerificationSerializer
-from drf_spectacular.utils import extend_schema, OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiTypes, OpenApiResponse, inline_serializer, OpenApiParameter
+from rest_framework import serializers as drf_serializers
 from django.utils import timezone
 from integrations.email_service import EmailService
 from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
+
+@extend_schema_view(
+    list=extend_schema(tags=['Profiles'], summary='List all profiles', description='Admin-only. Returns all user profiles.'),
+    retrieve=extend_schema(tags=['Profiles'], summary='Retrieve a profile', description='Returns a specific user profile by ID.'),
+    create=extend_schema(tags=['Profiles'], summary='Create a profile', description='Creates a new user profile. Typically done automatically on registration.'),
+    update=extend_schema(tags=['Profiles'], summary='Update a profile', description='Fully updates a user profile.'),
+    partial_update=extend_schema(tags=['Profiles'], summary='Partially update a profile', description='Partially updates a user profile.'),
+    destroy=extend_schema(tags=['Profiles'], summary='Delete a profile', description='Deletes a user profile.'),
+)
 class ProfileViewSet(viewsets.ModelViewSet):
+    """User profile management for riders and drivers."""
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -22,7 +33,17 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 raise NotFound("Profile not found")
         return super().get_object()
 
-    @extend_schema(responses={200: ProfileSerializer})
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Get or update my profile',
+        description=(
+            'Multi-method endpoint for the authenticated user\'s profile.\n\n'
+            '- **GET** — Returns the full profile with verification status, subscription status, and computed fields.\n'
+            '- **POST/PUT/PATCH** — Creates or updates the profile (partial updates supported).\n\n'
+            'Response is cached for 5 minutes on GET; cache is invalidated on mutations.'
+        ),
+        responses={200: ProfileSerializer},
+    )
     @action(detail=False, methods=['get', 'post', 'put', 'patch'])
     def me(self, request):
         if request.method == 'GET':
@@ -43,7 +64,26 @@ class ProfileViewSet(viewsets.ModelViewSet):
         invalidate_user_cache(request.user.id, 'profile')
         return Response(serializer.data)
 
-    @extend_schema(responses={200: ProfileSerializer})
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Update notification preferences',
+        description=(
+            'Updates the authenticated user\'s notification and security preferences.\n\n'
+            '**Supported fields:**\n'
+            '- `notification_preferences` (object) — Push notification settings\n'
+            '- `is_2fa_enabled` (boolean) — Two-factor authentication toggle\n'
+            '- `is_biometric_enabled` (boolean) — Biometric login toggle'
+        ),
+        request=inline_serializer(
+            name='PreferencesRequest',
+            fields={
+                'notification_preferences': drf_serializers.JSONField(required=False, help_text='Push notification settings object.'),
+                'is_2fa_enabled': drf_serializers.BooleanField(required=False),
+                'is_biometric_enabled': drf_serializers.BooleanField(required=False),
+            }
+        ),
+        responses={200: ProfileSerializer},
+    )
     @action(detail=False, methods=['patch'])
     def preferences(self, request):
         try:
@@ -62,7 +102,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(profile)
         return Response(serializer.data)
 
-    @extend_schema(responses={200: DriverVerificationSerializer})
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Get driver verification status',
+        description=(
+            'Returns the driver\'s verification status and document details.\n\n'
+            'Includes computed `can_resubmit_*` flags indicating which documents are '
+            'nearing expiry and can be re-uploaded.'
+        ),
+        responses={200: DriverVerificationSerializer},
+    )
     @action(detail=False, methods=['get'], url_path='verification')
     def verification_status(self, request):
         try:
@@ -72,7 +121,51 @@ class ProfileViewSet(viewsets.ModelViewSet):
         verification, created = DriverVerification.objects.get_or_create(driver=profile)
         serializer = DriverVerificationSerializer(verification)
         return Response(serializer.data)
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Submit driver verification documents',
+        description=(
+            'Submits or updates driver verification documents for admin review.\n\n'
+            '**Required documents (PDF only):**\n'
+            '- `license_url` — Driver\'s license\n'
+            '- `id_card_url` — National ID card\n'
+            '- `insurance_url` — Vehicle insurance\n'
+            '- `roadworthy_url` — Roadworthy certificate\n'
+            '- `vehicle_video_url` — Vehicle inspection video (any format)\n\n'
+            '**Re-submission rules:**\n'
+            '- Verified drivers can only update documents nearing expiry\n'
+            '- PENDING/SUBMITTED/REJECTED drivers can freely re-submit\n\n'
+            'Triggers an admin email notification on submission.'
+        ),
+        request=inline_serializer(
+            name='VerificationSubmitRequest',
+            fields={
+                'license_number': drf_serializers.CharField(required=False),
+                'license_url': drf_serializers.URLField(required=False, help_text='URL to uploaded PDF.'),
+                'license_expiry_date': drf_serializers.DateField(required=False),
+                'id_card_url': drf_serializers.URLField(required=False, help_text='URL to uploaded PDF.'),
+                'id_card_expiry_date': drf_serializers.DateField(required=False),
+                'insurance_url': drf_serializers.URLField(required=False, help_text='URL to uploaded PDF.'),
+                'roadworthy_url': drf_serializers.URLField(required=False, help_text='URL to uploaded PDF.'),
+                'vehicle_video_url': drf_serializers.URLField(required=False, help_text='URL to uploaded video.'),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='VerificationSubmitResponse',
+                    fields={
+                        'status': drf_serializers.CharField(),
+                        'profile_id': drf_serializers.UUIDField(),
+                        'verification_status': drf_serializers.CharField(),
+                    }
+                ),
+                description='Verification documents submitted for review.'
+            ),
+            400: OpenApiResponse(description='Already verified (no resubmit allowed) or invalid file format.'),
+        },
+    )
     @action(detail=False, methods=['post'], url_path='verification/initiate')
     def initiate_verification(self, request):
         try:
@@ -157,6 +250,30 @@ class ProfileViewSet(viewsets.ModelViewSet):
             'verification_status': verification.status
         }, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Get driver tier definitions',
+        description=(
+            'Returns the available driver loyalty tiers and their point thresholds.\n\n'
+            '**Tiers:** Silver (0+), Gold (500+), Platinum (1500+)\n\n'
+            'Response is cached globally for 15 minutes.'
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='TierDefinition',
+                    many=True,
+                    fields={
+                        'name': drf_serializers.CharField(),
+                        'min_points': drf_serializers.IntegerField(),
+                        'description': drf_serializers.CharField(),
+                        'benefits': drf_serializers.ListField(child=drf_serializers.CharField()),
+                    }
+                ),
+                description='List of tier definitions.'
+            ),
+        },
+    )
     @action(detail=False, methods=['get'], url_path='tier-definitions')
     def tier_definitions(self, request):
         """Returns the available driver tiers and their required points."""
@@ -183,7 +300,35 @@ class ProfileViewSet(viewsets.ModelViewSet):
             ])
         return cached_api_response(request, 'tier_definitions', timeout=900, fetcher=fetch_tiers, global_cache=True)
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Update driver GPS location',
+        description=(
+            'Updates the authenticated driver\'s real-time GPS coordinates in Redis.\n\n'
+            'Called frequently by the driver app while online. Used for:\n'
+            '- Ride matching (nearest driver selection)\n'
+            '- Nearby vehicles map display\n'
+            '- Surge pricing calculations'
+        ),
+        request=inline_serializer(
+            name='LocationUpdateRequest',
+            fields={
+                'lat': drf_serializers.FloatField(help_text='Latitude (-90 to 90).'),
+                'lng': drf_serializers.FloatField(help_text='Longitude (-180 to 180).'),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='LocationUpdateResponse',
+                    fields={'status': drf_serializers.CharField(default='Location updated')},
+                ),
+                description='Location updated in Redis geospatial index.'
+            ),
+            400: OpenApiResponse(description='Missing or invalid coordinates.'),
+            404: OpenApiResponse(description='Profile not found.'),
+        },
+    )
     @action(detail=False, methods=['post'], url_path='location')
     def update_location(self, request):
         try:
@@ -211,6 +356,32 @@ class ProfileViewSet(viewsets.ModelViewSet):
                 "detail": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Toggle driver online/offline status',
+        description=(
+            'Switches a driver between Online and Offline mode.\n\n'
+            '**Going online requires:**\n'
+            '1. User role must be `driver`\n'
+            '2. Account must be **verified** (all documents approved)\n'
+            '3. Must have an **active subscription** (or be in free trial)\n\n'
+            'Going offline has no restrictions. Updates Redis geospatial index and DB atomically.'
+        ),
+        request=inline_serializer(
+            name='ToggleOnlineRequest',
+            fields={
+                'is_online': drf_serializers.BooleanField(
+                    required=False,
+                    help_text='Explicit online state. If omitted, toggles the current state.'
+                ),
+            }
+        ),
+        responses={
+            200: ProfileSerializer,
+            403: OpenApiResponse(description='Not a driver, not verified, or no active subscription.'),
+            404: OpenApiResponse(description='Profile not found.'),
+        },
+    )
     @action(detail=False, methods=['post'], url_path='toggle-online')
     def toggle_online(self, request):
         """
@@ -272,6 +443,36 @@ class ProfileViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        tags=['Profiles'],
+        summary='Apply a referral code',
+        description=(
+            'Links a referral code to the authenticated user\'s profile.\n\n'
+            '**Rewards (immediate):**\n'
+            '- Referee gets a GH₵ 5.00 WELCOME promo code (valid 30 days)\n'
+            '- Referrer is notified via push that their friend joined\n\n'
+            'Can only be applied once per user. Self-referral is blocked.'
+        ),
+        request=inline_serializer(
+            name='ApplyReferralRequest',
+            fields={
+                'referral_code': drf_serializers.CharField(help_text='The referrer\'s unique referral code.'),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='ApplyReferralResponse',
+                    fields={
+                        'message': drf_serializers.CharField(),
+                        'referred_by': drf_serializers.CharField(),
+                    }
+                ),
+                description='Referral code applied successfully.'
+            ),
+            400: OpenApiResponse(description='Invalid code, already applied, or self-referral attempt.'),
+        },
+    )
     @action(detail=False, methods=['post'], url_path='apply-referral')
     def apply_referral(self, request):
         try:
@@ -343,6 +544,19 @@ class ProfileViewSet(viewsets.ModelViewSet):
             "referred_by": referrer_profile.referral_code
         }, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        tags=['Settings'],
+        summary='Get or set a platform setting',
+        description=(
+            'Admin-only endpoint to read/write platform configuration values.\n\n'
+            '**Special keys:** `terms_and_conditions`, `privacy_policy`, `about_us` '
+            '(stored as LegalDocument records). All other keys use the SiteSetting model.'
+        ),
+        parameters=[
+            OpenApiParameter(name='key', type=str, location='path', required=True, description='Setting key (terms_and_conditions, privacy_policy, about_us, etc.).'),
+        ],
+        responses={200: OpenApiResponse(description='Setting value.')},
+    )
     @action(detail=False, methods=['get', 'post'], url_path='settings/(?P<key>[^/.]+)')
     def config_settings(self, request, key=None):
         if not request.user.is_staff and not request.user.is_superuser and getattr(request.user, 'role', '') != 'admin':

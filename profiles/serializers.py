@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Profile, DriverVerification
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
 
 
 class DriverVerificationSerializer(serializers.ModelSerializer):
@@ -33,19 +34,22 @@ class DriverVerificationSerializer(serializers.ModelSerializer):
 
         return (expiry_date - timezone.now().date()) <= datetime.timedelta(days=threshold_days)
 
-
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_can_resubmit_license(self, obj):
         return self._can_resubmit(getattr(obj, 'license_expiry_date', None))
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_can_resubmit_id_card(self, obj):
         return self._can_resubmit(getattr(obj, 'id_card_expiry_date', None))
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_can_resubmit_insurance(self, obj):
         vehicle = obj.driver.vehicles.first()
         if vehicle and vehicle.insurance_expiry:
             return self._can_resubmit(vehicle.insurance_expiry)
         return True
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_can_resubmit_roadworthy(self, obj):
         vehicle = obj.driver.vehicles.first()
         if vehicle and vehicle.roadworthy_expiry:
@@ -58,9 +62,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     email = serializers.ReadOnlyField(source='user.email')
     role = serializers.ReadOnlyField(source='user.role')
     user_id = serializers.ReadOnlyField(source='user.id')
-    # photo_url is a read-only field that ensures absolute URLs
     photo_url = serializers.SerializerMethodField()
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_photo_url(self, obj):
         if not obj.profile_picture:
             return ""
@@ -93,6 +97,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('user', 'created_at', 'rating', 'referral_code', 'total_referrals', 'total_referral_earnings', 'is_online')
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_active(self, obj):
         """Returns true only if the driver is online AND eligible to be online."""
         if not getattr(obj, 'is_online', False):
@@ -111,10 +116,10 @@ class ProfileSerializer(serializers.ModelSerializer):
             
         return True
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_verified(self, obj):
         """True only when DriverVerification.is_verified is True."""
         try:
-            # Safer check for OneToOne relation to avoid RelatedObjectDoesNotExist
             verification = getattr(obj, 'verification', None)
             return bool(verification.is_verified) if verification else False
         except Exception as e:
@@ -122,13 +127,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             logging.getLogger(__name__).error(f"Error in get_is_verified: {e}")
             return False
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_subscribed(self, obj):
         """True only when the driver has an active subscription."""
         try:
             if not hasattr(obj, 'user') or obj.user.role != 'driver':
                 return False
             
-            # Check for the DriverSubscription relation
             subscription = getattr(obj, 'subscription', None)
             if not subscription:
                 return False
@@ -139,6 +144,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             logging.getLogger(__name__).error(f"Error in get_is_subscribed: {e}")
             return False
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_rating_count(self, obj):
         try:
             from rides.models import Rating

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Campaign, PromoCode
 
 class CampaignSerializer(serializers.ModelSerializer):
-    is_active = serializers.ReadOnlyField()
+    is_active = serializers.BooleanField(read_only=True)
     
     class Meta:
         model = Campaign

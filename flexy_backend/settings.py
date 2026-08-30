@@ -221,7 +221,7 @@ SPECTACULAR_SETTINGS = {
         '- Paginated lists return `{count, next, previous, results}`\n'
     ),
     'VERSION': '1.0.0',
-    'SERVE_PERMISSIONS': ['core_auth.permissions.IsDeveloperOrAdmin'],
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.AllowAny'],
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_PATCH': True,
     'COMPONENT_SPLIT_REQUEST': True,

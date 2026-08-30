@@ -15,15 +15,42 @@ from .serializers import (
 )
 from .models import DeletionRequest, OTPCode
 from integrations.social_auth_service import SocialAuthService
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
 
 User = get_user_model()
 
 class RegisterView(generics.CreateAPIView):
+    """Creates a new user account and sends an OTP to verify the email address."""
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
     authentication_classes = [] # Ensure invalid tokens don't block registration
 
+    @extend_schema(
+        tags=['Authentication'],
+        summary='Register a new user',
+        description=(
+            'Creates a new user account with email, password, and role.\n\n'
+            '- A 4-digit OTP is sent to the provided email for verification.\n'
+            '- The account remains **inactive** until email verification via `POST /v1/auth/otp/verify/`.\n'
+            '- An optional `referral_code` triggers double-sided welcome rewards (GH₵ 5.00 promo codes).\n\n'
+            '**Roles:** `rider` (default), `driver`'
+        ),
+        responses={
+            201: OpenApiResponse(
+                response=inline_serializer(
+                    name='RegisterResponse',
+                    fields={
+                        'message': drf_serializers.CharField(),
+                        'user': UserSerializer(),
+                    }
+                ),
+                description='Registration successful. OTP sent to email.'
+            ),
+            400: OpenApiResponse(description='Validation error (invalid email, weak password, bad referral code).'),
+        },
+        auth=[],
+    )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,13 +75,36 @@ class RegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 class LoginView(views.APIView):
+    """Authenticates a user with email and password, returning JWT tokens."""
     permission_classes = [permissions.AllowAny]
     authentication_classes = [] # Ensure invalid tokens don't block login
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Login with email and password',
+        description=(
+            'Authenticates a user and returns JWT access + refresh tokens.\n\n'
+            '**Error Scenarios:**\n'
+            '- `403 unverified_email` — Email not yet verified. A new OTP is automatically sent.\n'
+            '- `401` — Invalid credentials or account not found.\n\n'
+            'The `role` field is informational and does **not** grant privilege escalation on existing accounts.'
+        ),
         request=LoginRequestSerializer,
-        responses={200: TokenResponseSerializer},
-        auth=[]
+        responses={
+            200: TokenResponseSerializer,
+            401: OpenApiResponse(description='Invalid credentials or account not found.'),
+            403: OpenApiResponse(
+                response=inline_serializer(
+                    name='UnverifiedEmailResponse',
+                    fields={
+                        'error': drf_serializers.CharField(default='unverified_email'),
+                        'message': drf_serializers.CharField(),
+                    }
+                ),
+                description='Email not verified. A new OTP has been automatically sent.'
+            ),
+        },
+        auth=[],
     )
     def post(self, request):
         email = request.data.get("email", "").strip()
@@ -125,13 +175,25 @@ class LoginView(views.APIView):
         return Response({"error": "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 class CustomTokenRefreshView(views.APIView):
+    """Exchanges a refresh token for a new access + refresh token pair."""
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Refresh JWT tokens',
+        description=(
+            'Exchanges a valid refresh token for a new access token and rotated refresh token.\n\n'
+            'Includes session key validation — if the user logged in on another device, '
+            'the old refresh token is invalidated and returns `401 Session expired`.'
+        ),
         request=RefreshTokenRequestSerializer,
-        responses={200: RefreshTokenResponseSerializer},
-        auth=[]
+        responses={
+            200: RefreshTokenResponseSerializer,
+            400: OpenApiResponse(description='Refresh token not provided.'),
+            401: OpenApiResponse(description='Invalid/expired token or session expired (logged in elsewhere).'),
+        },
+        auth=[],
     )
     def post(self, request):
         refresh_token = request.data.get("refresh_token")
@@ -162,13 +224,36 @@ class CustomTokenRefreshView(views.APIView):
             return Response({"error": "Invalid or expired token"}, status=status.HTTP_401_UNAUTHORIZED)
 
 class OTPRequestView(views.APIView):
+    """Sends a 4-digit OTP code to the user's email for verification or password reset."""
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Request an OTP code',
+        description=(
+            'Sends a 4-digit OTP to the provided email address.\n\n'
+            '**Types:**\n'
+            '- `email_verification` — For new account email verification\n'
+            '- `password_reset` — For forgotten password flow\n\n'
+            'Rate limited to 1 request per 2 minutes per user per type. OTP expires after 10 minutes.'
+        ),
         request=OTPRequestSerializer,
-        responses={200: OpenApiTypes.OBJECT},
-        auth=[]
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='OTPSentResponse',
+                    fields={
+                        'message': drf_serializers.CharField(),
+                        'status': drf_serializers.CharField(default='success'),
+                    }
+                ),
+                description='OTP sent successfully.'
+            ),
+            404: OpenApiResponse(description='User with this email does not exist.'),
+            429: OpenApiResponse(description='Rate limited — please wait 2 minutes between requests.'),
+        },
+        auth=[],
     )
     def post(self, request):
         serializer = OTPRequestSerializer(data=request.data)
@@ -204,13 +289,40 @@ class OTPRequestView(views.APIView):
         return Response({"message": f"OTP sent to {email}", "status": "success"})
 
 class OTPVerifyView(views.APIView):
+    """Verifies an OTP code. For email verification, activates the account and returns tokens."""
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Verify an OTP code',
+        description=(
+            'Validates the 4-digit OTP sent to the user\'s email.\n\n'
+            '**Behaviour by type:**\n'
+            '- `email_verification` — Activates the account, sends welcome email, returns JWT tokens.\n'
+            '- `password_reset` — Returns a signed `reset_token` (valid 15 minutes) for use with '
+            '`POST /v1/auth/password/reset/`.\n\n'
+            'OTPs are single-use and expire after 10 minutes.'
+        ),
         request=OTPVerifySerializer,
-        responses={200: OpenApiTypes.OBJECT},
-        auth=[]
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='OTPVerifyResponse',
+                    fields={
+                        'message': drf_serializers.CharField(),
+                        'status': drf_serializers.CharField(default='success'),
+                        'user': UserSerializer(required=False),
+                        'token': drf_serializers.CharField(required=False, help_text='JWT access token (email_verification only)'),
+                        'refresh_token': drf_serializers.CharField(required=False, help_text='JWT refresh token (email_verification only)'),
+                        'reset_token': drf_serializers.CharField(required=False, help_text='Signed reset token (password_reset only)'),
+                    }
+                ),
+                description='OTP verified successfully.'
+            ),
+            400: OpenApiResponse(description='Invalid or expired OTP.'),
+        },
+        auth=[],
     )
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
@@ -273,13 +385,36 @@ class OTPVerifyView(views.APIView):
         return Response({"message": "OTP verified successfully", "status": "success"})
 
 class PasswordResetView(views.APIView):
+    """Resets a user's password using a verified OTP or signed reset token."""
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Reset password',
+        description=(
+            'Sets a new password for the user. Requires either:\n\n'
+            '1. A `reset_token` obtained from `POST /v1/auth/otp/verify/` (preferred, valid 15 min), OR\n'
+            '2. A raw `otp` code (fallback)\n\n'
+            'On success, all existing sessions are invalidated (session_key rotated) and a '
+            'security notification email is sent.'
+        ),
         request=PasswordResetSerializer,
-        responses={200: OpenApiTypes.OBJECT},
-        auth=[]
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='PasswordResetResponse',
+                    fields={
+                        'message': drf_serializers.CharField(),
+                        'status': drf_serializers.CharField(default='success'),
+                    }
+                ),
+                description='Password reset successfully.'
+            ),
+            400: OpenApiResponse(description='Invalid/expired OTP or reset token.'),
+            404: OpenApiResponse(description='User with this email does not exist.'),
+        },
+        auth=[],
     )
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
@@ -347,13 +482,28 @@ class PasswordResetView(views.APIView):
         }, status=status.HTTP_200_OK)
 
 class SocialAuthView(views.APIView):
+    """Authenticates or registers a user via Google or Apple OAuth tokens."""
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Social login (Google / Apple)',
+        description=(
+            'Authenticates a user using a Google or Apple OAuth token.\n\n'
+            '**Behaviour:**\n'
+            '1. If a user with the social ID exists → returns tokens (login)\n'
+            '2. If the email matches an existing account → links the social ID and returns tokens\n'
+            '3. If no match → creates a new account (auto-verified) and returns tokens\n\n'
+            '**Providers:** `google`, `apple`'
+        ),
         request=SocialAuthSerializer,
-        responses={200: TokenResponseSerializer},
-        auth=[]
+        responses={
+            200: TokenResponseSerializer,
+            400: OpenApiResponse(description='Unsupported provider or missing email for new account.'),
+            401: OpenApiResponse(description='Invalid or expired OAuth token.'),
+        },
+        auth=[],
     )
     def post(self, request):
         serializer = SocialAuthSerializer(data=request.data)
@@ -451,7 +601,30 @@ class SocialAuthView(views.APIView):
             logger.error(f"Social auth unexpected error: {str(e)}", exc_info=True)
             return Response({"error": f"An error occurred during social authentication: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@extend_schema_view(
+    retrieve=extend_schema(
+        tags=['Authentication'],
+        summary='Get current user',
+        description='Returns the authenticated user\'s account details (email, role, verification status).',
+    ),
+    update=extend_schema(
+        tags=['Authentication'],
+        summary='Update current user',
+        description='Fully updates the authenticated user\'s account fields.',
+    ),
+    partial_update=extend_schema(
+        tags=['Authentication'],
+        summary='Partially update current user',
+        description='Partially updates the authenticated user\'s account fields.',
+    ),
+    destroy=extend_schema(
+        tags=['Authentication'],
+        summary='Deactivate current user',
+        description='Soft-deletes the user account by setting `is_active=False`. Preserves data for accounting.',
+    ),
+)
 class UserMeView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieves, updates, or deactivates the currently authenticated user's account."""
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -462,12 +635,32 @@ class UserMeView(generics.RetrieveUpdateDestroyAPIView):
         # Soft delete the user record to preserve history and accounting.
         instance.is_active = False
         instance.save()
+
 class LogoutView(views.APIView):
+    """Blacklists the refresh token, effectively logging the user out."""
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
+        tags=['Authentication'],
+        summary='Logout',
+        description=(
+            'Blacklists the provided refresh token to invalidate the session.\n\n'
+            'Even if blacklisting fails (e.g. token already expired), returns success — '
+            'the client should discard tokens regardless.'
+        ),
         request=RefreshTokenRequestSerializer,
-        responses={200: OpenApiTypes.OBJECT},
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='LogoutResponse',
+                    fields={
+                        'message': drf_serializers.CharField(default='Successfully logged out'),
+                        'status': drf_serializers.CharField(default='success'),
+                    }
+                ),
+                description='Successfully logged out.'
+            ),
+        },
     )
     def post(self, request):
         try:
@@ -481,11 +674,39 @@ class LogoutView(views.APIView):
             return Response({"message": "Successfully logged out", "status": "success"}, status=status.HTTP_200_OK)
 
 class ChangePasswordView(views.APIView):
+    """Changes the authenticated user's password after verifying the current one."""
     permission_classes = [permissions.IsAuthenticated]
 
     @extend_schema(
-        request=OpenApiTypes.OBJECT,
-        responses={200: OpenApiTypes.OBJECT},
+        tags=['Authentication'],
+        summary='Change password',
+        description=(
+            'Changes the authenticated user\'s password.\n\n'
+            'Requires the current password for verification. On success:\n'
+            '- All existing sessions are invalidated (session_key rotated)\n'
+            '- A security notification email is sent\n\n'
+            'The new password must pass Django\'s password validation rules.'
+        ),
+        request=inline_serializer(
+            name='ChangePasswordRequest',
+            fields={
+                'current_password': drf_serializers.CharField(help_text='The user\'s current password.'),
+                'new_password': drf_serializers.CharField(help_text='The desired new password.'),
+            }
+        ),
+        responses={
+            200: OpenApiResponse(
+                response=inline_serializer(
+                    name='ChangePasswordResponse',
+                    fields={
+                        'message': drf_serializers.CharField(default='Password updated successfully'),
+                        'status': drf_serializers.CharField(default='success'),
+                    }
+                ),
+                description='Password changed successfully.'
+            ),
+            400: OpenApiResponse(description='Missing fields, incorrect current password, or weak new password.'),
+        },
     )
     def post(self, request):
         user = request.user

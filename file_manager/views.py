@@ -6,14 +6,22 @@ from rest_framework import status
 from django.core.files.storage import default_storage
 from .models import FileMetadata
 
-from drf_spectacular.utils import extend_schema, OpenApiTypes
-
+from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
 from rest_framework.permissions import AllowAny
 
 class FileUploadView(APIView):
+    """File upload service for profile pictures, documents, and proofs."""
     parser_classes = (MultiPartParser, FormParser)
 
     @extend_schema(
+        tags=['Files'],
+        summary='Upload a file',
+        description=(
+            'Uploads a file to media storage and returns its absolute URL.\n\n'
+            'Generates a unique UUID filename to prevent collisions. Stores file metadata '
+            '(size, content type, original filename) in DB.'
+        ),
         operation_id="upload_file",
         request={
             'multipart/form-data': {
@@ -21,12 +29,25 @@ class FileUploadView(APIView):
                 'properties': {
                     'file': {
                         'type': 'string',
-                        'format': 'binary'
+                        'format': 'binary',
+                        'description': 'The file binary payload to upload.'
                     }
-                }
+                },
+                'required': ['file']
             }
         },
-        responses={201: OpenApiTypes.OBJECT}
+        responses={
+            201: inline_serializer(
+                name='FileUploadResponse',
+                fields={
+                    'id': drf_serializers.UUIDField(help_text='File metadata record ID.'),
+                    'file_url': drf_serializers.URLField(help_text='Absolute public URL of the uploaded file.'),
+                    'file_name': drf_serializers.CharField(help_text='Original filename.'),
+                    'status': drf_serializers.CharField(default='success'),
+                }
+            ),
+            400: OpenApiResponse(description='No file uploaded.'),
+        }
     )
     def post(self, request, *args, **kwargs):
         file_obj = request.FILES.get('file')

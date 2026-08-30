@@ -8,6 +8,10 @@ from django.shortcuts import redirect, get_object_or_404
 import random
 import uuid
 
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
+
+
 class ActiveAdsAPIView(APIView):
     """
     Public endpoint strictly for the Flutter mobile app.
@@ -15,7 +19,44 @@ class ActiveAdsAPIView(APIView):
     """
     authentication_classes = []
     permission_classes = []
-    
+
+    @extend_schema(
+        tags=['Advertising'],
+        summary='Get active in-app ads',
+        description=(
+            'Returns active in-app ad banners for display in the Flutter mobile apps.\n\n'
+            '**A/B Testing:** Automatically selects between variant A and variant B. '
+            'Returns a direct image URL, target URL, and a `tracking_url` for click logging.\n\n'
+            'Filter by `app_type`: `PASSENGER` or `DRIVER`.'
+        ),
+        parameters=[
+            OpenApiParameter(name='app_type', type=str, location='query', required=False, description='App type filter: PASSENGER or DRIVER.'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='ActiveAdsResponse',
+                fields={
+                    'status': drf_serializers.CharField(default='success'),
+                    'data': drf_serializers.ListField(
+                        child=inline_serializer(
+                            name='AdBannerItem',
+                            fields={
+                                'id': drf_serializers.UUIDField(),
+                                'business_name': drf_serializers.CharField(),
+                                'headline': drf_serializers.CharField(),
+                                'body_text': drf_serializers.CharField(),
+                                'image_url': drf_serializers.URLField(allow_null=True),
+                                'target_url': drf_serializers.URLField(allow_null=True),
+                                'tracking_url': drf_serializers.URLField(allow_null=True, help_text='Ping URL to record click analytics.'),
+                                'variant': drf_serializers.CharField(help_text='Variant shown: A or B.'),
+                            }
+                        )
+                    ),
+                }
+            ),
+        },
+        auth=[],
+    )
     def get(self, request):
         import datetime
         today = timezone.localdate()
@@ -64,9 +105,31 @@ class ActiveAdsAPIView(APIView):
         return Response({'status': 'success', 'data': data}, status=status.HTTP_200_OK)
 
 class AdImpressionAPIView(APIView):
+    """Records an ad impression for analytics."""
     authentication_classes = []
     permission_classes = []
-    
+
+    @extend_schema(
+        tags=['Advertising'],
+        summary='Log ad impression',
+        description='Increments impression counter for a specific ad and A/B variant.',
+        request=inline_serializer(
+            name='AdImpressionRequest',
+            fields={
+                'ad_id': drf_serializers.UUIDField(),
+                'variant': drf_serializers.CharField(default='A', help_text='Variant rendered: A or B.'),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='AdImpressionResponse',
+                fields={'status': drf_serializers.CharField(default='logged')},
+            ),
+            400: OpenApiResponse(description='Missing ad_id.'),
+            404: OpenApiResponse(description='Invalid ad_id.'),
+        },
+        auth=[],
+    )
     def post(self, request):
         ad_id = request.data.get('ad_id')
         variant = request.data.get('variant', 'A')
@@ -86,9 +149,24 @@ class AdImpressionAPIView(APIView):
             return Response({'error': 'invalid ad_id'}, status=status.HTTP_404_NOT_FOUND)
 
 class AdClickRedirectView(APIView):
+    """Logs ad click analytics and redirects to destination URL."""
     authentication_classes = []
     permission_classes = []
-    
+
+    @extend_schema(
+        tags=['Advertising'],
+        summary='Log ad click & redirect',
+        description='Logs a click event for variant A or B, then redirects (HTTP 302) to the advertiser\'s website.',
+        parameters=[
+            OpenApiParameter(name='variant', type=str, location='query', required=False, description='Variant clicked: A or B.'),
+        ],
+        responses={
+            302: OpenApiResponse(description='Redirects to advertiser\'s target URL.'),
+            400: OpenApiResponse(description='Ad has no target URL.'),
+            404: OpenApiResponse(description='Ad not found.'),
+        },
+        auth=[],
+    )
     def get(self, request, ad_id):
         variant = request.query_params.get('variant', 'A')
         ad = get_object_or_404(AdBooking, id=ad_id)
@@ -110,7 +188,3 @@ class AdClickRedirectView(APIView):
                 url = f'https://{url}'
             return redirect(url)
         return Response({'error': 'No URL provided'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-

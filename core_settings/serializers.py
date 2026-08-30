@@ -9,6 +9,8 @@ class SiteSettingSerializer(serializers.ModelSerializer):
 from .models import DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType, VehicleCategory, ServiceArea
 import json
 
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
+
 class ServiceAreaSerializer(serializers.ModelSerializer):
     polygon = serializers.SerializerMethodField()
 
@@ -16,6 +18,7 @@ class ServiceAreaSerializer(serializers.ModelSerializer):
         model = ServiceArea
         fields = ['id', 'name', 'polygon', 'is_active']
 
+    @extend_schema_field(OpenApiTypes.OBJECT)
     def get_polygon(self, obj):
         if obj.polygon:
             return json.loads(obj.polygon.geojson)

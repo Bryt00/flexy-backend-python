@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Delivery, DeliveryProof
 from core_auth.serializers import UserSerializer
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
 
 class DeliveryProofSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,16 +25,19 @@ class DeliverySerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('id', 'passenger', 'driver', 'status', 'created_at', 'updated_at')
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_driver_name(self, obj):
         if obj.driver:
             return obj.driver.full_name
         return None
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_driver_photo(self, obj):
         if obj.driver and obj.driver.profile_picture:
             return obj.driver.profile_picture.url
         return None
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_driver_vehicle_info(self, obj):
         if obj.driver:
             vehicle = obj.driver.vehicles.filter(is_active=True).first()
@@ -41,6 +45,7 @@ class DeliverySerializer(serializers.ModelSerializer):
                 return f"{vehicle.make or ''} {vehicle.model or ''}".strip()
         return None
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_driver_license_plate(self, obj):
         if obj.driver:
             vehicle = obj.driver.vehicles.filter(is_active=True).first()
@@ -48,6 +53,7 @@ class DeliverySerializer(serializers.ModelSerializer):
                 return vehicle.license_plate
         return None
 
+    @extend_schema_field(OpenApiTypes.FLOAT)
     def get_driver_rating(self, obj):
         if obj.driver:
             return float(obj.driver.rating)

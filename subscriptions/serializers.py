@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import SubscriptionPlan, DriverSubscription, SubscriptionPayment
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,8 +16,11 @@ class DriverSubscriptionSerializer(serializers.ModelSerializer):
     plan_details = SubscriptionPlanSerializer(source='plan', read_only=True)
     is_active = serializers.BooleanField(source='is_currently_active', read_only=True)
     can_go_online = serializers.BooleanField(read_only=True)
+    is_in_trial = serializers.BooleanField(read_only=True)
+    trial_days_remaining = serializers.IntegerField(read_only=True)
     trial_expired = serializers.SerializerMethodField()
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_trial_expired(self, obj):
         """True when the driver had a trial (is_trial_used) but it has now ended."""
         return obj.is_trial_used and not obj.is_in_trial
@@ -30,4 +34,3 @@ class DriverSubscriptionSerializer(serializers.ModelSerializer):
             'trial_expired',
         ]
         read_only_fields = ['status', 'expiry_date', 'trial_end_date']
-

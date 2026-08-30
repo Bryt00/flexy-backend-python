@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiParameter
 import json
 import hmac
 import hashlib
@@ -12,15 +13,26 @@ from .models import Wallet, Transaction
 from .serializers import WalletSerializer, TransactionSerializer
 from integrations.paystack import PaystackService
 
-from drf_spectacular.utils import extend_schema, OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
 from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
 logger = logging.getLogger(__name__)
 
 class PaymentViewSet(viewsets.GenericViewSet):
+    """Wallet, transactions, earnings, and Paystack payment integration."""
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        tags=['Payments'],
+        summary='Get wallet balance',
+        description=(
+            'Returns the authenticated user\'s wallet balance and currency.\n\n'
+            'A wallet is automatically created on first access. Response is cached for 2 minutes.'
+        ),
+        responses={200: WalletSerializer},
+    )
     @action(detail=False, methods=['get'])
     def wallet(self, request):
         def fetch_wallet():
@@ -29,6 +41,15 @@ class PaymentViewSet(viewsets.GenericViewSet):
             return Response(serializer.data)
         return cached_api_response(request, 'wallet', timeout=120, fetcher=fetch_wallet)
 
+    @extend_schema(
+        tags=['Payments'],
+        summary='Get transaction history',
+        description=(
+            'Returns a paginated list of the user\'s wallet transactions, ordered by most recent first.\n\n'
+            'Page size: 20 transactions. Use `?page=2` for pagination.'
+        ),
+        responses={200: TransactionSerializer(many=True)},
+    )
     @action(detail=False, methods=['get'])
     def transactions(self, request):
         from rest_framework.pagination import PageNumberPagination
@@ -46,7 +67,63 @@ class PaymentViewSet(viewsets.GenericViewSet):
         serializer = TransactionSerializer(txs, many=True)
         return Response(serializer.data)
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        tags=['Payments'],
+        summary='Get driver earnings dashboard',
+        description=(
+            'Returns a comprehensive earnings breakdown for the authenticated driver.\n\n'
+            '**Includes:**\n'
+            '- Daily, weekly, and monthly earnings (rides + deliveries)\n'
+            '- Ride and delivery counts per period\n'
+            '- Driver statistics (rating, cancelled rides)\n'
+            '- Peak hours heatmap data\n'
+            '- Current wallet balance\n\n'
+            'Response is cached for 5 minutes.'
+        ),
+        responses={
+            200: inline_serializer(
+                name='EarningsResponse',
+                fields={
+                    'daily': inline_serializer(
+                        name='EarningsPeriod',
+                        fields={
+                            'total_earnings': drf_serializers.FloatField(),
+                            'ride_count': drf_serializers.IntegerField(),
+                            'delivery_count': drf_serializers.IntegerField(),
+                        }
+                    ),
+                    'weekly': inline_serializer(
+                        name='WeeklyEarnings',
+                        fields={
+                            'total_earnings': drf_serializers.FloatField(),
+                            'ride_count': drf_serializers.IntegerField(),
+                            'delivery_count': drf_serializers.IntegerField(),
+                        }
+                    ),
+                    'monthly': inline_serializer(
+                        name='MonthlyEarnings',
+                        fields={
+                            'total_earnings': drf_serializers.FloatField(),
+                            'ride_count': drf_serializers.IntegerField(),
+                            'delivery_count': drf_serializers.IntegerField(),
+                        }
+                    ),
+                    'stats': inline_serializer(
+                        name='DriverStats',
+                        fields={
+                            'total_distance': drf_serializers.FloatField(),
+                            'rating': drf_serializers.FloatField(),
+                            'cancelled_rides': drf_serializers.IntegerField(),
+                            'online_hours': drf_serializers.CharField(),
+                        }
+                    ),
+                    'peak_hours': drf_serializers.DictField(help_text='Hour → ride count mapping for peak hours chart.'),
+                    'balance': drf_serializers.FloatField(),
+                    'currency': drf_serializers.CharField(default='GHS'),
+                }
+            ),
+        },
+    )
     @action(detail=False, methods=['get'])
     def earnings(self, request):
         def fetch_earnings():
@@ -135,7 +212,22 @@ class PaymentViewSet(viewsets.GenericViewSet):
             })
         return cached_api_response(request, 'earnings', timeout=300, fetcher=fetch_earnings)
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        tags=['Payments'],
+        summary='Get earnings summary stats',
+        description='Returns a compact earnings summary (today, weekly, total) for the driver dashboard header.',
+        responses={
+            200: inline_serializer(
+                name='EarningsStatsResponse',
+                fields={
+                    'today_sales': drf_serializers.FloatField(),
+                    'weekly_sales': drf_serializers.FloatField(),
+                    'total_sales': drf_serializers.FloatField(),
+                    'currency': drf_serializers.CharField(default='GHS'),
+                }
+            ),
+        },
+    )
     @action(detail=False, methods=['get'])
     def stats(self, request):
         def fetch_stats():
@@ -150,7 +242,32 @@ class PaymentViewSet(viewsets.GenericViewSet):
             })
         return cached_api_response(request, 'pay_stats', timeout=300, fetcher=fetch_stats)
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT})
+    @extend_schema(
+        tags=['Payments'],
+        summary='Initiate wallet funding',
+        description=(
+            'Initiates a Paystack payment to fund the user\'s wallet.\n\n'
+            'Returns a `checkout_url` (Paystack-hosted payment page) and a `reference` '
+            'for tracking. After payment, call `GET /verify/{reference}/` to confirm.\n\n'
+            'Amount is in GHS (e.g., `10.00` for GH₵ 10).'
+        ),
+        request=inline_serializer(
+            name='InitiatePaymentRequest',
+            fields={
+                'amount': drf_serializers.DecimalField(max_digits=10, decimal_places=2, help_text='Amount in GHS.'),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='InitiatePaymentResponse',
+                fields={
+                    'checkout_url': drf_serializers.URLField(help_text='Paystack-hosted payment page URL.'),
+                    'reference': drf_serializers.CharField(help_text='Paystack transaction reference for verification.'),
+                }
+            ),
+            400: OpenApiResponse(description='Missing amount or Paystack initialization failed.'),
+        },
+    )
     @action(detail=False, methods=['post'])
     def initiate(self, request):
         """
@@ -165,9 +282,6 @@ class PaymentViewSet(viewsets.GenericViewSet):
             "user_id": str(request.user.id),
             "type": "wallet_funding"
         }
-        
-        # In a real scenario, you might want to specify a callback URL
-        # e.g., request.build_absolute_uri('/payments/verify-ui/')
         
         response = service.initialize_transaction(
             email=request.user.email,
@@ -200,6 +314,29 @@ class PaymentViewSet(viewsets.GenericViewSet):
             "message": response.get('message')
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Payments'],
+        summary='Verify a payment',
+        description=(
+            'Verifies a Paystack payment by reference and credits the wallet on success.\n\n'
+            'Returns `200 success` if already completed (idempotent).'
+        ),
+        parameters=[
+            OpenApiParameter(name='reference', type=str, location='path', required=True, description='Paystack transaction reference.'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='VerifyPaymentResponse',
+                fields={
+                    'message': drf_serializers.CharField(),
+                    'new_balance': drf_serializers.DecimalField(max_digits=10, decimal_places=2, required=False),
+                    'status': drf_serializers.CharField(default='success'),
+                }
+            ),
+            400: OpenApiResponse(description='Payment verification failed.'),
+            404: OpenApiResponse(description='Transaction not found.'),
+        },
+    )
     @action(detail=False, methods=['get'], url_path='verify/(?P<reference>[^/.]+)')
     def verify(self, request, reference=None):
         """
@@ -230,21 +367,45 @@ class PaymentViewSet(viewsets.GenericViewSet):
                 wallet.balance += tx.amount
                 wallet.save()
                 
+            # Invalidate wallet/earnings caches after funding
+            invalidate_user_cache(request.user.id, 'wallet')
+            invalidate_user_cache(request.user.id, 'earnings')
+            invalidate_user_cache(request.user.id, 'pay_stats')
+
             return Response({
                 "message": "Wallet funded successfully",
                 "new_balance": wallet.balance,
                 "status": "success"
             })
-            # Invalidate wallet/earnings caches after funding
-            invalidate_user_cache(request.user.id, 'wallet')
-            invalidate_user_cache(request.user.id, 'earnings')
-            invalidate_user_cache(request.user.id, 'pay_stats')
             
         return Response({
             "error": "Payment verification failed",
             "message": response.get('message', 'Transaction was not successful')
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Payments'],
+        summary='Paystack webhook handler',
+        description=(
+            'Receives Paystack `charge.success` webhook events and fulfills wallet funding.\n\n'
+            '**Security:** Validates the HMAC-SHA512 signature against the `x-paystack-signature` header. '
+            'Rejects requests with missing or invalid signatures.\n\n'
+            '**Idempotent:** Already-completed transactions are safely ignored.'
+        ),
+        request=OpenApiTypes.OBJECT,
+        responses={
+            200: inline_serializer(
+                name='WebhookResponse',
+                fields={
+                    'status': drf_serializers.CharField(default='success'),
+                    'event': drf_serializers.CharField(),
+                }
+            ),
+            400: OpenApiResponse(description='Missing signature header or invalid JSON body.'),
+            401: OpenApiResponse(description='Invalid HMAC signature.'),
+        },
+        auth=[],
+    )
     @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def webhook(self, request):
         """

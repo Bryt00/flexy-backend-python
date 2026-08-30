@@ -72,10 +72,17 @@
             </p>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                {% if ad.dashboard_token %}
+                <a href="{% url 'advertise_dashboard' %}?token={{ ad.dashboard_token }}" class="btn btn-primary px-8 py-4 flex items-center justify-center gap-2 shadow-xl shadow-brand/20">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    Return to Dashboard
+                </a>
+                {% else %}
                 <a href="{% url 'advertise_landing' %}" class="btn btn-primary px-8 py-4 flex items-center justify-center gap-2">
                     <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     Return to Advertising Home
                 </a>
+                {% endif %}
             </div>
         {% endif %}
     </div>

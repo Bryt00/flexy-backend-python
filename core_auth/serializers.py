@@ -5,6 +5,8 @@ from .models import DeletionRequest
 User = get_user_model()
 
 
+from drf_spectacular.utils import extend_schema_field, OpenApiTypes
+
 class UserSerializer(serializers.ModelSerializer):
     phone = serializers.SerializerMethodField()
 
@@ -13,6 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'role', 'phone', 'is_email_verified', 'google_id', 'apple_id', 'created_at')
         read_only_fields = ('id', 'created_at', 'phone', 'is_email_verified')
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_phone(self, obj):
         try:
             return obj.profile.phone_number

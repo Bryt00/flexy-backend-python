@@ -117,7 +117,7 @@ class LoginView(views.APIView):
         requested_role = str(requested_role).lower().strip()
         if requested_role == 'passenger':
             requested_role = 'rider'
-        if requested_role not in ['rider', 'driver', 'partner', 'admin', 'super_admin']:
+        if requested_role not in ['rider', 'driver', 'partner', 'developer', 'admin', 'super_admin']:
             requested_role = 'rider'
         
         # Use __iexact to ensure login works regardless of email capitalization

@@ -11902,6 +11902,7 @@ components:
           - rider
           - driver
           - partner
+          - developer
           - support
           - finance
           - admin
@@ -11911,11 +11912,12 @@ components:
             * `rider` - Rider
             * `driver` - Driver
             * `partner` - Partner
+            * `developer` - Developer
             * `support` - Customer Support
             * `finance` - Finance
             * `admin` - Admin
             * `super_admin` - Super Admin
-          x-spec-enum-id: 4831f7b41bb1bd9a
+          x-spec-enum-id: 3a885652244cf96a
         google_id:
           type: string
           nullable: true
@@ -12055,6 +12057,7 @@ components:
           - rider
           - driver
           - partner
+          - developer
           - support
           - finance
           - admin
@@ -12064,11 +12067,12 @@ components:
             * `rider` - Rider
             * `driver` - Driver
             * `partner` - Partner
+            * `developer` - Developer
             * `support` - Customer Support
             * `finance` - Finance
             * `admin` - Admin
             * `super_admin` - Super Admin
-          x-spec-enum-id: 4831f7b41bb1bd9a
+          x-spec-enum-id: 3a885652244cf96a
           readOnly: true
         full_name:
           type: string
@@ -12476,6 +12480,7 @@ components:
           - rider
           - driver
           - partner
+          - developer
           - support
           - finance
           - admin
@@ -12485,11 +12490,12 @@ components:
             * `rider` - Rider
             * `driver` - Driver
             * `partner` - Partner
+            * `developer` - Developer
             * `support` - Customer Support
             * `finance` - Finance
             * `admin` - Admin
             * `super_admin` - Super Admin
-          x-spec-enum-id: 4831f7b41bb1bd9a
+          x-spec-enum-id: 3a885652244cf96a
         referral_code:
           type: string
           writeOnly: true
@@ -13672,6 +13678,7 @@ components:
           - rider
           - driver
           - partner
+          - developer
           - support
           - finance
           - admin
@@ -13681,11 +13688,12 @@ components:
             * `rider` - Rider
             * `driver` - Driver
             * `partner` - Partner
+            * `developer` - Developer
             * `support` - Customer Support
             * `finance` - Finance
             * `admin` - Admin
             * `super_admin` - Super Admin
-          x-spec-enum-id: 4831f7b41bb1bd9a
+          x-spec-enum-id: 3a885652244cf96a
         phone:
           type: string
           readOnly: true
@@ -13723,6 +13731,7 @@ components:
           - rider
           - driver
           - partner
+          - developer
           - support
           - finance
           - admin
@@ -13732,11 +13741,12 @@ components:
             * `rider` - Rider
             * `driver` - Driver
             * `partner` - Partner
+            * `developer` - Developer
             * `support` - Customer Support
             * `finance` - Finance
             * `admin` - Admin
             * `super_admin` - Super Admin
-          x-spec-enum-id: 4831f7b41bb1bd9a
+          x-spec-enum-id: 3a885652244cf96a
         google_id:
           type: string
           nullable: true

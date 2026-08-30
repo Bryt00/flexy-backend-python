@@ -25,6 +25,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('rider', 'Rider'),
         ('driver', 'Driver'),
         ('partner', 'Partner'),
+        ('developer', 'Developer'),
         ('support', 'Customer Support'),
         ('finance', 'Finance'),
         ('admin', 'Admin'),

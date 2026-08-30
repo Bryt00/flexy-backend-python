@@ -5,7 +5,55 @@ from .serializers import VehicleSerializer
 from profiles.models import Profile
 from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiResponse
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Vehicles'],
+        summary='List my vehicles',
+        description=(
+            'Returns all vehicles belonging to the authenticated driver.\n\n'
+            'Staff/admin users see all vehicles in the system. Response is cached for 5 minutes.'
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=['Vehicles'],
+        summary='Get vehicle details',
+        description='Returns full details for a specific vehicle by ID.',
+    ),
+    create=extend_schema(
+        tags=['Vehicles'],
+        summary='Register or update a vehicle',
+        description=(
+            'Registers a new vehicle for the authenticated driver.\n\n'
+            '**Upsert behaviour:** If the driver already has a vehicle, the existing one is updated instead '
+            'of creating a duplicate. This simplifies the Flutter app flow.\n\n'
+            'The vehicle is automatically linked to the driver\'s profile — no need to send `driverId`.'
+        ),
+    ),
+    update=extend_schema(
+        tags=['Vehicles'],
+        summary='Update a vehicle',
+        description=(
+            'Fully updates a vehicle record.\n\n'
+            '**Online restriction:** Setting `status=available` requires an active subscription. '
+            'Returns a validation error if the subscription is due or expired.'
+        ),
+    ),
+    partial_update=extend_schema(
+        tags=['Vehicles'],
+        summary='Partially update a vehicle',
+        description='Partially updates a vehicle record.',
+    ),
+    destroy=extend_schema(
+        tags=['Vehicles'],
+        summary='Delete a vehicle',
+        description='Removes a vehicle registration from the system.',
+    ),
+)
 class VehicleViewSet(viewsets.ModelViewSet):
+    """Driver vehicle registration and management."""
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -83,4 +131,3 @@ class VehicleViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK if existing_vehicle else status.HTTP_201_CREATED,
             headers=headers,
         )
-

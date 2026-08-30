@@ -10,7 +10,39 @@ from rides.utils import FareCalculator, GeospatialUtils
 from integrations.google_maps import GoogleMapsService
 from .utils import CourierFareCalculator
 
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Deliveries'],
+        summary='List deliveries',
+        description=(
+            'Returns deliveries visible to the authenticated user.\n\n'
+            '- **Passengers** see their own requested deliveries.\n'
+            '- **Drivers** see their assigned deliveries plus all `PENDING` deliveries available for pickup.'
+        ),
+    ),
+    create=extend_schema(
+        tags=['Deliveries'],
+        summary='Create a delivery request',
+        description=(
+            'Creates a new courier delivery request.\n\n'
+            '**Fare calculation:** Uses Google Maps for real distance/duration, then applies the '
+            'courier-specific fare formula (vehicle type + item category + weight tier + distance).\n\n'
+            '**Notifications:** Eligible drivers within 15km are notified via push. Geofence restrictions '
+            'are enforced for category-restricted vehicle types.\n\n'
+            '**Required fields:** `pickup_lat`, `pickup_lng`, `dropoff_lat`, `dropoff_lng`, `pickup_address`, `dropoff_address`'
+        ),
+    ),
+    retrieve=extend_schema(tags=['Deliveries'], summary='Get delivery details', description='Returns full delivery details including proofs and driver info.'),
+    update=extend_schema(tags=['Deliveries'], summary='Update a delivery', description='Fully updates a delivery record.'),
+    partial_update=extend_schema(tags=['Deliveries'], summary='Partially update a delivery', description='Partially updates a delivery record.'),
+    destroy=extend_schema(tags=['Deliveries'], summary='Delete a delivery', description='Deletes a delivery record.'),
+)
 class DeliveryViewSet(viewsets.ModelViewSet):
+    """Courier/parcel delivery lifecycle management."""
     queryset = Delivery.objects.all()
     serializer_class = DeliverySerializer
     permission_classes = [IsAuthenticated]
@@ -207,6 +239,43 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Error sending delivery notifications to drivers: {e}")
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Get delivery fare estimate',
+        description=(
+            'Calculates the fare estimate for a courier delivery based on:\n'
+            '- Real distance/duration from Google Maps\n'
+            '- Vehicle type surcharge\n'
+            '- Item category multiplier\n'
+            '- Weight tier surcharge\n'
+            '- Surge pricing (if applicable)\n\n'
+            'Returns the total fare and a full cost breakdown.'
+        ),
+        parameters=[
+            OpenApiParameter(name='pickup_lat', type=float, location='query', required=True),
+            OpenApiParameter(name='pickup_lng', type=float, location='query', required=True),
+            OpenApiParameter(name='dropoff_lat', type=float, location='query', required=True),
+            OpenApiParameter(name='dropoff_lng', type=float, location='query', required=True),
+            OpenApiParameter(name='vehicle_type_id', type=str, location='query', required=False, description='Delivery vehicle type ID.'),
+            OpenApiParameter(name='category_id', type=str, location='query', required=False, description='Item category ID.'),
+            OpenApiParameter(name='weight_tier_id', type=str, location='query', required=False, description='Weight tier ID.'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='DeliveryEstimateResponse',
+                fields={
+                    'estimated_fare': drf_serializers.FloatField(),
+                    'distance_km': drf_serializers.FloatField(),
+                    'duration_seconds': drf_serializers.IntegerField(),
+                    'duration_text': drf_serializers.CharField(),
+                    'distance_text': drf_serializers.CharField(),
+                    'currency': drf_serializers.CharField(default='GHS'),
+                    'breakdown': drf_serializers.DictField(help_text='Full fare breakdown ledger.'),
+                }
+            ),
+            400: OpenApiResponse(description='Invalid parameters.'),
+        },
+    )
     @action(detail=False, methods=['get'])
     def estimate(self, request):
         """
@@ -291,6 +360,31 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         except Exception:
             pass
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Update delivery status',
+        description=(
+            'Transitions a delivery to a new status.\n\n'
+            '**Status flow:** `PENDING` → `ACCEPTED` → `AT_PICKUP` → `PACKAGE_COLLECTED` → '
+            '`EN_ROUTE_TO_DROPOFF` → `ARRIVED_AT_DROPOFF` → `DELIVERED`\n\n'
+            '**On completion (`DELIVERED`):** Driver earnings are processed, profile ride count '
+            'is incremented, and driver tracking status is reset.\n\n'
+            'Push notifications are sent to the passenger at each milestone.'
+        ),
+        request=inline_serializer(
+            name='DeliveryStatusRequest',
+            fields={
+                'status': drf_serializers.ChoiceField(
+                    choices=['PENDING', 'ACCEPTED', 'AT_PICKUP', 'PACKAGE_COLLECTED',
+                             'EN_ROUTE_TO_DROPOFF', 'ARRIVED_AT_DROPOFF', 'DELIVERED', 'CANCELLED']
+                ),
+            }
+        ),
+        responses={
+            200: DeliverySerializer,
+            400: OpenApiResponse(description='Invalid status value.'),
+        },
+    )
     @action(detail=True, methods=['post', 'patch'])
     def status(self, request, pk=None):
         delivery = self.get_object()
@@ -349,6 +443,24 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             return Response(DeliverySerializer(delivery).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Accept a delivery (driver)',
+        description=(
+            'Allows a driver to accept a pending delivery request.\n\n'
+            '**Restrictions:** Only `PENDING` deliveries can be accepted, and only by users with `driver` role.\n\n'
+            'On acceptance:\n'
+            '- Driver profile is assigned to the delivery\n'
+            '- Driver is marked as actively riding in the tracking service\n'
+            '- WebSocket broadcast updates the passenger in real-time\n'
+            '- The delivery is removed from the discovery stream'
+        ),
+        responses={
+            200: DeliverySerializer,
+            400: OpenApiResponse(description='Delivery already accepted or processed.'),
+            403: OpenApiResponse(description='User is not a driver.'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         delivery = self.get_object()
@@ -398,6 +510,37 @@ class DeliveryViewSet(viewsets.ModelViewSet):
 
         return Response(DeliverySerializer(delivery).data)
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Upload delivery proof',
+        description=(
+            'Uploads proof of pickup or delivery with photo/signature and GPS coordinates.\n\n'
+            '**Proof types:**\n'
+            '- `PICKUP` — Advances delivery to `PACKAGE_COLLECTED`\n'
+            '- `DROPOFF` — Advances delivery to `DELIVERED` and triggers earnings processing\n\n'
+            'GPS coordinates are required for location verification.'
+        ),
+        request=inline_serializer(
+            name='DeliveryProofRequest',
+            fields={
+                'proof_type': drf_serializers.ChoiceField(choices=['PICKUP', 'DROPOFF']),
+                'image_url': drf_serializers.URLField(required=False, help_text='URL to uploaded proof photo.'),
+                'signature_base64': drf_serializers.CharField(required=False, help_text='Base64-encoded signature image.'),
+                'latitude': drf_serializers.FloatField(help_text='Current latitude for verification.'),
+                'longitude': drf_serializers.FloatField(help_text='Current longitude for verification.'),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='DeliveryProofResponse',
+                fields={
+                    'message': drf_serializers.CharField(),
+                    'delivery': DeliverySerializer(),
+                }
+            ),
+            400: OpenApiResponse(description='Invalid proof type or missing coordinates.'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def upload_proof(self, request, pk=None):
         """
@@ -475,6 +618,18 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             "delivery": DeliverySerializer(delivery).data
         })
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Get available deliveries (drivers)',
+        description=(
+            'Returns all `PENDING` deliveries available for drivers to accept.\n\n'
+            '**Filters:**\n'
+            '- **Proximity:** Only deliveries within 15km of the driver\'s last known location\n'
+            '- **Geofence:** For geofenced vehicle categories, both pickup and dropoff must be within allowed service areas\n'
+            '- **Eligibility:** Only drivers who opted into deliveries (`receive_deliveries=True`) or have delivery-only vehicles'
+        ),
+        responses={200: DeliverySerializer(many=True)},
+    )
     @action(detail=False, methods=['get'])
     def available(self, request):
         """
@@ -540,6 +695,12 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         serializer = DeliverySerializer(filtered_deliveries, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Get delivery history',
+        description='Returns the delivery history for the authenticated user (filtered by role: passenger or driver).',
+        responses={200: DeliverySerializer(many=True)},
+    )
     @action(detail=False, methods=['get'])
     def history(self, request):
         """
@@ -552,11 +713,15 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         else:
             queryset = qs.filter(passenger=user)
         
-        # Exclude currently active/pending ones for 'history' if desired, 
-        # but matching queryset for consistency now.
         serializer = DeliverySerializer(queryset.order_by('-created_at'), many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=['Deliveries'],
+        summary='Get nearby deliveries',
+        description='Alias for `/available/`. Returns pending deliveries near the driver\'s location.',
+        responses={200: DeliverySerializer(many=True)},
+    )
     @action(detail=False, methods=['get'])
     def nearby(self, request):
         """

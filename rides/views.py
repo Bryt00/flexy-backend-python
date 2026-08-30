@@ -11,7 +11,37 @@ from django.utils import timezone
 from .tasks import process_ride_matching
 from payments.tasks import process_ride_earnings
 
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Rides'],
+        summary='List rides',
+        description='Returns all rides visible to the authenticated user (riders see their own, drivers see assigned).',
+    ),
+    create=extend_schema(
+        tags=['Rides'],
+        summary='Request a new ride',
+        description=(
+            'Creates a new ride request and triggers automatic driver matching.\n\n'
+            'The system finds the nearest available driver within 5km and sends a push notification.\n'
+            'If a `promo_code_string` is provided, the discount is applied to the final fare.\n\n'
+            '**Required fields:** `pickup_lat`, `pickup_lng`, `pickup_address`, `dropoff_lat`, `dropoff_lng`, `dropoff_address`'
+        ),
+    ),
+    retrieve=extend_schema(
+        tags=['Rides'],
+        summary='Get ride details',
+        description='Returns full ride details including driver info, stops, incidents, and financial ledger.',
+    ),
+    update=extend_schema(tags=['Rides'], summary='Update a ride', description='Fully updates a ride record.'),
+    partial_update=extend_schema(tags=['Rides'], summary='Partially update a ride', description='Partially updates a ride record.'),
+    destroy=extend_schema(tags=['Rides'], summary='Delete a ride', description='Deletes a ride record.'),
+)
 class RideViewSet(viewsets.ModelViewSet):
+    """Core ride-hailing lifecycle management."""
     queryset = Ride.objects.all()
     serializer_class = RideSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -98,6 +128,31 @@ class RideViewSet(viewsets.ModelViewSet):
         # Trigger matching asynchronously via RabbitMQ
         process_ride_matching.delay(str(ride.id))
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get surge multiplier',
+        description=(
+            'Calculates the real-time surge pricing multiplier for a given location.\n\n'
+            'Based on the ratio of active ride requests to available drivers within the specified radius.'
+        ),
+        parameters=[
+            OpenApiParameter(name='lat', type=float, location='query', required=True, description='Latitude of the location.'),
+            OpenApiParameter(name='lng', type=float, location='query', required=True, description='Longitude of the location.'),
+            OpenApiParameter(name='radius', type=float, location='query', required=False, description='Search radius in km (default: 5.0).'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='SurgeResponse',
+                fields={
+                    'lat': drf_serializers.FloatField(),
+                    'lng': drf_serializers.FloatField(),
+                    'radius': drf_serializers.FloatField(),
+                    'surge_multiplier': drf_serializers.FloatField(help_text='1.0 = no surge, 1.5 = 50% surge, etc.'),
+                    'status': drf_serializers.CharField(),
+                }
+            ),
+        },
+    )
     @action(detail=False, methods=['get'])
     def surge(self, request):
         """
@@ -121,6 +176,39 @@ class RideViewSet(viewsets.ModelViewSet):
             "status": "active"
         })
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get surge heatmap data',
+        description=(
+            'Returns a list of geo-points with surge multipliers for rendering a heatmap overlay on the driver map.\n\n'
+            'Points are generated around the center location with randomised scatter to create a realistic heat blob. '
+            'Each point expires after 5 minutes.'
+        ),
+        parameters=[
+            OpenApiParameter(name='lat', type=float, location='query', required=True, description='Center latitude.'),
+            OpenApiParameter(name='lng', type=float, location='query', required=True, description='Center longitude.'),
+            OpenApiParameter(name='radius', type=float, location='query', required=False, description='Search radius in km (default: 5.0).'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='SurgeHeatmapResponse',
+                fields={
+                    'points': drf_serializers.ListField(
+                        child=inline_serializer(
+                            name='HeatmapPoint',
+                            fields={
+                                'lat': drf_serializers.FloatField(),
+                                'lng': drf_serializers.FloatField(),
+                                'multiplier': drf_serializers.FloatField(),
+                                'expires_at': drf_serializers.DateTimeField(),
+                            }
+                        )
+                    ),
+                    'status': drf_serializers.CharField(),
+                }
+            ),
+        },
+    )
     @action(detail=False, methods=['get'], url_path='surge/heatmap')
     def surge_heatmap(self, request):
         """
@@ -165,6 +253,16 @@ class RideViewSet(viewsets.ModelViewSet):
         
         return Response({"points": points, "status": "success"})
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get ride history',
+        description=(
+            'Returns a paginated list of the rider\'s past rides, ordered by most recent first.\n\n'
+            'Uses the `LiteRideSerializer` for performance (fewer fields than full ride details). '
+            'Page size: 20 rides per page.'
+        ),
+        responses={200: LiteRideSerializer(many=True)},
+    )
     @action(detail=False, methods=['get'])
     def history(self, request):
         from rest_framework.pagination import PageNumberPagination
@@ -179,6 +277,21 @@ class RideViewSet(viewsets.ModelViewSet):
             
         return Response(self.get_serializer(rides, many=True).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get active ride',
+        description=(
+            'Returns the single currently active ride for the authenticated user, or `null` if none.\n\n'
+            '**Active ride criteria:**\n'
+            '- Status is `pending`, `accepted`, `arrived`, or `in_progress`\n'
+            '- OR `completed` within the last 5 minutes (for rating summary screen)\n'
+            '- Excludes rides the user has already rated\n'
+            '- Excludes scheduled rides that haven\'t started yet\n\n'
+            'Returns `200` with `null` body (not 404) when no active ride exists — this avoids '
+            'Dio/HTTP client errors on the Flutter side.'
+        ),
+        responses={200: RideSerializer},
+    )
     @action(detail=False, methods=['get'])
     def active(self, request):
         five_mins_ago = timezone.now() - timezone.timedelta(minutes=5)
@@ -205,6 +318,16 @@ class RideViewSet(viewsets.ModelViewSet):
         # Return 200 with null to avoid Dio errors in frontend when no trip exists
         return Response(None, status=status.HTTP_200_OK)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get scheduled rides',
+        description=(
+            'Returns all scheduled (future) rides for the authenticated user.\n\n'
+            'Includes rides with status `accepted`, `arrived`, `in_progress`, '
+            'or `pending`/`requested` if the scheduled time hasn\'t passed (±15 min grace).'
+        ),
+        responses={200: RideSerializer(many=True)},
+    )
     @action(detail=False, methods=['get'])
     def scheduled(self, request):
         # Only show rides that are in the future OR are already accepted/active.
@@ -217,6 +340,18 @@ class RideViewSet(viewsets.ModelViewSet):
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get ride opportunities (drivers)',
+        description=(
+            'Returns scheduled rides in `pending` status that are available for drivers to accept.\n\n'
+            '**Driver-only endpoint.** Returns `403` for non-driver roles.'
+        ),
+        responses={
+            200: RideSerializer(many=True),
+            403: OpenApiResponse(description='User is not a driver.'),
+        },
+    )
     @action(detail=False, methods=['get'])
     def opportunities(self, request):
         """
@@ -233,6 +368,16 @@ class RideViewSet(viewsets.ModelViewSet):
         ).order_by('scheduled_for')
         return Response(self.get_serializer(rides, many=True).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Accept a scheduled ride (driver)',
+        description='Allows a driver to accept a pending scheduled ride opportunity.',
+        responses={
+            200: RideSerializer,
+            400: OpenApiResponse(description='Ride is not in pending status.'),
+            403: OpenApiResponse(description='User is not a driver.'),
+        },
+    )
     @action(detail=True, methods=['post'], url_path='schedule/accept')
     def schedule_accept(self, request, pk=None):
         if getattr(request.user, 'role', 'rider') != 'driver':
@@ -246,6 +391,16 @@ class RideViewSet(viewsets.ModelViewSet):
         self._broadcast_ride_update(ride, 'status_updated')
         return Response(self.get_serializer(ride).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Start a scheduled ride',
+        description=(
+            'Transitions a scheduled ride from the waiting state to an active ride.\n\n'
+            'Sets `is_scheduled=False` and status to `accepted`, triggering the normal ride flow. '
+            'Also marks the driver as actively riding in the tracking service.'
+        ),
+        responses={200: RideSerializer},
+    )
     @action(detail=True, methods=['post'], url_path='schedule/start')
     def schedule_start(self, request, pk=None):
         ride = self.get_object()
@@ -260,6 +415,21 @@ class RideViewSet(viewsets.ModelViewSet):
         self._broadcast_ride_update(ride, 'status_updated')
         return Response(self.get_serializer(ride).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Schedule a future ride',
+        description=(
+            'Creates a future-dated ride request **without** triggering immediate driver matching.\n\n'
+            'The ride stays in `pending` status until:\n'
+            '- A driver manually accepts it via `/opportunities/`\n'
+            '- The scheduled time approaches and auto-activation kicks in\n\n'
+            '`scheduled_for` must be a future ISO 8601 timestamp.'
+        ),
+        responses={
+            201: RideSerializer,
+            400: OpenApiResponse(description='Missing scheduled_for or time is in the past.'),
+        },
+    )
     @action(detail=False, methods=['post'])
     def schedule(self, request):
         """
@@ -299,6 +469,14 @@ class RideViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Manage favorite locations',
+        description=(
+            '**GET** — Returns all saved favorite locations for the authenticated user.\n\n'
+            '**POST** — Saves a new favorite location (home, work, etc.).'
+        ),
+    )
     @action(detail=False, methods=['get', 'post'])
     def favorites(self, request):
         if request.method == 'GET':
@@ -314,6 +492,46 @@ class RideViewSet(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get fare estimates',
+        description=(
+            'Calculates dynamic fare estimates and real-time driver ETAs for all vehicle categories.\n\n'
+            '**How it works:**\n'
+            '1. Fetches nearby drivers from Redis geospatial index (5km radius)\n'
+            '2. Groups drivers by vehicle category with closest driver per category\n'
+            '3. Fetches Google Maps trip metrics (distance, duration, traffic) in parallel\n'
+            '4. Applies pricing rules (base fare + distance tiers + stops + surge)\n'
+            '5. Returns per-category estimates with availability and ETA\n\n'
+            '**Caching:** Results are cached for 45 seconds per ~50m coordinate grid to reduce Google Maps API costs.\n\n'
+            'The `X-Cache` response header indicates `HIT` or `MISS`.'
+        ),
+        parameters=[
+            OpenApiParameter(name='pickup_lat', type=float, location='query', required=True, description='Pickup latitude.'),
+            OpenApiParameter(name='pickup_lng', type=float, location='query', required=True, description='Pickup longitude.'),
+            OpenApiParameter(name='dropoff_lat', type=float, location='query', required=False, description='Dropoff latitude.'),
+            OpenApiParameter(name='dropoff_lng', type=float, location='query', required=False, description='Dropoff longitude.'),
+            OpenApiParameter(name='stops', type=str, location='query', required=False, description='JSON-encoded array of intermediate stop coordinates [{lat, lng}, ...].'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='FareEstimateResponse',
+                fields={
+                    'estimated_fare': drf_serializers.FloatField(help_text='Fare for the default/standard category.'),
+                    'is_available': drf_serializers.BooleanField(help_text='Whether a driver is available for the default category.'),
+                    'eta_minutes': drf_serializers.IntegerField(allow_null=True, help_text='ETA in minutes for the default category.'),
+                    'estimates': drf_serializers.DictField(help_text='Per-category breakdown: {slug: {fare, is_available, real_time_available, eta_minutes}}.'),
+                    'distance_km': drf_serializers.FloatField(),
+                    'duration_seconds': drf_serializers.IntegerField(),
+                    'duration_text': drf_serializers.CharField(),
+                    'distance_text': drf_serializers.CharField(),
+                    'currency': drf_serializers.CharField(default='GHS'),
+                }
+            ),
+            400: OpenApiResponse(description='Missing or invalid coordinates.'),
+            404: OpenApiResponse(description='No vehicle categories available.'),
+        },
+    )
     @action(detail=False, methods=['get'])
     def estimate(self, request):
         """
@@ -504,6 +722,36 @@ class RideViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get nearby vehicles',
+        description=(
+            'Returns anonymised positions (±~50m jitter) of active drivers within 3km.\n\n'
+            'Used by the passenger map to display ambient vehicle markers before a ride is ordered. '
+            'Positions are intentionally jittered for driver privacy.'
+        ),
+        parameters=[
+            OpenApiParameter(name='lat', type=float, location='query', required=True, description='Passenger latitude.'),
+            OpenApiParameter(name='lng', type=float, location='query', required=True, description='Passenger longitude.'),
+        ],
+        responses={
+            200: inline_serializer(
+                name='NearbyVehiclesResponse',
+                fields={
+                    'vehicles': drf_serializers.ListField(
+                        child=inline_serializer(
+                            name='NearbyVehicle',
+                            fields={
+                                'lat': drf_serializers.FloatField(),
+                                'lng': drf_serializers.FloatField(),
+                                'type': drf_serializers.CharField(help_text='Vehicle category slug (e.g. go, standard, comfort).'),
+                            }
+                        )
+                    ),
+                }
+            ),
+        },
+    )
     @action(detail=False, methods=['get'], url_path='nearby-vehicles')
     def nearby_vehicles(self, request):
         """
@@ -545,6 +793,36 @@ class RideViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Update ride status (driver)',
+        description=(
+            'Transitions a ride to a new status. **Driver-only** — only the assigned driver can update.\n\n'
+            '**Status flow:** `pending` → `accepted` → `arrived` → `in_progress` → `completed`\n\n'
+            '**On completion (`completed`):**\n'
+            '- Final fare is calculated using the 8-stage pricing ledger\n'
+            '- Promo code discount is applied (if any)\n'
+            '- Driver earnings are processed and credited to wallet\n'
+            '- Receipt is auto-generated and emailed to rider\n'
+            '- Referral rewards are triggered (first ride)\n'
+            '- Push notification sent to rider with fare summary\n\n'
+            '**On cancellation (`cancelled`):**\n'
+            '- Driver ride status is reset in tracking service'
+        ),
+        request=inline_serializer(
+            name='RideStatusUpdateRequest',
+            fields={
+                'status': drf_serializers.ChoiceField(choices=['pending', 'accepted', 'arrived', 'in_progress', 'completed', 'cancelled']),
+                'distance': drf_serializers.FloatField(required=False, help_text='Actual distance in km (for completion).'),
+                'waiting_minutes': drf_serializers.FloatField(required=False, help_text='Waiting time in minutes (for completion).'),
+            }
+        ),
+        responses={
+            200: RideSerializer,
+            400: OpenApiResponse(description='Invalid status value.'),
+            403: OpenApiResponse(description='Only the assigned driver can update status.'),
+        },
+    )
     @action(detail=True, methods=['post', 'put', 'patch'])
     def status(self, request, pk=None):
         ride = self.get_object()
@@ -737,6 +1015,40 @@ class RideViewSet(viewsets.ModelViewSet):
             return Response(self.get_serializer(ride).data)
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Update driver tracking data',
+        description=(
+            'Receives the driver\'s GPS coordinates and recalculates remaining distance/ETA to the next milestone.\n\n'
+            '**Throttling:** Google Maps API is only called when:\n'
+            '- 60+ seconds since last call, OR\n'
+            '- Driver moved 200+ meters\n\n'
+            '**Milestones:**\n'
+            '- `accepted`/`arrived` → ETA to pickup\n'
+            '- `in_progress` → ETA to next pending stop or final dropoff\n\n'
+            'Updates are broadcast via WebSocket to the ride room.'
+        ),
+        request=inline_serializer(
+            name='TrackingUpdateRequest',
+            fields={
+                'lat': drf_serializers.FloatField(help_text='Driver current latitude.'),
+                'lng': drf_serializers.FloatField(help_text='Driver current longitude.'),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='TrackingUpdateResponse',
+                fields={
+                    'status': drf_serializers.CharField(),
+                    'distance_remaining': drf_serializers.FloatField(help_text='Remaining distance in km.'),
+                    'duration_remaining': drf_serializers.FloatField(help_text='Remaining duration in seconds.'),
+                    'updated_at': drf_serializers.DateTimeField(),
+                }
+            ),
+            400: OpenApiResponse(description='Missing latitude/longitude.'),
+            403: OpenApiResponse(description='Only the assigned driver can update tracking.'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def track(self, request, pk=None):
         """
@@ -823,6 +1135,20 @@ class RideViewSet(viewsets.ModelViewSet):
             "updated_at": ride.last_tracking_time
         })
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Cancel a ride',
+        description=(
+            'Cancels an active ride. Can be called by either the rider or the assigned driver.\n\n'
+            'Cannot cancel rides that are already `completed` or `cancelled`. '
+            'Resets the driver\'s ride status in the tracking service and broadcasts via WebSocket.'
+        ),
+        responses={
+            200: RideSerializer,
+            400: OpenApiResponse(description='Ride is already completed or cancelled.'),
+            403: OpenApiResponse(description='Not authorized (not a participant in this ride).'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         ride = self.get_object()
@@ -869,6 +1195,22 @@ class RideViewSet(viewsets.ModelViewSet):
         
         return Response(self.get_serializer(ride).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Accept a ride (driver)',
+        description=(
+            'Allows a driver to accept a pending ride request. Uses `SELECT FOR UPDATE` to prevent race conditions.\n\n'
+            'On acceptance:\n'
+            '- Driver is assigned and status transitions to `accepted`\n'
+            '- Driver is marked as actively riding in the tracking service\n'
+            '- WebSocket broadcast notifies the rider in real-time'
+        ),
+        responses={
+            200: RideSerializer,
+            400: OpenApiResponse(description='Ride already accepted/cancelled or driver has no profile.'),
+            404: OpenApiResponse(description='Ride not found.'),
+        },
+    )
     @action(detail=True, methods=['post', 'put'])
     def accept(self, request, pk=None):
         from django.db import transaction
@@ -905,6 +1247,19 @@ class RideViewSet(viewsets.ModelViewSet):
         
         return Response(self.get_serializer(ride).data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Decline a ride (driver)',
+        description=(
+            'Allows a driver to decline a pending ride request.\n\n'
+            'The driver is added to the `rejected_driver_ids` list and immediate re-dispatch '
+            'is triggered to find the next nearest available driver.'
+        ),
+        responses={
+            200: OpenApiResponse(description='Ride declined. Re-dispatch triggered.'),
+            400: OpenApiResponse(description='Ride is no longer available.'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def decline(self, request, pk=None):
         ride = self.get_object()
@@ -927,6 +1282,26 @@ class RideViewSet(viewsets.ModelViewSet):
         
         return Response({"status": "declined"})
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Trigger SOS emergency',
+        description=(
+            'Creates an emergency incident for the ride and triggers immediate notifications.\n\n'
+            '**Actions:**\n'
+            '- Creates an `Incident` record with type `SOS`\n'
+            '- Sends an emergency email to platform admins\n'
+            '- Broadcasts to the `admin_alerts` WebSocket channel for real-time monitoring'
+        ),
+        request=inline_serializer(
+            name='SOSRequest',
+            fields={
+                'description': drf_serializers.CharField(required=False, default='SOS Triggered'),
+                'lat': drf_serializers.FloatField(required=False, help_text='Current latitude.'),
+                'lng': drf_serializers.FloatField(required=False, help_text='Current longitude.'),
+            }
+        ),
+        responses={201: IncidentSerializer},
+    )
     @action(detail=True, methods=['post'])
     def sos(self, request, pk=None):
         ride = self.get_object()
@@ -968,6 +1343,22 @@ class RideViewSet(viewsets.ModelViewSet):
         
         return Response(IncidentSerializer(incident).data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Rate a ride',
+        description=(
+            'Submits a rating for the counterparty in a completed ride.\n\n'
+            '- Riders rate drivers, drivers rate riders\n'
+            '- Each user can only rate once per ride\n'
+            '- Rating value: 1-5 stars with optional comment'
+        ),
+        request=RatingSerializer,
+        responses={
+            201: RatingSerializer,
+            400: OpenApiResponse(description='Already rated, no counterparty, or invalid data.'),
+            403: OpenApiResponse(description='Not a participant in this ride.'),
+        },
+    )
     @action(detail=True, methods=['post'])
     def rate(self, request, pk=None):
         ride = self.get_object()
@@ -1004,6 +1395,28 @@ class RideViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Update a stop status',
+        description=(
+            'Allows drivers to mark individual intermediate stops as `arrived` or `completed`.\n\n'
+            'Updates are broadcast via WebSocket and push notifications are sent to the rider.'
+        ),
+        parameters=[
+            OpenApiParameter(name='stop_id', type=OpenApiTypes.UUID, location='path', required=True, description='ID of the RideStop.'),
+        ],
+        request=inline_serializer(
+            name='StopStatusRequest',
+            fields={
+                'status': drf_serializers.ChoiceField(choices=['pending', 'arrived', 'completed']),
+            }
+        ),
+        responses={
+            200: RideSerializer,
+            400: OpenApiResponse(description='Invalid status.'),
+            404: OpenApiResponse(description='Stop not found for this ride.'),
+        },
+    )
     @action(detail=True, methods=['post'], url_path='stops/(?P<stop_id>[^/.]+)/status')
     def update_stop_status(self, request, pk=None, stop_id=None):
         """
@@ -1056,6 +1469,16 @@ class RideViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get chat history',
+        description=(
+            'Returns the decrypted in-ride chat messages between rider and driver.\n\n'
+            'Messages are AES-encrypted at rest and decrypted on read. '
+            'Chat history expires 30 minutes after the ride reaches a terminal state.'
+        ),
+        responses={200: ChatMessageSerializer(many=True)},
+    )
     @action(detail=True, methods=['get'])
     def chat_history(self, request, pk=None):
         from .crypto_utils import ChatEncryption
@@ -1090,12 +1513,56 @@ class RideViewSet(viewsets.ModelViewSet):
         serializer = ChatMessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Get ride share link',
+        description='Generates a public tracking URL that can be shared with friends/family for live ride tracking.',
+        responses={
+            200: inline_serializer(
+                name='ShareLinkResponse',
+                fields={'share_url': drf_serializers.URLField()},
+            ),
+        },
+    )
     @action(detail=True, methods=['post'])
     def share(self, request, pk=None):
         ride = self.get_object()
         share_url = f"https://flexyridegh.com/track/{ride.id}"
         return Response({"share_url": share_url})
 
+    @extend_schema(
+        tags=['Rides'],
+        summary='Update ride destination',
+        description=(
+            'Updates the ride dropoff destination and/or intermediate stops mid-trip.\n\n'
+            '**Recalculation:** Automatically recalculates distance and fare based on the new route using Google Maps.\n\n'
+            '**Stop sync:** Existing stops can be updated by ID, new stops are created, '
+            'and omitted pending stops are deleted.\n\n'
+            'Triggers a WebSocket broadcast and push notification to the driver.'
+        ),
+        request=inline_serializer(
+            name='DestinationUpdateRequest',
+            fields={
+                'dropoff_lat': drf_serializers.FloatField(required=False),
+                'dropoff_lng': drf_serializers.FloatField(required=False),
+                'dropoff_address': drf_serializers.CharField(required=False),
+                'stops': drf_serializers.ListField(
+                    required=False,
+                    child=inline_serializer(
+                        name='StopInput',
+                        fields={
+                            'id': drf_serializers.UUIDField(required=False, help_text='Existing stop ID (omit for new stops).'),
+                            'address': drf_serializers.CharField(),
+                            'latitude': drf_serializers.FloatField(),
+                            'longitude': drf_serializers.FloatField(),
+                            'stop_order': drf_serializers.IntegerField(required=False),
+                        }
+                    )
+                ),
+            }
+        ),
+        responses={200: RideSerializer},
+    )
     @action(detail=True, methods=['put', 'patch', 'post'])
     def destination(self, request, pk=None):
         """
@@ -1225,12 +1692,33 @@ class RideViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(ride).data)
 
 
-from drf_spectacular.utils import extend_schema, OpenApiTypes
-
 class SystemSettingsView(APIView):
+    """Returns platform-wide settings: legal documents, support contacts."""
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(responses={200: OpenApiTypes.OBJECT}, auth=[])
+    @extend_schema(
+        tags=['System'],
+        summary='Get system settings',
+        description=(
+            'Returns public platform settings used by mobile apps on startup.\n\n'
+            '**Includes:** Privacy policy, terms of service, about us text, '
+            'support email, and support phone number.\n\n'
+            'Response is cached for 24 hours.'
+        ),
+        responses={
+            200: inline_serializer(
+                name='SystemSettingsResponse',
+                fields={
+                    'privacy_policy': drf_serializers.CharField(),
+                    'terms_of_service': drf_serializers.CharField(),
+                    'about_us': drf_serializers.CharField(),
+                    'support_email': drf_serializers.EmailField(),
+                    'support_phone': drf_serializers.CharField(),
+                }
+            ),
+        },
+        auth=[],
+    )
     def get(self, request):
         from core_settings.models import SiteSetting
         from website.models import LegalDocument

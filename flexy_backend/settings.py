@@ -202,11 +202,42 @@ else:
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'FlexyRide API',
-    'DESCRIPTION': 'Consolidated Backend API for FlexyRide Fleet Management and Mobile Apps.',
+    'DESCRIPTION': (
+        '## FlexyRide Backend API v1\n\n'
+        'Consolidated REST API powering the FlexyRide ride-hailing, courier delivery, '
+        'and fleet management platform.\n\n'
+        '### Authentication\n'
+        '- **JWT Bearer Token** — Obtain via `POST /v1/auth/login/` or `POST /v1/auth/social/`\n'
+        '- **API Key** — For server-to-server integrations, send `X-Api-Key` header\n\n'
+        '### Base URL\n'
+        '- Production: `https://api.flexyridegh.com`\n'
+        '- Staging: `https://staging-api.flexyridegh.com`\n\n'
+        '### Conventions\n'
+        '- All IDs are UUIDs\n'
+        '- Monetary values are in GHS (Ghana Cedis) as floats\n'
+        '- Timestamps are ISO 8601 UTC\n'
+        '- Paginated lists return `{count, next, previous, results}`\n'
+    ),
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_PATCH': True,
     'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': 'Authentication', 'description': 'User registration, login (email + social), OTP verification, password management, and session control.'},
+        {'name': 'Profiles', 'description': 'User profile management, driver verification, location tracking, online/offline toggling, and referral system.'},
+        {'name': 'Rides', 'description': 'Core ride-hailing lifecycle: requesting, matching, tracking, status transitions, fare estimation, surge pricing, and ratings.'},
+        {'name': 'Deliveries', 'description': 'Courier/parcel delivery lifecycle: creation, driver acceptance, proof of delivery, fare estimation, and status tracking.'},
+        {'name': 'Vehicles', 'description': 'Driver vehicle registration, updates, and fleet management.'},
+        {'name': 'Payments', 'description': 'Wallet management, Paystack payment integration, transaction history, and driver earnings dashboard.'},
+        {'name': 'Subscriptions', 'description': 'Driver subscription plans, Paystack-powered payments, and subscription status management.'},
+        {'name': 'Notifications', 'description': 'In-app notification inbox, FCM device registration, and read/delete operations.'},
+        {'name': 'Marketing', 'description': 'Promotional campaigns, promo codes, and referral statistics.'},
+        {'name': 'Files', 'description': 'File upload service for profile pictures, documents, and delivery proofs.'},
+        {'name': 'Advertising', 'description': 'In-app advertising: active ads retrieval, impression tracking, and click analytics.'},
+        {'name': 'Integrations', 'description': 'Self-service API key management for external service integrations.'},
+        {'name': 'Settings', 'description': 'Platform configuration: vehicle categories, pricing rules, delivery options, service areas, and app versioning.'},
+        {'name': 'System', 'description': 'System-level endpoints: legal documents, support contacts, and health checks.'},
+    ],
     'SECURITY': [{
         'ApiKeyAuth': [],
         'jwtAuth': []
@@ -225,7 +256,8 @@ SPECTACULAR_SETTINGS = {
                 'bearerFormat': 'JWT',
             }
         }
-    }
+    },
+    'POSTPROCESSING_HOOKS': ['flexy_backend.spectacular_hooks.postprocess_auto_tag'],
 }
 
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[

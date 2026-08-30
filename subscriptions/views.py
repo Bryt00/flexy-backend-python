@@ -11,7 +11,24 @@ from .serializers import SubscriptionPlanSerializer, DriverSubscriptionSerialize
 from .services import PaystackService
 from core_auth.cache_utils import cached_api_response, invalidate_user_cache
 
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiTypes, OpenApiResponse, inline_serializer
+from rest_framework import serializers as drf_serializers
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Subscriptions'],
+        summary='List active subscription plans',
+        description=(
+            'Returns available subscription plans matching the driver\'s assigned category.\n\n'
+            '**Note:** Drivers only see plans after completing account verification and getting assigned '
+            'a vehicle category by an admin.'
+        ),
+    ),
+    retrieve=extend_schema(tags=['Subscriptions'], summary='Get subscription plan details', description='Returns details for a specific subscription plan.'),
+)
 class SubscriptionViewSet(viewsets.ModelViewSet):
+    """Driver subscription plan management and Paystack payment integration."""
     serializer_class = SubscriptionPlanSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -35,6 +52,15 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return cached_api_response(request, 'sub_plans', timeout=900, fetcher=fetch_plans)
 
+    @extend_schema(
+        tags=['Subscriptions'],
+        summary='Get driver subscription status',
+        description=(
+            'Returns the authenticated driver\'s subscription status, active plan, trial details, '
+            'and `can_go_online` eligibility flag.'
+        ),
+        responses={200: DriverSubscriptionSerializer},
+    )
     @action(detail=False, methods=['get'])
     def status(self, request):
         def fetch_status():
@@ -45,6 +71,34 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         return cached_api_response(request, 'sub_status', timeout=300, fetcher=fetch_status)
 
+    @extend_schema(
+        tags=['Subscriptions'],
+        summary='Initiate subscription payment',
+        description=(
+            'Initiates a Paystack checkout transaction to purchase or renew a subscription plan.\n\n'
+            'Returns a `checkout_url` (Paystack payment page) and `reference` for verification.'
+        ),
+        request=inline_serializer(
+            name='SubscriptionPayRequest',
+            fields={
+                'plan_id': drf_serializers.UUIDField(help_text='ID of the SubscriptionPlan to purchase.'),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='SubscriptionPayResponse',
+                fields={
+                    'checkout_url': drf_serializers.URLField(),
+                    'access_code': drf_serializers.CharField(),
+                    'reference': drf_serializers.CharField(),
+                    'amount': drf_serializers.IntegerField(help_text='Amount in pesewas/cents (e.g. 5000 = GH₵ 50.00).'),
+                    'status': drf_serializers.CharField(default='success'),
+                }
+            ),
+            400: OpenApiResponse(description='Missing plan_id or payment initialization failed.'),
+            404: OpenApiResponse(description='Invalid or inactive plan.'),
+        },
+    )
     @action(detail=False, methods=['post'])
     def pay(self, request):
         plan_id = request.data.get('plan_id')
@@ -100,6 +154,32 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             "message": response.get('message')
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        tags=['Subscriptions'],
+        summary='Verify subscription payment',
+        description=(
+            'Verifies a Paystack payment reference and activates/extends the driver\'s subscription.\n\n'
+            'Triggers an email receipt and in-app push notification on success.'
+        ),
+        request=inline_serializer(
+            name='SubscriptionVerifyRequest',
+            fields={
+                'reference': drf_serializers.CharField(help_text='Paystack payment reference.'),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='SubscriptionVerifyResponse',
+                fields={
+                    'message': drf_serializers.CharField(),
+                    'expiry_date': drf_serializers.DateTimeField(),
+                    'status': drf_serializers.CharField(default='success'),
+                }
+            ),
+            400: OpenApiResponse(description='Verification failed.'),
+            404: OpenApiResponse(description='Payment record not found.'),
+        },
+    )
     @action(detail=False, methods=['post'])
     def verify(self, request):
         reference = request.data.get('reference')
@@ -179,4 +259,3 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             "error": "Payment verification failed",
             "message": response.get('message', 'Transaction was not successful')
         }, status=status.HTTP_400_BAD_REQUEST)
-

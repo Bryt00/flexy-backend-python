@@ -16,3 +16,18 @@ class CustomJWTAuthentication(JWTAuthentication):
             raise AuthenticationFailed('Session expired. You logged in on another device.', code='session_expired')
             
         return user
+
+
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
+
+class CustomJWTAuthenticationScheme(OpenApiAuthenticationExtension):
+    target_class = 'core_auth.authentication.CustomJWTAuthentication'
+    name = 'jwtAuth'
+
+    def get_security_definition(self, auto_schema):
+        return {
+            'type': 'http',
+            'scheme': 'bearer',
+            'bearerFormat': 'JWT',
+        }
+

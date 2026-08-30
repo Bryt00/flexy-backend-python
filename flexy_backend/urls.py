@@ -39,6 +39,7 @@ urlpatterns = [
     path('', include('marketing.urls')), # To match /campaigns/active
     
     # Generic API Auth (Standard DRF)
+    path('api-auth/', include('rest_framework.urls')),
     path('api/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('ckeditor5/', include('django_ckeditor_5.urls'), name='ck_editor_5_upload'),

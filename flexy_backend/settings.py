@@ -146,6 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = 'core_auth.User'
+LOGIN_URL = '/headquarters/login/'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'

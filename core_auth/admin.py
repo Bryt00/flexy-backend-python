@@ -5,6 +5,7 @@ from unfold.widgets import UnfoldAdminPasswordWidget
 from .models import User, DeletionRequest
 
 class UserCreationForm(forms.ModelForm):
+    role = forms.ChoiceField(choices=User.ROLE_CHOICES, required=False, initial='rider')
     password = forms.CharField(
         widget=UnfoldAdminPasswordWidget(attrs={'autocomplete': 'new-password'}),
         label="Password",
@@ -24,6 +25,7 @@ class UserCreationForm(forms.ModelForm):
         return user
 
 class UserChangeForm(forms.ModelForm):
+    role = forms.ChoiceField(choices=User.ROLE_CHOICES, required=False)
     password = forms.CharField(
         widget=UnfoldAdminPasswordWidget(attrs={'autocomplete': 'new-password'}),
         label="Change Password",

@@ -1,41 +1,87 @@
-# Environments
-venv/
+# ==========================================
+# Environments & Virtual Environments
+# ==========================================
 .env
-.env.staging
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+venv/
 .venv/
 env/
+ENV/
+env.bak/
+venv.bak/
 
-# Django specific
+# ==========================================
+# Secrets, Keys, and Service Accounts
+# ==========================================
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.pkcs12
+*service_account*.json
+firebase*.json
+!firebase.json
+.secret/
+secrets/
+cookies.txt
+
+# ==========================================
+# Django Specific & Runtime Files
+# ==========================================
 staticfiles/
 media/
+local_settings.py
 db.sqlite3
 db.sqlite3-journal
-local_settings.py
+db.sqlite3*
+*.sqlite3
+*.dump
+*.sql
+*.sql.gz
+*.sql.tar.gz
+windows_data.sql
+logs/
+*.log
 
-# Python specific
+# ==========================================
+# Celery
+# ==========================================
+celerybeat-schedule*
+celerybeat.pid
+
+# ==========================================
+# Python Bytecode & Caches
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.Python
 *.egg
 *.egg-info/
 .installed.cfg
 .eggs/
-
-# Distribution / packaging
-bin/
 build/
-develop-eggs/
 dist/
+develop-eggs/
+downloads/
 eggs/
 lib/
 lib64/
 parts/
 sdist/
 var/
-*.egg-info/
+wheels/
+share/python-wheels/
 
-# Unit test / coverage reports
+# ==========================================
+# Testing & Code Quality
+# ==========================================
 htmlcov/
 .tox/
 .noseresults
@@ -47,41 +93,42 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
-# Celery stuff
-celerybeat-schedule*
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IDEs and Editors
+# ==========================================
+# IDEs & Operating System
+# ==========================================
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
 
-# Docker
-.dockerignore
-
-# Scratch / Temporary scripts
+# ==========================================
+# AI Assistant & Scratch Workspaces
+# ==========================================
 scratch/
-logs/
-*.sql
-cookies.txt
+.gemini/
+brain/
+
+# ==========================================
+# Temporary / Scratch Scripts & Notes
+# ==========================================
 /test_*.py
 /send_*.py
 /seed_*.py
 /broadcast_*.py
 send_otp.py
 portal_manual.md
-.secret/
-firebase_service_account.json
-firebase-service-account.json
 admin_manual.md
 superadmin_manual.md
 requirements_new.txt

@@ -19,6 +19,8 @@ class DriverSubscriptionSerializer(serializers.ModelSerializer):
     is_in_trial = serializers.BooleanField(read_only=True)
     trial_days_remaining = serializers.IntegerField(read_only=True)
     trial_expired = serializers.SerializerMethodField()
+    commission_rate = serializers.FloatField(read_only=True)
+    can_switch_billing_type = serializers.BooleanField(read_only=True)
 
     @extend_schema_field(OpenApiTypes.BOOL)
     def get_trial_expired(self, obj):
@@ -28,9 +30,10 @@ class DriverSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = DriverSubscription
         fields = [
-            'id', 'plan', 'plan_details', 'status', 'expiry_date',
+            'id', 'billing_type', 'commission_rate', 'plan', 'plan_details', 'status', 'expiry_date',
             'is_active', 'auto_renew', 'trial_end_date', 'is_in_trial',
             'trial_days_remaining', 'is_trial_used', 'can_go_online',
-            'trial_expired',
+            'trial_expired', 'outstanding_cash_debt', 'has_unpaid_cash_debt',
+            'can_switch_billing_type', 'last_billing_switch_date',
         ]
-        read_only_fields = ['status', 'expiry_date', 'trial_end_date']
+        read_only_fields = ['status', 'expiry_date', 'trial_end_date', 'outstanding_cash_debt', 'has_unpaid_cash_debt']

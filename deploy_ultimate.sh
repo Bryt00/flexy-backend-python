@@ -88,7 +88,7 @@ apt-get install -y \
     gdal-bin \
     libgdal-dev \
     redis-server \
-    rabbitmq-server \
+    golang-go \
     nginx \
     supervisor \
     git \

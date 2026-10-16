@@ -31,9 +31,18 @@ class DriverSubscription(models.Model):
         ('pending_payment', 'Pending Payment'),
     )
     
+    BILLING_TYPES = (
+        ('subscription', 'Subscription'),
+        ('commission', 'Per-Ride Commission'),
+    )
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name='subscription')
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.SET_NULL, null=True)
+    billing_type = models.CharField(max_length=20, choices=BILLING_TYPES, default='subscription')
+    last_billing_switch_date = models.DateTimeField(null=True, blank=True)
+    outstanding_cash_debt = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    has_unpaid_cash_debt = models.BooleanField(default=False)
     
     start_date = models.DateTimeField(null=True, blank=True)
     expiry_date = models.DateTimeField(null=True, blank=True)
@@ -62,10 +71,37 @@ class DriverSubscription(models.Model):
         return max(0, diff.days)
 
     @property
+    def commission_rate(self):
+        """
+        14-day trial applies to both models (0% commission during trial).
+        Commission model applies current CommissionRule percentage (default 10%).
+        Subscription model pays 0% commission on rides.
+        """
+        if self.is_in_trial:
+            return 0.0
+        if self.billing_type == 'commission':
+            from core_settings.models import CommissionRule
+            return CommissionRule.get_current_rate()
+        return 0.0
+
+    @property
+    def can_switch_billing_type(self):
+        """
+        Driver can switch billing model once every 6 months after active plan expiration.
+        """
+        if not self.last_billing_switch_date:
+            return True
+        from django.utils import timezone
+        cooldown = self.last_billing_switch_date + timezone.timedelta(days=180)
+        return timezone.now() >= cooldown
+
+    @property
     def is_currently_active(self):
         from django.utils import timezone
         if self.is_in_trial:
             return True
+        if self.billing_type == 'commission':
+            return not self.has_unpaid_cash_debt
         if self.status != 'active':
             return False
         if self.expiry_date and self.expiry_date < timezone.now():
@@ -74,11 +110,15 @@ class DriverSubscription(models.Model):
 
     @property
     def is_expired(self):
+        if self.billing_type == 'commission':
+            return False
         from django.utils import timezone
         return self.expiry_date and self.expiry_date < timezone.now()
 
     @property
     def is_in_grace_period(self):
+        if self.billing_type == 'commission':
+            return False
         if not self.is_expired:
             return False
         from django.utils import timezone
@@ -88,10 +128,17 @@ class DriverSubscription(models.Model):
     @property
     def can_go_online(self):
         """
-        Strict: must NOT be expired to be visible.
-        Once month is due, they are blocked from being visible.
-        Trial period allows them to be visible.
+        Billing gating rules:
+        1. 1-Ride Cash Debt Policy: If driver owes unpaid cash commission debt, they are blocked.
+        2. Commission model: Allowed online if no debt.
+        3. Subscription model: Allowed if in trial or active and unexpired.
         """
+        if self.has_unpaid_cash_debt or self.outstanding_cash_debt > 0:
+            return False
+
+        if self.billing_type == 'commission':
+            return True
+
         if self.is_in_trial:
             return True
         return self.status == 'active' and not self.is_expired

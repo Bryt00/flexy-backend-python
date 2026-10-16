@@ -6,6 +6,11 @@ class RidesConfig(AppConfig):
 
     def ready(self):
         import rides.signals
+        try:
+            from rides.engine_sync import register_engine_signals
+            register_engine_signals()
+        except Exception:
+            pass
         
         # Trigger the headless 10-second heatmap pulse loop for Admins
         try:

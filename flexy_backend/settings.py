@@ -285,9 +285,9 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='amqp://guest:guest@localhost:5673//')
-CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6380/1')
-REDIS_URL = env('REDIS_URL', default='redis://localhost:6380/0')
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/3')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6379/1')
+REDIS_URL = env('REDIS_URL', default='redis://localhost:6379/0')
 
 CELERY_TASK_ROUTES = {
     'notification.tasks.send_fcm_push_task': {'queue': 'high_priority'},

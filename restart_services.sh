@@ -110,15 +110,12 @@ for service in $(systemctl list-units --type=service --state=active | grep -oE "
     echo "   Restarting ${service}..."
     systemctl restart ${service}
 done
-echo -e "${GREEN}✓ Redis services restarted${NC}"
+echo -e "${GREEN}✓ Redis services restarted (Native Broker & Cache)${NC}"
 
-echo -e "${YELLOW}2. Restarting RabbitMQ Broker...${NC}"
-systemctl restart rabbitmq-server || echo "RabbitMQ not found"
-echo -e "${GREEN}✓ RabbitMQ restarted${NC}"
-
-echo -e "${YELLOW}3. Restarting Application Replicas (Supervisor)...${NC}"
+echo -e "${YELLOW}3. Restarting Application Replicas & Engine (Supervisor)...${NC}"
 supervisorctl restart ${APP_NAME}_replicas:*
-echo -e "${GREEN}✓ Application replicas restarted${NC}"
+supervisorctl restart ${APP_NAME}_flexy_engine || echo "flexy-engine supervisor program not found"
+echo -e "${GREEN}✓ Application replicas and flexy-engine restarted${NC}"
 
 echo -e "${YELLOW}3. Restarting Celery Services...${NC}"
 supervisorctl restart ${APP_NAME}_celery_high

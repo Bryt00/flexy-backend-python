@@ -12,6 +12,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+dump.rdb
 
 # ==========================================
 # Secrets, Keys, and Service Accounts
@@ -133,3 +134,5 @@ admin_manual.md
 superadmin_manual.md
 requirements_new.txt
 full_requirements.txt
+engine/bin/
+*.sock

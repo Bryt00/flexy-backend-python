@@ -88,7 +88,7 @@ apt-get install -y \
     gdal-bin \
     libgdal-dev \
     redis-server \
-    rabbitmq-server \
+    golang-go \
     nginx \
     supervisor \
     git \
@@ -350,10 +350,19 @@ BACKUP_SCRIPT
 fi
 
 echo ""
-echo -e "${YELLOW}Step 8: Running migrations...${NC}"
-python manage.py migrate --noinput
+echo -e "${YELLOW}Step 7.5: Building Go flexy-engine...${NC}"
+mkdir -p $APP_DIR/engine/bin
+(cd $APP_DIR/engine && go build -o bin/flexy-engine ./cmd/flexy-engine)
+chown -R $USER:$GROUP $APP_DIR/engine/bin
+chmod +x $APP_DIR/engine/bin/flexy-engine
+echo -e "${GREEN}✓ flexy-engine compiled${NC}"
 
-echo -e "${GREEN}✓ Migrations completed${NC}"
+echo ""
+echo -e "${YELLOW}Step 8: Running migrations & syncing engine config...${NC}"
+python manage.py migrate --noinput
+python manage.py engine_sync_config || echo "Warning: engine_sync_config encountered an issue"
+
+echo -e "${GREEN}✓ Migrations and engine config sync completed${NC}"
 
 echo -e "${YELLOW}Step 9: Collecting static files...${NC}"
 python manage.py collectstatic --noinput
@@ -436,9 +445,14 @@ redirect_stderr=true
 stdout_logfile=$APP_DIR/logs/celery-beat.log
 environment=PATH="$VENV_DIR/bin"
 
-# Group all replicas for easy management
-[group:${APP_NAME}_replicas]
-programs=$REPLICA_PROGRAMS
+[program:${APP_NAME}_flexy_engine]
+command=$APP_DIR/engine/bin/flexy-engine -socket /tmp/flexy_engine.sock -port 8091 -redis redis://localhost:6379/0
+directory=$APP_DIR/engine
+user=$USER
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=$APP_DIR/logs/flexy_engine.log
 EOF
 
 supervisorctl reread
@@ -553,8 +567,24 @@ server {
         add_header Access-Control-Allow-Origin *;
     }
 
+    # Go flexy-engine WebSockets (Global Map & Heatmap)
     location /ws/ {
-        proxy_pass http://flexyride_backend_staging_cluster;
+        proxy_pass http://127.0.0.1:8091;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_read_timeout 86400;
+    }
+
+    # Go flexy-engine WebSockets (Mobile App Tracking & Discovery)
+    location ~* ^/v1/(rides/.*/track/|rides/discovery|deliveries/.*/track/|deliveries/discovery|admin/tracking/ws/|notifications/ws) {
+        proxy_pass http://127.0.0.1:8091;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection \$connection_upgrade;
@@ -660,7 +690,7 @@ server {
     }
 
     location /ws/ {
-        proxy_pass http://flexyride_backend_staging_cluster;
+        proxy_pass http://127.0.0.1:8091;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection \$connection_upgrade;
@@ -747,6 +777,7 @@ pkill -f "gunicorn" || true
 supervisorctl reread
 supervisorctl update
 supervisorctl restart ${APP_NAME}_replicas:*
+supervisorctl restart ${APP_NAME}_flexy_engine
 supervisorctl restart ${APP_NAME}_celery_high
 supervisorctl restart ${APP_NAME}_celery_default
 supervisorctl restart ${APP_NAME}_celery_beat

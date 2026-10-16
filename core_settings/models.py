@@ -252,3 +252,35 @@ class AppVersion(models.Model):
     def __str__(self):
         return f"{self.get_app_type_display()} - {self.get_platform_display()} (Min: {self.minimum_version}, Latest: {self.latest_version})"
 
+
+class CommissionRule(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100, default="Standard Driver Commission")
+    percentage = models.FloatField(default=10.0, help_text="Percentage commission per completed ride (e.g. 10.0 for 10%)")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_commission_rule")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        from django.core.cache import cache
+        cache.delete("active_commission_rule")
+        super().delete(*args, **kwargs)
+
+    @classmethod
+    def get_current_rate(cls) -> float:
+        from django.core.cache import cache
+        rate = cache.get("active_commission_rule")
+        if rate is None:
+            rule = cls.objects.filter(is_active=True).first()
+            rate = rule.percentage if rule else 10.0
+            cache.set("active_commission_rule", rate, timeout=900)
+        return float(rate)
+
+    def __str__(self):
+        return f"{self.name}: {self.percentage}%"
+

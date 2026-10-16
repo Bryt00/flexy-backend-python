@@ -39,15 +39,24 @@ class MatchingService:
                 else:
                     target_categories = [requested_category]
                 
-            # 2. Redis Geospatial Filter with Distance
-            nearby_data = redis_geo.geo_radius_drivers_with_dist(ride.pickup_lat, ride.pickup_lng, radius_km)
-            
-            if not nearby_data:
-                return [], {}
-                
-            # Map of driver_id -> distance for sorting later
-            distance_map = {d_id: dist for d_id, dist in nearby_data}
-            nearby_driver_ids = list(distance_map.keys())
+            # 2. Redis Geospatial Filter with Distance (Go engine primary, redis_geo fallback)
+            from flexy_backend.engine_client import engine_client
+            engine_resp = engine_client.find_nearby_drivers(
+                pickup_lat=ride.pickup_lat,
+                pickup_lng=ride.pickup_lng,
+                attempt_count=attempt_count,
+            )
+
+            if engine_resp and "drivers" in engine_resp:
+                driver_items = engine_resp["drivers"]
+                distance_map = {d["driver_id"]: d["distance_km"] for d in driver_items}
+                nearby_driver_ids = list(distance_map.keys())
+            else:
+                nearby_data = redis_geo.geo_radius_drivers_with_dist(ride.pickup_lat, ride.pickup_lng, radius_km)
+                if not nearby_data:
+                    return [], {}
+                distance_map = {d_id: dist for d_id, dist in nearby_data}
+                nearby_driver_ids = list(distance_map.keys())
             
             # 2.5 Redis Lock Filter (Point 5 - Redis Locking)
             if exclude_locked:
@@ -109,80 +118,99 @@ class MatchingService:
             # 0. Check if Carpooling / Shared Ride Match is possible
             if ride.is_sharing_enabled:
                 logger.info(f"Carpooling: Scanning for active shared rides compatible with ride {ride_id}")
-                from rides.utils import GeospatialUtils
-                
-                # Find active drivers executing a shared ride
-                active_shared_rides = Ride.objects.filter(
+                from flexy_backend.engine_client import engine_client
+                from rides.models import RideStop
+
+                active_shared_rides = list(Ride.objects.filter(
                     is_sharing_enabled=True,
                     status__in=['accepted', 'arrived', 'in_progress'],
                     driver__isnull=False
-                ).exclude(id=ride_id)
-                
-                for active_ride in active_shared_rides:
-                    # 1. Capacity Check: Sum of max_riders on all rides active for this driver
-                    driver_active_rides = Ride.objects.filter(
-                        driver=active_ride.driver,
-                        status__in=['accepted', 'arrived', 'in_progress']
+                ).exclude(id=ride_id).select_related('driver'))
+
+                matched_active_ride = None
+
+                # 1. Attempt high-speed Go Engine evaluation
+                if active_shared_rides and engine_client.is_available():
+                    active_candidates = [
+                        {
+                            "ride_id": str(ar.id),
+                            "driver_id": str(ar.driver.id),
+                            "status": ar.status,
+                            "current_riders": sum(r.max_riders for r in Ride.objects.filter(driver=ar.driver, status__in=['accepted', 'arrived', 'in_progress'])),
+                            "driver_lat": ar.pickup_lat,
+                            "driver_lng": ar.pickup_lng,
+                            "pickup_lat": ar.pickup_lat,
+                            "pickup_lng": ar.pickup_lng,
+                            "pickup_address": ar.pickup_address,
+                            "dropoff_lat": ar.dropoff_lat,
+                            "dropoff_lng": ar.dropoff_lng,
+                            "dropoff_address": ar.dropoff_address,
+                        }
+                        for ar in active_shared_rides
+                    ]
+                    new_ride_data = {
+                        "ride_id": str(ride.id),
+                        "seats_requested": ride.max_riders or 1,
+                        "pickup_lat": ride.pickup_lat,
+                        "pickup_lng": ride.pickup_lng,
+                        "pickup_address": ride.pickup_address,
+                        "dropoff_lat": ride.dropoff_lat,
+                        "dropoff_lng": ride.dropoff_lng,
+                        "dropoff_address": ride.dropoff_address,
+                    }
+                    pool_res = engine_client.evaluate_pooling(active_candidates, new_ride_data)
+                    if pool_res and pool_res.get("matched"):
+                        target_id = pool_res.get("target_ride_id")
+                        matched_active_ride = next((ar for ar in active_shared_rides if str(ar.id) == target_id), None)
+
+                # 2. Python Reference Fallback
+                if not matched_active_ride and active_shared_rides:
+                    from rides.utils import GeospatialUtils
+                    for active_ride in active_shared_rides:
+                        driver_active_rides = Ride.objects.filter(
+                            driver=active_ride.driver,
+                            status__in=['accepted', 'arrived', 'in_progress']
+                        )
+                        total_riders = sum(r.max_riders for r in driver_active_rides)
+                        if total_riders + ride.max_riders > 4:
+                            continue
+                        pickup_dist = GeospatialUtils.calculate_haversine_distance(
+                            active_ride.pickup_lat, active_ride.pickup_lng,
+                            ride.pickup_lat, ride.pickup_lng
+                        ) / 1000.0
+                        dropoff_dist = GeospatialUtils.calculate_haversine_distance(
+                            active_ride.dropoff_lat, active_ride.dropoff_lng,
+                            ride.dropoff_lat, ride.dropoff_lng
+                        ) / 1000.0
+                        if pickup_dist <= 4.0 and dropoff_dist <= 5.0:
+                            matched_active_ride = active_ride
+                            break
+
+                if matched_active_ride:
+                    logger.info(f"Carpooling Match Found! Pooling ride {ride_id} with active ride {matched_active_ride.id} of driver {matched_active_ride.driver.id}")
+                    ride.driver = matched_active_ride.driver
+                    ride.status = 'accepted'
+                    ride.save()
+
+                    current_stops_count = matched_active_ride.stops.count()
+                    RideStop.objects.create(
+                        ride=matched_active_ride,
+                        address=ride.pickup_address,
+                        latitude=ride.pickup_lat,
+                        longitude=ride.pickup_lng,
+                        stop_order=current_stops_count + 1,
+                        status='pending'
                     )
-                    total_riders = sum(r.max_riders for r in driver_active_rides)
-                    
-                    # Assume typical car capacity is 4 passengers
-                    if total_riders + ride.max_riders > 4:
-                        logger.info(f"Carpooling: Driver {active_ride.driver.id} has no available capacity. Total current riders: {total_riders}")
-                        continue
-                    
-                    # 2. Geospatial Proximity Check:
-                    # New pickup must be close to active pickup (within 4km)
-                    pickup_dist = GeospatialUtils.calculate_haversine_distance(
-                        active_ride.pickup_lat, active_ride.pickup_lng,
-                        ride.pickup_lat, ride.pickup_lng
-                    ) / 1000.0
-                    
-                    # New dropoff must be close to active dropoff (within 5km)
-                    dropoff_dist = GeospatialUtils.calculate_haversine_distance(
-                        active_ride.dropoff_lat, active_ride.dropoff_lng,
-                        ride.dropoff_lat, ride.dropoff_lng
-                    ) / 1000.0
-                    
-                    if pickup_dist <= 4.0 and dropoff_dist <= 5.0:
-                        logger.info(f"Carpooling Match Found! Pooling ride {ride_id} with active ride {active_ride.id} of driver {active_ride.driver.id}")
-                        
-                        # 3. Associate driver to new ride
-                        ride.driver = active_ride.driver
-                        ride.status = 'accepted'
-                        ride.save()
-                        
-                        # 4. Create Intermediate Stops on the Active Ride
-                        from rides.models import RideStop
-                        
-                        # Determine next stop order
-                        current_stops_count = active_ride.stops.count()
-                        
-                        # Add Passenger B's Pickup as Stop 1
-                        RideStop.objects.create(
-                            ride=active_ride,
-                            address=ride.pickup_address,
-                            latitude=ride.pickup_lat,
-                            longitude=ride.pickup_lng,
-                            stop_order=current_stops_count + 1,
-                            status='pending'
-                        )
-                        
-                        # Add Passenger B's Dropoff as Stop 2
-                        RideStop.objects.create(
-                            ride=active_ride,
-                            address=ride.dropoff_address,
-                            latitude=ride.dropoff_lat,
-                            longitude=ride.dropoff_lng,
-                            stop_order=current_stops_count + 2,
-                            status='pending'
-                        )
-                        
-                        # 5. Broadcast to Passenger A and Driver that stops list has changed
-                        active_ride.save()
-                        
-                        # Return 1 to indicate successful pool matching
-                        return 1
+                    RideStop.objects.create(
+                        ride=matched_active_ride,
+                        address=ride.dropoff_address,
+                        latitude=ride.dropoff_lat,
+                        longitude=ride.dropoff_lng,
+                        stop_order=current_stops_count + 2,
+                        status='pending'
+                    )
+                    matched_active_ride.save()
+                    return 1
 
             # 1. Get Sorted Pool with Distance Data
             metadata = ride.dispatch_metadata or {}

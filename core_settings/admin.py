@@ -23,7 +23,7 @@ def _safe_flatten_context(context):
 
 unfold.templatetags.unfold._flatten_context = _safe_flatten_context
 
-from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType, ServiceArea, AppVersion
+from .models import SiteSetting, LegalDocument, PricingRule, VehicleCategory, DistanceTier, DeliveryCategory, DeliveryWeightTier, DeliveryVehicleType, ServiceArea, AppVersion, CommissionRule
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(ModelAdmin):
@@ -132,3 +132,11 @@ class AppVersionAdmin(ModelAdmin):
     list_editable = ('minimum_version', 'latest_version', 'force_update')
     list_filter = ('app_type', 'platform', 'force_update')
     search_fields = ('app_type', 'platform')
+
+
+@admin.register(CommissionRule)
+class CommissionRuleAdmin(ModelAdmin):
+    list_per_page = 20
+    list_display = ('name', 'percentage', 'is_active', 'updated_at')
+    list_editable = ('percentage', 'is_active')
+    search_fields = ('name',)

@@ -13,8 +13,8 @@ class SubscriptionPlanAdmin(ModelAdmin):
 @admin.register(DriverSubscription)
 class DriverSubscriptionAdmin(ModelAdmin):
     list_per_page = 20
-    list_display = ('driver_display', 'plan', 'status', 'trial_end_date', 'expiry_date', 'is_in_trial', 'is_currently_active')
-    list_filter = ('status', 'is_trial_used', 'plan__category', 'created_at', 'updated_at', 'start_date', 'expiry_date')
+    list_display = ('driver_display', 'billing_type', 'plan', 'status', 'outstanding_cash_debt', 'has_unpaid_cash_debt', 'trial_end_date', 'is_in_trial', 'is_currently_active')
+    list_filter = ('billing_type', 'has_unpaid_cash_debt', 'status', 'is_trial_used', 'plan__category', 'created_at', 'updated_at')
     search_fields = ('profile__user__email', 'profile__full_name')
     readonly_fields = ('created_at', 'updated_at')
 
@@ -30,7 +30,10 @@ class DriverSubscriptionAdmin(ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('profile', 'plan', 'status')
+            'fields': ('profile', 'billing_type', 'plan', 'status')
+        }),
+        ('Commission & Cash Debt Policy', {
+            'fields': ('outstanding_cash_debt', 'has_unpaid_cash_debt', 'last_billing_switch_date')
         }),
         ('Trial Information', {
             'fields': ('is_trial_used', 'trial_end_date')

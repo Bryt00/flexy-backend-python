@@ -844,6 +844,11 @@ class RideViewSet(viewsets.ModelViewSet):
                 actual_distance = request.data.get('distance', ride.distance)
                 waiting_mins = request.data.get('waiting_minutes', 0)
                 
+                from decimal import Decimal
+                driver_sub = getattr(ride.driver, 'subscription', None) if ride.driver else None
+                billing_model = getattr(driver_sub, 'billing_type', 'subscription') if driver_sub else 'subscription'
+                is_trial = getattr(driver_sub, 'is_in_trial', False) if driver_sub else False
+
                 ledger = PricingService.compute_final_fare(
                     distance_km=actual_distance,
                     vehicle_category_slug=ride.preferred_vehicle_type or 'standard',
@@ -851,7 +856,9 @@ class RideViewSet(viewsets.ModelViewSet):
                     lng=ride.pickup_lng,
                     waiting_minutes=waiting_mins,
                     payment_method=ride.payment_method or 'cash',
-                    num_stops=ride.stops.count()
+                    num_stops=ride.stops.count(),
+                    driver_billing_model=billing_model,
+                    is_trial=is_trial
                 )
                 
                 # Apply PromoCode Discount if applicable
@@ -872,6 +879,14 @@ class RideViewSet(viewsets.ModelViewSet):
                 ride.total_calculated_fare = ledger['total_fare'] - discount_to_apply
                 ride.driver_payout_amount = ledger['driver_payout']
                 ride.fare = ledger['total_fare'] - discount_to_apply # User facing fare
+
+                # Enforce 1-Ride Cash Debt Policy on completed cash rides for commission drivers
+                if (ride.payment_method or 'cash') == 'cash' and billing_model == 'commission' and not is_trial and driver_sub:
+                    comm_due = Decimal(str(round(ledger.get('commission_amount', 0.0), 2)))
+                    if comm_due > 0:
+                        driver_sub.outstanding_cash_debt += comm_due
+                        driver_sub.has_unpaid_cash_debt = True
+                        driver_sub.save(update_fields=['outstanding_cash_debt', 'has_unpaid_cash_debt'])
                 
                 # Trigger earnings processing synchronously
                 from payments.tasks import process_ride_earnings_sync

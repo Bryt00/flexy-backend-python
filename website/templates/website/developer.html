@@ -932,6 +932,8 @@ function verifyWebhook(rawBody, signatureHeader, secret) {
 // DEVELOPER PORTAL LOGIC & CLIENT-SIDE ROUTER
 // ==============================================================================
 
+const IS_AUTHENTICATED = {{ is_authenticated|yesno:"true,false" }};
+
 let currentTab = 'overview';
 let activeEnvironment = 'LIVE';
 let activeDocId = 'overview';
@@ -1328,6 +1330,11 @@ function closeModal(id) {
 }
 
 function openCreateKeyModal() {
+    if (!IS_AUTHENTICATED) {
+        openLoginModal();
+        showToast('Please sign in to generate or manage API keys', 'error');
+        return;
+    }
     openModal('modal-create-key');
 }
 
@@ -1415,6 +1422,11 @@ async function handleCreateKeySubmit(e) {
 }
 
 async function rotateKey(keyId, keyName) {
+    if (!IS_AUTHENTICATED) {
+        openLoginModal();
+        showToast('Please sign in to rotate credentials', 'error');
+        return;
+    }
     if (!confirm(`Are you sure you want to rotate secret for "${keyName}"? Existing requests using this key will immediately fail.`)) {
         return;
     }
@@ -1439,6 +1451,11 @@ async function rotateKey(keyId, keyName) {
 }
 
 async function revokeKey(keyId, keyName) {
+    if (!IS_AUTHENTICATED) {
+        openLoginModal();
+        showToast('Please sign in to revoke credentials', 'error');
+        return;
+    }
     if (!confirm(`Revoke key "${keyName}"? All external integrations using this key will be revoked immediately.`)) {
         return;
     }
@@ -1509,6 +1526,11 @@ async function refreshKeysTable() {
 }
 
 async function triggerWebhookTest(keyId) {
+    if (!IS_AUTHENTICATED) {
+        openLoginModal();
+        showToast('Please sign in to test webhooks', 'error');
+        return;
+    }
     showToast('Dispatching signed HMAC test ping...', 'info');
     try {
         const res = await fetch(`/developer/api/keys/${keyId}/test-webhook/`, {

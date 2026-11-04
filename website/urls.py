@@ -43,6 +43,7 @@ urlpatterns = [
     path('developer/api/keys/<uuid:key_id>/revoke/', views.DeveloperAjaxRevokeKeyView.as_view(), name='developer_ajax_revoke_key'),
     path('developer/api/keys/<uuid:key_id>/test-webhook/', views.DeveloperAjaxTestWebhookView.as_view(), name='developer_ajax_test_webhook'),
     path('developer/api/playground/', views.DeveloperPlaygroundProxyView.as_view(), name='developer_playground_proxy'),
+    path('developer/guide/download/', views.DeveloperGuideDownloadView.as_view(), name='developer_guide_download'),
     path('advertise/', include('advertising.website_urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     path('robots.txt', views.RobotsView.as_view(), name='robots'),

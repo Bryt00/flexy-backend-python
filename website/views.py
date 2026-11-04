@@ -789,20 +789,112 @@ class DeveloperPlaygroundProxyView(View):
                 }
             })
 
-        elif '/v1/settings/vehicle-categories' in endpoint:
+        elif '/v1/deliveries' in endpoint and 'cancel' in endpoint:
+            latency_ms = int((time.time() - start_time) * 1000) + 12
+            return JsonResponse({
+                'status': 200,
+                'status_text': '200 OK',
+                'latency_ms': latency_ms,
+                'data': {
+                    'status': 'success',
+                    'message': 'Delivery order successfully cancelled',
+                    'data': {
+                        'id': 'e81d77a0-07bf-4cf2-8321-df54c79401ab',
+                        'status': 'CANCELLED',
+                        'cancellation_fee': 0.00,
+                        'cancelled_at': timezone.now().isoformat()
+                    }
+                }
+            })
+
+        elif '/v1/deliveries/categories' in endpoint or '/v1/settings/vehicle-categories' in endpoint:
             latency_ms = int((time.time() - start_time) * 1000) + 9
             return JsonResponse({
                 'status': 200,
                 'status_text': '200 OK',
                 'latency_ms': latency_ms,
                 'data': {
-                    'success': True,
+                    'status': 'success',
                     'data': [
-                        {'id': 'standard', 'name': 'FlexyGo', 'base_fare': 12.0, 'capacity': 4},
-                        {'id': 'comfort', 'name': 'FlexyComfort', 'base_fare': 18.0, 'capacity': 4},
-                        {'id': 'van', 'name': 'FlexyVan', 'base_fare': 35.0, 'capacity': 7},
-                        {'id': 'courier_bike', 'name': 'Express Motorcycle', 'base_fare': 8.0, 'capacity': 1}
+                        {'id': 'motorbike', 'name': 'Express Motorcycle', 'base_fare': 15.00, 'max_weight_kg': 15.0, 'description': 'Fastest parcel dispatch for letters, food, small electronics.'},
+                        {'id': 'pragya', 'name': 'Pragya Tricycle', 'base_fare': 20.00, 'max_weight_kg': 50.0, 'description': 'Affordable medium-capacity local courier cargo.'},
+                        {'id': 'courier_van', 'name': 'Courier Delivery Van', 'base_fare': 45.00, 'max_weight_kg': 500.0, 'description': 'Heavy bulk cargo, pallets, and multi-box fulfillment.'}
                     ]
+                }
+            })
+
+        elif '/v1/deliveries' in endpoint and method == 'GET':
+            latency_ms = int((time.time() - start_time) * 1000) + 15
+            return JsonResponse({
+                'status': 200,
+                'status_text': '200 OK',
+                'latency_ms': latency_ms,
+                'data': {
+                    'status': 'success',
+                    'data': {
+                        'id': 'e81d77a0-07bf-4cf2-8321-df54c79401ab',
+                        'tracking_code': 'FX-DEL-984310',
+                        'status': 'IN_TRANSIT',
+                        'driver': {
+                            'name': 'Kofi Boateng',
+                            'phone': '+233240001122',
+                            'vehicle_plate': 'GW-4402-21',
+                            'vehicle_model': 'Honda ACE 125 Motorbike',
+                            'rating': 4.92,
+                            'current_lat': 5.5891,
+                            'current_lng': -0.1982
+                        },
+                        'estimated_eta_minutes': 7,
+                        'pickup_time': timezone.now().isoformat(),
+                        'completed_at': None
+                    }
+                }
+            })
+
+        elif '/v1/rides/request' in endpoint and method == 'POST':
+            trip_id = f"trip_{uuid.uuid4().hex[:12]}"
+            latency_ms = int((time.time() - start_time) * 1000) + 20
+            return JsonResponse({
+                'status': 201,
+                'status_text': '201 Created',
+                'latency_ms': latency_ms,
+                'data': {
+                    'status': 'success',
+                    'message': 'Ride request broadcasting to nearby drivers',
+                    'data': {
+                        'trip_id': trip_id,
+                        'status': 'SEARCHING',
+                        'tier': body.get('tier', 'comfort') if isinstance(body, dict) else 'comfort',
+                        'estimated_fare': 52.00,
+                        'currency': 'GHS',
+                        'created_at': timezone.now().isoformat()
+                    }
+                }
+            })
+
+        elif '/v1/rides' in endpoint and method == 'GET':
+            latency_ms = int((time.time() - start_time) * 1000) + 14
+            return JsonResponse({
+                'status': 200,
+                'status_text': '200 OK',
+                'latency_ms': latency_ms,
+                'data': {
+                    'status': 'success',
+                    'data': {
+                        'trip_id': 'trip_88fa12bc0991',
+                        'status': 'ACCEPTED',
+                        'driver': {
+                            'name': 'Emmanuel Cudjoe',
+                            'phone': '+233241112233',
+                            'vehicle_plate': 'GR-8890-22',
+                            'vehicle_model': 'Toyota Corolla 2021',
+                            'rating': 4.95,
+                            'current_lat': 5.6189,
+                            'current_lng': -0.1702
+                        },
+                        'eta_minutes': 4,
+                        'fare': 52.00
+                    }
                 }
             })
 
@@ -818,3 +910,27 @@ class DeveloperPlaygroundProxyView(View):
                     'timestamp': timezone.now().isoformat()
                 }
             })
+
+
+class DeveloperGuideDownloadView(View):
+    """Allows developers to download the full API Integration Guide in raw Markdown."""
+    def get(self, request, *args, **kwargs):
+        from django.http import FileResponse, Http404
+        from django.conf import settings
+        import os
+
+        # Check candidate locations for API_INTEGRATION_GUIDE.md
+        candidate_paths = [
+            os.path.join(settings.BASE_DIR, '..', 'docs', 'API_INTEGRATION_GUIDE.md'),
+            os.path.join(settings.BASE_DIR, 'docs', 'API_INTEGRATION_GUIDE.md'),
+            '/home/r4v3n_00/dockets/work/patmac/flexyride/docs/API_INTEGRATION_GUIDE.md',
+        ]
+        for p in candidate_paths:
+            if os.path.exists(p):
+                return FileResponse(
+                    open(p, 'rb'),
+                    as_attachment=True,
+                    filename='FlexyRide_API_Integration_Guide.md',
+                    content_type='text/markdown'
+                )
+        raise Http404("API Integration Guide document not found.")

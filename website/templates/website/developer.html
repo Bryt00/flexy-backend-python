@@ -732,6 +732,16 @@ function verifyWebhook(rawBody, signatureHeader, secret) {
                             />
                         </div>
 
+                        <!-- Download Full Guide Button -->
+                        <a
+                            href="{% url 'developer_guide_download' %}"
+                            class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 hover:text-white transition-all text-center cursor-pointer group"
+                            title="Download full API Integration Guide in Markdown format (.md)"
+                        >
+                            <i data-lucide="download" class="w-4 h-4 text-brand group-hover:scale-110 transition-transform"></i>
+                            <span>Download Full Guide (.md)</span>
+                        </a>
+
                         <!-- Categorized Sidebar Menu -->
                         <nav id="docs-sidebar-menu" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1 text-xs">
                             <!-- Items dynamically injected by JavaScript -->
@@ -939,8 +949,11 @@ let activeEnvironment = 'LIVE';
 let activeDocId = 'overview';
 let activeSnippetLang = 'curl';
 
-// Dynamic documentation catalog matching API_INTEGRATION_GUIDE.md
+// Dynamic documentation catalog matching API_INTEGRATION_GUIDE.md (Comprehensive 11-Section Guide)
 const docCatalog = [
+    // -------------------------------------------------------------------------
+    // SECTION 1: GETTING STARTED
+    // -------------------------------------------------------------------------
     {
         id: 'overview',
         title: 'Platform Overview',
@@ -950,26 +963,43 @@ const docCatalog = [
         htmlContent: `
             <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
                 <p>
-                    FlexyRide provides high-throughput programmatic access to West Africa's leading on-demand transport and parcel logistics fleet.
-                    Via our RESTful API, webhooks, and live WebSocket telemetry streams, enterprise e-commerce platforms, merchants, and corporate partners can seamlessly quote, dispatch, and track orders in real time.
+                    The <strong>FlexyRide API</strong> is an enterprise-grade REST and real-time WebSocket platform that allows external applications to programmatically control on-demand transportation and parcel delivery across Ghana.
                 </p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
                     <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1.5">
                         <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-brand"></span>
-                            On-Demand Courier Deliveries
+                            E-Commerce &amp; Retail Dispatch
                         </h4>
                         <p class="text-[12px] text-gray-400">
-                            Calculate instant distance-based parcel quotes, dispatch motorcycle and van couriers with automated driver assignment, and receive step-by-step telemetry until package handover.
+                            Automatically request motorcycle, pragya, or van couriers when customers place orders on your storefront with automated driver dispatch.
                         </p>
                     </div>
                     <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1.5">
                         <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-sky-400"></span>
-                            Corporate Ride-Hailing
+                            Fleet &amp; Corporate Mobility
                         </h4>
                         <p class="text-[12px] text-gray-400">
-                            Book passenger rides across FlexyGo, Comfort, and Van tiers. Centralize billing, enforce spending policies, and stream live vehicle GPS coords for employee transport.
+                            Book on-demand or scheduled rides for employees and clients across FlexyGo, Comfort, and Van tiers with central billing audit trails.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            3PL Routing &amp; Instant Quotes
+                        </h4>
+                        <p class="text-[12px] text-gray-400">
+                            Query instant price estimates and multi-stop delivery routes using Accra, Kumasi, and Takoradi live traffic matrices.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                            Live WebSocket Tracking
+                        </h4>
+                        <p class="text-[12px] text-gray-400">
+                            Embed real-time driver GPS coordinates, bearing, speed, and ETA updates directly into your web/mobile customer tracking screens.
                         </p>
                     </div>
                 </div>
@@ -980,106 +1010,277 @@ const docCatalog = [
         id: 'quickstart',
         title: '3-Minute Quickstart',
         category: 'Getting Started',
-        description: 'Get up and running with FlexyRide in 3 straightforward steps.',
+        description: 'Get up and running with FlexyRide in under 5 minutes with a verified test request.',
         icon: 'terminal',
         htmlContent: `
             <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
-                <p>Follow these three steps to quote and book your first parcel delivery.</p>
+                <p>Follow these 3 straightforward steps to dispatch your first API request:</p>
                 <div class="space-y-3">
                     <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
                         <div class="font-bold text-white text-xs flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">1</span>
-                            Generate API Key
+                            Obtain Developer Credentials
                         </div>
-                        <p class="text-xs text-gray-400">Switch to the <strong>API Keys</strong> tab and generate a new key with <code>deliveries:create</code> and <code>deliveries:estimate</code> permissions.</p>
+                        <p class="text-xs text-gray-400">
+                            FlexyRide developer access is private and gated. Request access or sign in to your developer console, navigate to <strong>API Keys</strong>, and generate your API key with target scopes (e.g. <code>deliveries:read</code>, <code>deliveries:write</code>).
+                        </p>
                     </div>
                     <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
                         <div class="font-bold text-white text-xs flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">2</span>
-                            Calculate Instant Quote
+                            Choose Target Environment
                         </div>
-                        <p class="text-xs text-gray-400">Submit pickup and dropoff GPS coordinates to <code>POST /v1/deliveries/estimate/</code> to calculate the guaranteed fare in Ghanaian Cedis (GHS).</p>
+                        <p class="text-xs text-gray-400">
+                            Use <strong>SANDBOX</strong> (<code>https://sandbox-api.flexyridegh.com/api/v1</code>) for risk-free simulation without incurring charges or triggering physical drivers. Switch to <strong>LIVE</strong> when ready for production.
+                        </p>
                     </div>
                     <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
                         <div class="font-bold text-white text-xs flex items-center gap-2">
                             <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">3</span>
-                            Dispatch Delivery
+                            Your First Request ("Hello World")
                         </div>
-                        <p class="text-xs text-gray-400">Call <code>POST /v1/deliveries/</code> with recipient phone and dropoff coordinates to automatically dispatch the nearest courier.</p>
+                        <p class="text-xs text-gray-400">
+                            Verify connectivity and your API key by querying available courier parcel vehicle categories via <code>GET /v1/deliveries/categories</code>.
+                        </p>
                     </div>
                 </div>
             </div>
         `,
         snippets: {
-            curl: `curl -X POST https://api.flexyridegh.com/api/v1/deliveries/estimate/ \\
-  -H "X-Api-Key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "pickup_lat": 5.55602,
-    "pickup_lng": -0.18241,
-    "dropoff_lat": 5.60512,
-    "dropoff_lng": -0.17721,
-    "weight_tier_id": "standard"
-  }'`,
+            curl: `curl -X GET "https://api.flexyridegh.com/api/v1/deliveries/categories" \\
+  -H "X-API-Key: fx_live_your_actual_api_key_here" \\
+  -H "Accept: application/json"`,
             javascript: `import axios from 'axios';
 
-const { data } = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/estimate/', {
-  pickup_lat: 5.55602,
-  pickup_lng: -0.18241,
-  dropoff_lat: 5.60512,
-  dropoff_lng: -0.17721,
-  weight_tier_id: 'standard'
-}, {
-  headers: {
-    'X-Api-Key': 'YOUR_API_KEY',
-    'Content-Type': 'application/json'
+async function testConnection() {
+  try {
+    const response = await axios.get('https://api.flexyridegh.com/api/v1/deliveries/categories', {
+      headers: {
+        'X-API-Key': process.env.FLEXYRIDE_API_KEY,
+        'Accept': 'application/json'
+      }
+    });
+    console.log('FlexyRide Connected! Categories:', response.data);
+  } catch (error) {
+    console.error('API Error:', error.response?.data || error.message);
   }
-});
+}
 
-console.log('Fare:', data.data.estimated_fare, 'GHS');`,
+testConnection();`,
+            python: `import os
+import requests
+
+def test_connection():
+    api_key = os.getenv("FLEXYRIDE_API_KEY")
+    url = "https://api.flexyridegh.com/api/v1/deliveries/categories"
+    headers = {
+        "X-API-Key": api_key,
+        "Accept": "application/json"
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        print("Connected to FlexyRide API! Payload:", response.json())
+    else:
+        print(f"Failed ({response.status_code}):", response.text)
+
+if __name__ == "__main__":
+    test_connection()`
+        }
+    },
+    {
+        id: 'environments',
+        title: 'Environments & Base URLs',
+        category: 'Getting Started',
+        description: 'Target API endpoints, WebSocket streams, and sandbox isolation.',
+        icon: 'layers',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>FlexyRide provides separate target environments for safe automated integration testing and live deployment:</p>
+                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-dark-900 border-b border-white/10 text-gray-400 uppercase text-[10px]">
+                            <tr><th class="p-3">Environment</th><th class="p-3">Base URL</th><th class="p-3">Behavior &amp; Purpose</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 bg-dark-950/50">
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-emerald-400">Production (Live)</td>
+                                <td class="p-3 font-mono text-white">https://api.flexyridegh.com/api/v1</td>
+                                <td class="p-3 text-gray-300">Live production dispatches, real couriers, real payment processing.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-amber-400">Sandbox (Test)</td>
+                                <td class="p-3 font-mono text-white">https://sandbox-api.flexyridegh.com/api/v1</td>
+                                <td class="p-3 text-gray-300">Safe sandbox with simulated drivers, mocked dispatch cycles, zero financial billing.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">WebSocket Telemetry</td>
+                                <td class="p-3 font-mono text-white">wss://api.flexyridegh.com/ws</td>
+                                <td class="p-3 text-gray-300">Persistent bidirectional telemetry connection for sub-second driver GPS coordinates.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `
+    },
+    {
+        id: 'conventions',
+        title: 'Architectural Conventions',
+        category: 'Getting Started',
+        description: 'Coordinate system, currency, phone numbers, timestamps, and idempotency.',
+        icon: 'cpu',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider">1. Coordinate Representation (WGS84)</h4>
+                <p class="text-xs text-gray-400">
+                    All GPS positions are expressed in standard decimal degrees (WGS84):
+                    <code>pickup_lat: 5.55602</code> (Accra, Ghana), <code>pickup_lng: -0.18241</code>.
+                </p>
+
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider">2. Currency &amp; Pricing</h4>
+                <p class="text-xs text-gray-400">
+                    All monetary amounts are returned in <strong>Ghanaian Cedis (GHS)</strong> as floating-point decimals with 2 decimal precision (e.g. <code>25.50</code> represents <code>GH₵ 25.50</code>).
+                </p>
+
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider">3. Phone Number Standard (E.164)</h4>
+                <p class="text-xs text-gray-400">
+                    All Ghanaian sender and recipient mobile contacts must be formatted in international E.164 notation: <code>+233241234567</code>.
+                </p>
+
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider">4. Idempotency Keys</h4>
+                <div class="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-xs text-purple-300 leading-relaxed">
+                    <strong>Critical for Network Resilience:</strong> All write operations (<code>POST /v1/deliveries/</code>, <code>POST /v1/rides/request/</code>) accept an optional <code>Idempotency-Key: &lt;uuid&gt;</code> header. If a network blip occurs, retrying with the same key returns the original booking without double-dispatching or charging twice.
+                </div>
+            </div>
+        `
+    },
+
+    // -------------------------------------------------------------------------
+    // SECTION 2: AUTHENTICATION & SECURITY
+    // -------------------------------------------------------------------------
+    {
+        id: 'auth-guide',
+        title: 'Authentication & Scopes',
+        category: 'Authentication & Security',
+        description: 'Server-to-server API Key authentication, token formats, and granular permission scopes.',
+        icon: 'shield-check',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>Pass your API Key in the <code>X-API-Key</code> HTTP header with every request:</p>
+                <div class="p-3 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-emerald-400">
+                    X-API-Key: fx_live_your_cryptographic_token_here
+                </div>
+                <p class="text-xs text-gray-400">Alternatively, standard HTTP Bearer token syntax is supported: <code>Authorization: Bearer fx_live_...</code></p>
+
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mt-4">Granular Permission Matrix</h4>
+                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-dark-900 border-b border-white/10 text-gray-400 uppercase text-[10px]">
+                            <tr><th class="p-3">Scope Identifier</th><th class="p-3">Capabilities Granted</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 bg-dark-950/50">
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">deliveries:read</td>
+                                <td class="p-3 text-gray-300">Inspect parcel quotes, query delivery state, and view dispatch history.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">deliveries:write</td>
+                                <td class="p-3 text-gray-300">Create new delivery orders, update destination waypoints, and cancel active dispatches.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">trips:read</td>
+                                <td class="p-3 text-gray-300">View passenger trip history, receipts, and driver telemetry.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">trips:write</td>
+                                <td class="p-3 text-gray-300">Request new passenger rides, schedule corporate trips, and cancel bookings.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">pricing:estimate</td>
+                                <td class="p-3 text-gray-300">Query real-time route calculations, distance matrices, and fare estimates.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-purple-400">webhooks:manage</td>
+                                <td class="p-3 text-gray-300">Register webhook destinations and receive signed HMAC-SHA256 lifecycle callbacks.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `
+    },
+
+    // -------------------------------------------------------------------------
+    // SECTION 3: COURIER & LOGISTICS API
+    // -------------------------------------------------------------------------
+    {
+        id: 'delivery-categories',
+        title: 'List Vehicle Categories',
+        category: 'Courier & Logistics API',
+        description: 'Query available dispatch vehicle types, base fares, and cargo capacities across Ghana.',
+        method: 'GET',
+        isEndpoint: true,
+        endpoint: '/v1/deliveries/categories',
+        scope: 'deliveries:read',
+        htmlContent: `<p class="text-sm text-gray-300">Returns the full catalog of dispatch vehicle categories (Express Motorcycle, Pragya Tricycle, Courier Van) with their cargo capacity limits and base fares.</p>`,
+        snippets: {
+            curl: `curl -X GET "https://api.flexyridegh.com/api/v1/deliveries/categories" \\
+  -H "X-API-Key: YOUR_API_KEY"`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.get('https://api.flexyridegh.com/api/v1/deliveries/categories', {
+  headers: { 'X-API-Key': 'YOUR_API_KEY' }
+});
+console.log(res.data.data);`,
             python: `import requests
 
-res = requests.post(
-    'https://api.flexyridegh.com/api/v1/deliveries/estimate/',
-    headers={'X-Api-Key': 'YOUR_API_KEY'},
-    json={
-        'pickup_lat': 5.55602,
-        'pickup_lng': -0.18241,
-        'dropoff_lat': 5.60512,
-        'dropoff_lng': -0.17721,
-        'weight_tier_id': 'standard'
-    }
+res = requests.get(
+    'https://api.flexyridegh.com/api/v1/deliveries/categories',
+    headers={'X-API-Key': 'YOUR_API_KEY'}
 )
-print(res.json()['data']['estimated_fare'])`
+print(res.json()['data'])`
+        },
+        sampleResponse: {
+            status: "success",
+            data: [
+                { id: "motorbike", name: "Express Motorcycle", base_fare: 15.00, max_weight_kg: 15.0, description: "Fastest parcel dispatch for letters, food, small electronics." },
+                { id: "pragya", name: "Pragya Tricycle", base_fare: 20.00, max_weight_kg: 50.0, description: "Affordable medium-capacity local courier cargo." },
+                { id: "courier_van", name: "Courier Delivery Van", base_fare: 45.00, max_weight_kg: 500.0, description: "Heavy bulk cargo, pallets, and multi-box fulfillment." }
+            ]
         }
     },
     {
         id: 'delivery-estimate',
         title: 'Calculate Parcel Quote',
-        category: 'Courier & Deliveries',
+        category: 'Courier & Logistics API',
         description: 'Calculate distance, estimated duration, and guaranteed fare before dispatching a delivery order.',
         method: 'POST',
         isEndpoint: true,
         endpoint: '/v1/deliveries/estimate/',
-        scope: 'deliveries:estimate',
+        scope: 'pricing:estimate',
         htmlContent: `<p class="text-sm text-gray-300">Calculates an upfront delivery quote based on pickup/dropoff coordinates and package weight category. Quotes remain valid for 15 minutes.</p>`,
         params: [
-            { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude (-90 to 90).' },
-            { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude (-180 to 180).' },
+            { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude (e.g. 5.55602).' },
+            { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude (e.g. -0.18241).' },
             { name: 'dropoff_lat', type: 'float', required: true, description: 'Dropoff GPS latitude.' },
             { name: 'dropoff_lng', type: 'float', required: true, description: 'Dropoff GPS longitude.' },
-            { name: 'weight_tier_id', type: 'string', required: false, description: 'Package tier: "small", "standard", or "heavy".' }
+            { name: 'package_weight_kg', type: 'float', required: false, description: 'Weight in kilograms (default: 1.0).' },
+            { name: 'category', type: 'string', required: false, description: 'Parcel type: "documents", "electronics", "food", "fragile".' },
+            { name: 'vehicle_type', type: 'string', required: false, description: 'Vehicle preference: "motorbike", "courier_van", "pragya".' }
         ],
         snippets: {
-            curl: `curl -X POST https://api.flexyridegh.com/api/v1/deliveries/estimate/ \\
-  -H "X-Api-Key: YOUR_API_KEY" \\
+            curl: `curl -X POST "https://api.flexyridegh.com/api/v1/deliveries/estimate/" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "pickup_lat": 5.55602,
     "pickup_lng": -0.18241,
     "dropoff_lat": 5.60512,
     "dropoff_lng": -0.17721,
-    "weight_tier_id": "standard"
+    "package_weight_kg": 2.5,
+    "category": "electronics",
+    "vehicle_type": "motorbike"
   }'`,
             javascript: `import axios from 'axios';
 
@@ -1088,187 +1289,764 @@ const res = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/esti
   pickup_lng: -0.18241,
   dropoff_lat: 5.60512,
   dropoff_lng: -0.17721,
-  weight_tier_id: 'standard'
+  package_weight_kg: 2.5,
+  category: "electronics",
+  vehicle_type: "motorbike"
 }, {
-  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+  headers: { 'X-API-Key': 'YOUR_API_KEY' }
 });`,
             python: `import requests
 
 res = requests.post(
     'https://api.flexyridegh.com/api/v1/deliveries/estimate/',
-    headers={'X-Api-Key': 'YOUR_API_KEY'},
+    headers={'X-API-Key': 'YOUR_API_KEY'},
     json={
         'pickup_lat': 5.55602,
         'pickup_lng': -0.18241,
         'dropoff_lat': 5.60512,
         'dropoff_lng': -0.17721,
-        'weight_tier_id': 'standard'
+        'package_weight_kg': 2.5,
+        'category': 'electronics',
+        'vehicle_type': 'motorbike'
     }
 )`
         },
         sampleResponse: {
-            success: true,
+            status: "success",
             data: {
-                distance_km: 7.42,
-                duration_minutes: 24,
+                estimated_fare: 28.50,
                 currency: "GHS",
-                base_fare: 10.0,
-                distance_fare: 14.84,
-                estimated_fare: 24.84,
-                weight_tier: "standard",
-                quote_expires_at: "2026-11-03T19:45:00Z"
+                distance_km: 7.42,
+                duration_minutes: 18,
+                weight_tier: "0-5kg",
+                base_fare: 15.00,
+                per_km_rate: 1.80,
+                surge_multiplier: 1.0,
+                vehicle_type: "motorbike"
             }
         }
     },
     {
         id: 'delivery-create',
-        title: 'Create Courier Delivery',
-        category: 'Courier & Deliveries',
+        title: 'Dispatch Courier Delivery',
+        category: 'Courier & Logistics API',
         description: 'Dispatch an on-demand courier parcel delivery with automated driver pairing.',
         method: 'POST',
         isEndpoint: true,
         endpoint: '/v1/deliveries/',
-        scope: 'deliveries:create',
-        htmlContent: `<p class="text-sm text-gray-300">Creates a new courier delivery order. FlexyRide broadcasts the request to nearby couriers and creates a live tracking URL.</p>`,
+        scope: 'deliveries:write',
+        htmlContent: `<p class="text-sm text-gray-300">Creates a new courier delivery order. FlexyRide broadcasts the request to nearby couriers and creates a live tracking URL and code.</p>`,
         params: [
             { name: 'sender_name', type: 'string', required: true, description: 'Store or sender contact name.' },
-            { name: 'sender_phone', type: 'string', required: true, description: 'Sender phone number (+233241234567).' },
-            { name: 'pickup_address', type: 'string', required: true, description: 'Street address for pickup.' },
+            { name: 'sender_phone', type: 'string', required: true, description: 'Sender phone number in E.164 (+233241234567).' },
+            { name: 'pickup_address', type: 'string', required: true, description: 'Human-readable street pickup address.' },
             { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude.' },
             { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude.' },
-            { name: 'recipient_name', type: 'string', required: true, description: 'Recipient name.' },
-            { name: 'recipient_phone', type: 'string', required: true, description: 'Recipient phone number.' },
-            { name: 'dropoff_address', type: 'string', required: true, description: 'Dropoff destination address.' },
-            { name: 'dropoff_lat', type: 'float', required: true, description: 'Dropoff GPS latitude.' },
-            { name: 'dropoff_lng', type: 'float', required: true, description: 'Dropoff GPS longitude.' },
-            { name: 'package_description', type: 'string', required: true, description: 'Brief description of contents.' }
+            { name: 'recipient_name', type: 'string', required: true, description: 'Recipient full name.' },
+            { name: 'recipient_phone', type: 'string', required: true, description: 'Recipient phone number for delivery confirmation.' },
+            { name: 'dropoff_address', type: 'string', required: true, description: 'Destination street address.' },
+            { name: 'dropoff_lat', type: 'float', required: true, description: 'Destination GPS latitude.' },
+            { name: 'dropoff_lng', type: 'float', required: true, description: 'Destination GPS longitude.' },
+            { name: 'package_description', type: 'string', required: true, description: 'Description of parcel contents.' },
+            { name: 'package_weight_kg', type: 'float', required: false, description: 'Package weight in kg (default: 1.0).' },
+            { name: 'delivery_notes', type: 'string', required: false, description: 'Instructions for courier (gate code, reception note).' }
         ],
         snippets: {
-            curl: `curl -X POST https://api.flexyridegh.com/api/v1/deliveries/ \\
-  -H "X-Api-Key: YOUR_API_KEY" \\
-  -H "Idempotency-Key: e9a2c34d-1144-42b7-9ce4-8ff1f298818a" \\
+            curl: `curl -X POST "https://api.flexyridegh.com/api/v1/deliveries/" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Idempotency-Key: e82b5d49-43c2-4cfb-8ea7-a7ebfdfbb35a" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "sender_name": "Accra Central Store",
+    "sender_name": "Accra Central Fulfillment",
     "sender_phone": "+233241234567",
-    "pickup_address": "Oxford Street, Osu",
-    "pickup_lat": 5.55602,
-    "pickup_lng": -0.18241,
+    "pickup_address": "Plot 12, Industrial Area, North Kaneshie, Accra",
+    "pickup_lat": 5.5681,
+    "pickup_lng": -0.2314,
     "recipient_name": "Ama Mensah",
     "recipient_phone": "+233209876543",
-    "dropoff_address": "East Legon",
-    "dropoff_lat": 5.63512,
-    "dropoff_lng": -0.15721,
-    "package_description": "Electronics Package #449"
+    "dropoff_address": "Apartment 4B, Airport Residential, Accra",
+    "dropoff_lat": 5.6051,
+    "dropoff_lng": -0.1772,
+    "package_description": "Order #88432 - Electronics Accessories",
+    "package_weight_kg": 1.8,
+    "delivery_notes": "Leave with security reception if recipient is in meeting"
   }'`,
             javascript: `import axios from 'axios';
 
-const res = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/', {
-  sender_name: "Accra Central Store",
+const order = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/', {
+  sender_name: "Accra Central Fulfillment",
   sender_phone: "+233241234567",
-  pickup_address: "Oxford Street, Osu",
-  pickup_lat: 5.55602,
-  pickup_lng: -0.18241,
+  pickup_address: "Plot 12, Industrial Area, North Kaneshie, Accra",
+  pickup_lat: 5.5681,
+  pickup_lng: -0.2314,
   recipient_name: "Ama Mensah",
   recipient_phone: "+233209876543",
-  dropoff_address: "East Legon",
-  dropoff_lat: 5.63512,
-  dropoff_lng: -0.15721,
-  package_description: "Electronics Package #449"
+  dropoff_address: "Apartment 4B, Airport Residential, Accra",
+  dropoff_lat: 5.6051,
+  dropoff_lng: -0.1772,
+  package_description: "Order #88432 - Electronics Accessories",
+  package_weight_kg: 1.8,
+  delivery_notes: "Leave with security reception if recipient is in meeting"
 }, {
   headers: {
-    'X-Api-Key': 'YOUR_API_KEY',
-    'Idempotency-Key': 'e9a2c34d-1144-42b7-9ce4-8ff1f298818a'
+    'X-API-Key': process.env.FLEXYRIDE_API_KEY,
+    'Idempotency-Key': 'order_88432_dispatch_v1'
   }
-});`,
+});
+
+console.log("Delivery Created! Tracking Code:", order.data.data.tracking_code);`,
             python: `import requests
 import uuid
 
 res = requests.post(
     'https://api.flexyridegh.com/api/v1/deliveries/',
     headers={
-        'X-Api-Key': 'YOUR_API_KEY',
+        'X-API-Key': 'YOUR_API_KEY',
         'Idempotency-Key': str(uuid.uuid4())
     },
     json={
-        'sender_name': 'Accra Central Store',
+        'sender_name': 'Accra Central Fulfillment',
         'sender_phone': '+233241234567',
-        'pickup_address': 'Oxford Street, Osu',
-        'pickup_lat': 5.55602,
-        'pickup_lng': -0.18241,
+        'pickup_address': 'Plot 12, Industrial Area, North Kaneshie, Accra',
+        'pickup_lat': 5.5681,
+        'pickup_lng': -0.2314,
         'recipient_name': 'Ama Mensah',
         'recipient_phone': '+233209876543',
-        'dropoff_address': 'East Legon',
-        'dropoff_lat': 5.63512,
-        'dropoff_lng': -0.15721,
-        'package_description': 'Electronics Package #449'
+        'dropoff_address': 'Apartment 4B, Airport Residential, Accra',
+        'dropoff_lat': 5.6051,
+        'dropoff_lng': -0.1772,
+        'package_description': 'Order #88432 - Electronics Accessories',
+        'package_weight_kg': 1.8,
+        'delivery_notes': 'Leave with reception if recipient is busy'
     }
 )`
         },
         sampleResponse: {
-            success: true,
+            status: "success",
+            message: "Delivery created and broadcasting to nearby couriers",
             data: {
-                id: "del_01HN7XYR45K2MN9",
-                tracking_number: "FLX-DEL-89240",
-                status: "REQUESTED",
-                fare: 28.50,
+                id: "e81d77a0-07bf-4cf2-8321-df54c79401ab",
+                tracking_code: "FX-DEL-984310",
+                status: "PENDING",
+                final_fare: 32.00,
                 currency: "GHS",
-                tracking_url: "https://flexyridegh.com/track/FLX-DEL-89240"
+                distance_km: 8.1,
+                sender_name: "Accra Central Fulfillment",
+                recipient_name: "Ama Mensah",
+                created_at: "2026-11-03T18:25:00Z",
+                tracking_url: "https://track.flexyridegh.com/FX-DEL-984310"
             }
         }
     },
     {
-        id: 'ride-estimate',
-        title: 'Calculate Ride Estimate',
-        category: 'Ride-Hailing',
-        description: 'Calculate passenger trip fares and ETAs across vehicle categories.',
+        id: 'delivery-track',
+        title: 'Track Delivery Status',
+        category: 'Courier & Logistics API',
+        description: 'Retrieve real-time delivery status, courier name, phone, plate, and live GPS coordinates.',
         method: 'GET',
         isEndpoint: true,
-        endpoint: '/v1/rides/estimate/?pickup_lat=5.5560&pickup_lng=-0.1824&dropoff_lat=5.6051&dropoff_lng=-0.1772',
-        scope: 'rides:estimate',
-        htmlContent: `<p class="text-sm text-gray-300">Returns fare estimates across all enabled vehicle tiers (FlexyGo, Comfort, Van) along with estimated driver arrival times.</p>`,
+        endpoint: '/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/',
+        scope: 'deliveries:read',
+        htmlContent: `<p class="text-sm text-gray-300">Poll the current delivery lifecycle state, assigned courier driver contact info, vehicle plate, and current GPS location.</p>`,
         snippets: {
-            curl: `curl -X GET "https://api.flexyridegh.com/api/v1/rides/estimate/?pickup_lat=5.5560&pickup_lng=-0.1824&dropoff_lat=5.6051&dropoff_lng=-0.1772" \\
-  -H "X-Api-Key: YOUR_API_KEY"`,
+            curl: `curl -X GET "https://api.flexyridegh.com/api/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/" \\
+  -H "X-API-Key: YOUR_API_KEY"`,
             javascript: `import axios from 'axios';
 
-const res = await axios.get('https://api.flexyridegh.com/api/v1/rides/estimate/', {
-  params: { pickup_lat: 5.5560, pickup_lng: -0.1824, dropoff_lat: 5.6051, dropoff_lng: -0.1772 },
-  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
-});`,
+const res = await axios.get('https://api.flexyridegh.com/api/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/', {
+  headers: { 'X-API-Key': 'YOUR_API_KEY' }
+});
+console.log('Delivery Status:', res.data.data.status, 'Driver:', res.data.data.driver);`,
             python: `import requests
 
 res = requests.get(
-    'https://api.flexyridegh.com/api/v1/rides/estimate/',
-    params={'pickup_lat': 5.5560, 'pickup_lng': -0.1824, 'dropoff_lat': 5.6051, 'dropoff_lng': -0.1772},
-    headers={'X-Api-Key': 'YOUR_API_KEY'}
+    'https://api.flexyridegh.com/api/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/',
+    headers={'X-API-Key': 'YOUR_API_KEY'}
+)
+print(res.json()['data'])`
+        },
+        sampleResponse: {
+            status: "success",
+            data: {
+                id: "e81d77a0-07bf-4cf2-8321-df54c79401ab",
+                tracking_code: "FX-DEL-984310",
+                status: "IN_TRANSIT",
+                driver: {
+                    name: "Kofi Boateng",
+                    phone: "+233240001122",
+                    vehicle_plate: "GW-4402-21",
+                    vehicle_model: "Honda ACE 125 Motorbike",
+                    rating: 4.92,
+                    current_lat: 5.5891,
+                    current_lng: -0.1982
+                },
+                estimated_eta_minutes: 7,
+                pickup_time: "2026-11-03T18:38:12Z",
+                completed_at: null
+            }
+        }
+    },
+    {
+        id: 'delivery-cancel',
+        title: 'Cancel Delivery Order',
+        category: 'Courier & Logistics API',
+        description: 'Cancel an active courier delivery request prior to parcel pickup.',
+        method: 'POST',
+        isEndpoint: true,
+        endpoint: '/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/cancel/',
+        scope: 'deliveries:write',
+        htmlContent: `<p class="text-sm text-gray-300">Cancels an active delivery order before the courier completes pickup. If cancelled after courier arrival, a standard cancellation fee applies.</p>`,
+        params: [
+            { name: 'reason', type: 'string', required: true, description: 'Reason for cancellation (e.g. "Customer requested cancellation").' }
+        ],
+        snippets: {
+            curl: `curl -X POST "https://api.flexyridegh.com/api/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/cancel/" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"reason": "Customer changed order to in-store pickup"}'`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/cancel/', {
+  reason: "Customer changed order to in-store pickup"
+}, {
+  headers: { 'X-API-Key': 'YOUR_API_KEY' }
+});`,
+            python: `import requests
+
+res = requests.post(
+    'https://api.flexyridegh.com/api/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/cancel/',
+    headers={'X-API-Key': 'YOUR_API_KEY'},
+    json={'reason': 'Customer changed order to in-store pickup'}
 )`
         },
         sampleResponse: {
-            success: true,
+            status: "success",
+            message: "Delivery order successfully cancelled",
             data: {
-                distance_km: 6.8,
-                duration_minutes: 18,
+                id: "e81d77a0-07bf-4cf2-8321-df54c79401ab",
+                status: "CANCELLED",
+                cancellation_fee: 0.00,
+                cancelled_at: "2026-11-03T18:42:00Z"
+            }
+        }
+    },
+
+    // -------------------------------------------------------------------------
+    // SECTION 4: RIDE-HAILING & CORPORATE MOBILITY
+    // -------------------------------------------------------------------------
+    {
+        id: 'ride-estimate',
+        title: 'Calculate Ride Estimate',
+        category: 'Ride-Hailing & Mobility',
+        description: 'Calculate passenger trip fares, distance, and driver arrival times across vehicle tiers.',
+        method: 'POST',
+        isEndpoint: true,
+        endpoint: '/v1/rides/estimate/',
+        scope: 'pricing:estimate',
+        htmlContent: `<p class="text-sm text-gray-300">Returns route distance, transit duration, and guaranteed fare estimates across all vehicle tiers (FlexyGo, Comfort, Van).</p>`,
+        params: [
+            { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude (e.g. 5.6221).' },
+            { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude (e.g. -0.1738).' },
+            { name: 'dropoff_lat', type: 'float', required: true, description: 'Dropoff GPS latitude.' },
+            { name: 'dropoff_lng', type: 'float', required: true, description: 'Dropoff GPS longitude.' },
+            { name: 'preferred_tier', type: 'string', required: false, description: 'Target tier: "go", "comfort", or "van".' }
+        ],
+        snippets: {
+            curl: `curl -X POST "https://api.flexyridegh.com/api/v1/rides/estimate/" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "pickup_lat": 5.6221,
+    "pickup_lng": -0.1738,
+    "dropoff_lat": 5.5612,
+    "dropoff_lng": -0.1432,
+    "preferred_tier": "comfort"
+  }'`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.post('https://api.flexyridegh.com/api/v1/rides/estimate/', {
+  pickup_lat: 5.6221,
+  pickup_lng: -0.1738,
+  dropoff_lat: 5.5612,
+  dropoff_lng: -0.1432,
+  preferred_tier: "comfort"
+}, {
+  headers: { 'X-API-Key': 'YOUR_API_KEY' }
+});`,
+            python: `import requests
+
+res = requests.post(
+    'https://api.flexyridegh.com/api/v1/rides/estimate/',
+    headers={'X-API-Key': 'YOUR_API_KEY'},
+    json={
+        'pickup_lat': 5.6221,
+        'pickup_lng': -0.1738,
+        'dropoff_lat': 5.5612,
+        'dropoff_lng': -0.1432,
+        'preferred_tier': 'comfort'
+    }
+)`
+        },
+        sampleResponse: {
+            status: "success",
+            data: {
+                distance_km: 11.2,
+                duration_minutes: 24,
                 tiers: [
-                    { tier_id: "standard", name: "FlexyGo", fare_ghs: 32.50, eta_minutes: 3 },
-                    { tier_id: "comfort", name: "FlexyComfort", fare_ghs: 48.00, eta_minutes: 5 },
-                    { tier_id: "van", name: "FlexyVan (7 Seater)", fare_ghs: 75.00, eta_minutes: 8 }
+                    { tier_id: "go", name: "Flexy Go", estimated_fare: 38.00, currency: "GHS", eta_minutes: 4 },
+                    { tier_id: "comfort", name: "Flexy Comfort", estimated_fare: 52.00, currency: "GHS", eta_minutes: 6 },
+                    { tier_id: "van", name: "Flexy Van (7-Seater)", estimated_fare: 85.00, currency: "GHS", eta_minutes: 9 }
                 ]
             }
         }
     },
     {
+        id: 'ride-request',
+        title: 'Request Passenger Ride',
+        category: 'Ride-Hailing & Mobility',
+        description: 'Book an on-demand passenger ride or employee corporate transport.',
+        method: 'POST',
+        isEndpoint: true,
+        endpoint: '/v1/rides/request/',
+        scope: 'trips:write',
+        htmlContent: `<p class="text-sm text-gray-300">Dispatches an on-demand passenger trip. Billed directly to corporate business wallet or card on file.</p>`,
+        params: [
+            { name: 'passenger_name', type: 'string', required: true, description: 'Rider name.' },
+            { name: 'passenger_phone', type: 'string', required: true, description: 'Rider mobile (+233...).' },
+            { name: 'tier', type: 'string', required: true, description: 'Requested tier: "go", "comfort", or "van".' },
+            { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude.' },
+            { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude.' },
+            { name: 'pickup_address', type: 'string', required: true, description: 'Pickup address title.' },
+            { name: 'dropoff_lat', type: 'float', required: true, description: 'Dropoff GPS latitude.' },
+            { name: 'dropoff_lng', type: 'float', required: true, description: 'Dropoff GPS longitude.' },
+            { name: 'dropoff_address', type: 'string', required: true, description: 'Destination address title.' }
+        ],
+        snippets: {
+            curl: `curl -X POST "https://api.flexyridegh.com/api/v1/rides/request/" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Idempotency-Key: trip_req_99341" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "passenger_name": "Kweku Hanson",
+    "passenger_phone": "+233245009988",
+    "tier": "comfort",
+    "pickup_lat": 5.6221,
+    "pickup_lng": -0.1738,
+    "pickup_address": "Stanbic Heights, Airport City, Accra",
+    "dropoff_lat": 5.5612,
+    "dropoff_lng": -0.1432,
+    "dropoff_address": "Labadi Beach Hotel, Accra"
+  }'`,
+            javascript: `import axios from 'axios';
+
+const trip = await axios.post('https://api.flexyridegh.com/api/v1/rides/request/', {
+  passenger_name: "Kweku Hanson",
+  passenger_phone: "+233245009988",
+  tier: "comfort",
+  pickup_lat: 5.6221,
+  pickup_lng: -0.1738,
+  pickup_address: "Stanbic Heights, Airport City, Accra",
+  dropoff_lat: 5.5612,
+  dropoff_lng: -0.1432,
+  dropoff_address: "Labadi Beach Hotel, Accra"
+}, {
+  headers: {
+    'X-API-Key': 'YOUR_API_KEY',
+    'Idempotency-Key': 'trip_req_99341'
+  }
+});`,
+            python: `import requests
+
+res = requests.post(
+    'https://api.flexyridegh.com/api/v1/rides/request/',
+    headers={'X-API-Key': 'YOUR_API_KEY', 'Idempotency-Key': 'trip_req_99341'},
+    json={
+        'passenger_name': 'Kweku Hanson',
+        'passenger_phone': '+233245009988',
+        'tier': 'comfort',
+        'pickup_lat': 5.6221,
+        'pickup_lng': -0.1738,
+        'pickup_address': 'Stanbic Heights, Airport City, Accra',
+        'dropoff_lat': 5.5612,
+        'dropoff_lng': -0.1432,
+        'dropoff_address': 'Labadi Beach Hotel, Accra'
+    }
+)`
+        },
+        sampleResponse: {
+            status: "success",
+            message: "Ride request broadcasting to nearby drivers",
+            data: {
+                trip_id: "trip_88fa12bc0991",
+                status: "SEARCHING",
+                tier: "comfort",
+                estimated_fare: 52.00,
+                currency: "GHS",
+                created_at: "2026-11-03T18:30:00Z"
+            }
+        }
+    },
+    {
+        id: 'ride-status',
+        title: 'Trip Details & Tracking',
+        category: 'Ride-Hailing & Mobility',
+        description: 'Query driver matching status, assigned vehicle plate, driver rating, and telemetry.',
+        method: 'GET',
+        isEndpoint: true,
+        endpoint: '/v1/rides/trip_88fa12bc0991/',
+        scope: 'trips:read',
+        htmlContent: `<p class="text-sm text-gray-300">Retrieves real-time status of a passenger ride, including assigned vehicle details, driver location, and journey stage.</p>`,
+        snippets: {
+            curl: `curl -X GET "https://api.flexyridegh.com/api/v1/rides/trip_88fa12bc0991/" \\
+  -H "X-API-Key: YOUR_API_KEY"`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.get('https://api.flexyridegh.com/api/v1/rides/trip_88fa12bc0991/', {
+  headers: { 'X-API-Key': 'YOUR_API_KEY' }
+});`,
+            python: `import requests
+
+res = requests.get(
+    'https://api.flexyridegh.com/api/v1/rides/trip_88fa12bc0991/',
+    headers={'X-API-Key': 'YOUR_API_KEY'}
+)`
+        },
+        sampleResponse: {
+            status: "success",
+            data: {
+                trip_id: "trip_88fa12bc0991",
+                status: "ACCEPTED",
+                driver: {
+                    name: "Emmanuel Cudjoe",
+                    phone: "+233241112233",
+                    vehicle_plate: "GR-8890-22",
+                    vehicle_model: "Toyota Corolla 2021",
+                    rating: 4.95,
+                    current_lat: 5.6189,
+                    current_lng: -0.1702
+                },
+                eta_minutes: 4,
+                fare: 52.00
+            }
+        }
+    },
+
+    // -------------------------------------------------------------------------
+    // SECTION 5: REAL-TIME STREAMING & WEBHOOKS
+    // -------------------------------------------------------------------------
+    {
         id: 'webhooks-guide',
-        title: 'Webhooks & HMAC Verification',
+        title: 'Webhooks & Event Catalog',
         category: 'Real-Time Integration',
         description: 'Listen to asynchronous state updates signed cryptographically with your Webhook Secret.',
         icon: 'radio',
         htmlContent: `
             <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
-                <p>FlexyRide sends HTTP POST notifications to your webhook URL whenever an order status changes.</p>
-                <h4 class="text-white font-bold text-xs uppercase">HMAC Header</h4>
+                <p>FlexyRide sends HTTP POST JSON notifications to your webhook URL whenever an order status changes, eliminating unnecessary polling.</p>
+                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-dark-900 border-b border-white/10 text-gray-400 uppercase text-[10px]">
+                            <tr><th class="p-3">Event Name</th><th class="p-3">Trigger Condition</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 bg-dark-950/50">
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-sky-400">delivery.created</td>
+                                <td class="p-3 text-gray-300">New delivery dispatch logged and broadcasting to fleet.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-emerald-400">delivery.driver_assigned</td>
+                                <td class="p-3 text-gray-300">Courier has accepted the order and is en route to pickup.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-emerald-400">delivery.picked_up</td>
+                                <td class="p-3 text-gray-300">Courier has collected and verified the parcel; journey started.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-brand">delivery.delivered</td>
+                                <td class="p-3 text-gray-300">Parcel successfully handed over and confirmed by recipient.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-rose-400">delivery.cancelled</td>
+                                <td class="p-3 text-gray-300">Order cancelled by sender, dispatch, or system timeout.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-sky-400">trip.accepted</td>
+                                <td class="p-3 text-gray-300">Passenger ride driver matched and approaching pickup point.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-mono font-bold text-brand">trip.completed</td>
+                                <td class="p-3 text-gray-300">Passenger ride concluded and fare settled to wallet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `
+    },
+    {
+        id: 'webhooks-hmac',
+        title: 'HMAC Signature Verification',
+        category: 'Real-Time Integration',
+        description: 'Verify X-Flexy-Signature header cryptographically to prevent spoofing and replay attacks.',
+        icon: 'lock',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>Every webhook notification includes the <code>X-Flexy-Signature</code> header with timestamp and hash:</p>
                 <div class="p-3 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-sky-400">
-                    X-Flexy-Signature: t=1730656800,v1=5d41402abc4b2a76b9719d911017c592...
+                    X-Flexy-Signature: t=1762194800,v1=9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+                </div>
+                <p class="text-xs text-gray-400">
+                    Always reject signatures with timestamps older than 300 seconds (5 minutes) to protect against replay attacks.
+                </p>
+            </div>
+        `,
+        snippets: {
+            javascript: `import crypto from 'crypto';
+
+export function verifyFlexyWebhook(rawBody, signatureHeader, webhookSecret) {
+  const parts = Object.fromEntries(
+    signatureHeader.split(',').map(kv => kv.split('='))
+  );
+
+  const timestamp = parts['t'];
+  const expectedSignature = parts['v1'];
+
+  // Prevent replay attacks (5 minute window)
+  const currentTime = Math.floor(Date.now() / 1000);
+  if (Math.abs(currentTime - parseInt(timestamp, 10)) > 300) {
+    throw new Error('Webhook timestamp outside allowed tolerance window');
+  }
+
+  // Compute HMAC-SHA256
+  const payloadToSign = \`t=\${timestamp}.\${rawBody}\`;
+  const computedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(payloadToSign)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(computedSignature, 'hex'),
+    Buffer.from(expectedSignature, 'hex')
+  );
+}`,
+            python: `import hmac
+import hashlib
+import time
+
+def verify_flexy_webhook(raw_body: bytes, signature_header: str, webhook_secret: str) -> bool:
+    parts = dict(x.split('=') for x in signature_header.split(','))
+    timestamp = parts.get('t')
+    expected_sig = parts.get('v1')
+
+    # Reject if older than 5 minutes
+    if abs(time.time() - int(timestamp)) > 300:
+        return False
+
+    payload_to_sign = f"t={timestamp}.".encode('utf-8') + raw_body
+    computed_sig = hmac.new(
+        webhook_secret.encode('utf-8'),
+        payload_to_sign,
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(computed_sig, expected_sig)`
+        }
+    },
+    {
+        id: 'websocket-tracking',
+        title: 'Live WebSocket Telemetry',
+        category: 'Real-Time Integration',
+        description: 'Stream sub-second driver GPS telemetry and bearing over persistent WebSocket connection.',
+        icon: 'activity',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>For smooth live map rendering (vehicle moving across the map in real time), connect directly to our WebSocket gateway:</p>
+                <div class="p-3 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-brand">
+                    wss://api.flexyridegh.com/ws?token=fx_live_your_key
+                </div>
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mt-4">1. Subscribe to Channel</h4>
+                <div class="p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-sky-400">
+{
+  "action": "subscribe",
+  "channel": "delivery:e81d77a0-07bf-4cf2-8321-df54c79401ab"
+}
+                </div>
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mt-4">2. Inbound Location Stream</h4>
+                <div class="p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-emerald-400">
+{
+  "event": "location_update",
+  "channel": "delivery:e81d77a0-07bf-4cf2-8321-df54c79401ab",
+  "data": {
+    "lat": 5.59214,
+    "lng": -0.18521,
+    "bearing": 142.5,
+    "speed_kmh": 36.2,
+    "eta_minutes": 6
+  }
+}
+                </div>
+            </div>
+        `,
+        snippets: {
+            javascript: `const ws = new WebSocket('wss://api.flexyridegh.com/ws?token=YOUR_API_KEY');
+
+ws.onopen = () => {
+  console.log('Connected to FlexyRide Real-Time Gateway');
+  ws.send(JSON.stringify({
+    action: "subscribe",
+    channel: "delivery:e81d77a0-07bf-4cf2-8321-df54c79401ab"
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.event === 'location_update') {
+    const { lat, lng, bearing, speed_kmh, eta_minutes } = msg.data;
+    console.log(\`Driver GPS: \${lat}, \${lng} | Speed: \${speed_kmh} km/h | ETA: \${eta_minutes}m\`);
+    // Update live Mapbox/Google Map marker
+  }
+};`,
+            python: `import asyncio
+import websockets
+import json
+
+async def track_delivery():
+    uri = "wss://api.flexyridegh.com/ws?token=YOUR_API_KEY"
+    async with websockets.connect(uri) as ws:
+        await ws.send(json.dumps({
+            "action": "subscribe",
+            "channel": "delivery:e81d77a0-07bf-4cf2-8321-df54c79401ab"
+        }))
+        while True:
+            msg = json.loads(await ws.recv())
+            if msg.get('event') == 'location_update':
+                coords = msg['data']
+                print(f"Driver coords: {coords['lat']}, {coords['lng']} ({coords['speed_kmh']} km/h)")
+
+asyncio.run(track_delivery())`
+        }
+    },
+
+    // -------------------------------------------------------------------------
+    // SECTION 6: ARCHITECTURE & RELIABILITY
+    // -------------------------------------------------------------------------
+    {
+        id: 'e2e-workflow',
+        title: 'End-to-End E-Commerce Workflow',
+        category: 'Architecture & Reliability',
+        description: 'Complete lifecycle walkthrough: customer checkout -> estimate -> dispatch -> tracking -> webhook handover.',
+        icon: 'git-merge',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>Here is how high-volume retail, grocery, and pharmacy merchants automate delivery on FlexyRide:</p>
+                <div class="space-y-3">
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">1</span>
+                            Instant Quote at Checkout
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            Call <code>POST /v1/deliveries/estimate/</code> to display instant, guaranteed shipping fees to the customer before payment.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">2</span>
+                            Automated Dispatch upon Payment
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            When Paystack or Mobile Money webhook confirms payment, send <code>POST /v1/deliveries/</code> with an <code>Idempotency-Key</code>.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">3</span>
+                            Live Customer Tracking
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            Send the returned <code>tracking_url</code> and <code>tracking_code</code> to the customer via SMS or WhatsApp, or embed real-time GPS telemetry via WebSockets.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">4</span>
+                            Automated Settlement &amp; Archive
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            Your server listens for the <code>delivery.delivered</code> webhook to mark the order as fulfilled in your ERP/database.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `
+    },
+    {
+        id: 'error-codes',
+        title: 'Error Codes & Schema',
+        category: 'Architecture & Reliability',
+        description: 'Standardized JSON error envelope, validation errors, and HTTP status code matrix.',
+        icon: 'alert-triangle',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>All FlexyRide error responses adhere to a consistent JSON envelope:</p>
+                <div class="p-4 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-rose-400 leading-relaxed">
+{
+  "status": "error",
+  "message": "Validation failed on input parameters",
+  "errors": {
+    "recipient_phone": "Valid Ghanaian mobile number (+233...) is required"
+  }
+}
+                </div>
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mt-4">HTTP Status Code Reference</h4>
+                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-dark-900 border-b border-white/10 text-gray-400 uppercase text-[10px]">
+                            <tr><th class="p-3">Status Code</th><th class="p-3">Meaning</th><th class="p-3">Resolution Action</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 bg-dark-950/50">
+                            <tr><td class="p-3 font-mono font-bold text-emerald-400">200 OK</td><td class="p-3">Success</td><td class="p-3 text-gray-300">Request processed successfully.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-emerald-400">201 Created</td><td class="p-3">Created</td><td class="p-3 text-gray-300">Delivery or ride successfully booked.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-amber-400">400 Bad Request</td><td class="p-3">Malformed Payload</td><td class="p-3 text-gray-300">Check required fields, coordinate ranges, and phone number format.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-amber-400">401 Unauthorized</td><td class="p-3">Invalid Credentials</td><td class="p-3 text-gray-300">Missing or revoked API Key token.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-amber-400">403 Forbidden</td><td class="p-3">Scope Denied</td><td class="p-3 text-gray-300">Your API Key lacks the necessary permission scope for this action.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-amber-400">404 Not Found</td><td class="p-3">Missing Resource</td><td class="p-3 text-gray-300">Order ID, tracking code, or driver not found.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-amber-400">409 Conflict</td><td class="p-3">Idempotency Conflict</td><td class="p-3 text-gray-300">Concurrent booking or duplicate key detected.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-rose-400">429 Rate Limited</td><td class="p-3">Quota Exceeded</td><td class="p-3 text-gray-300">Exceeded burst rate limit. Apply exponential backoff.</td></tr>
+                            <tr><td class="p-3 font-mono font-bold text-rose-400">500 Server Error</td><td class="p-3">Internal Failure</td><td class="p-3 text-gray-300">Internal system error. Retry with backoff or contact support.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `
+    },
+    {
+        id: 'rate-limits',
+        title: 'Rate Limits & Backoff',
+        category: 'Architecture & Reliability',
+        description: 'Burst limits, daily quotas, rate limit headers, and exponential backoff retry algorithms.',
+        icon: 'gauge',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>Standard Developer Tier limits:</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5">
+                        <div class="text-xs text-gray-400 font-bold uppercase">Burst Rate Limit</div>
+                        <div class="text-xl font-bold text-brand mt-1">60 req / min</div>
+                        <div class="text-[11px] text-gray-500 mt-1">Sandbox: 30 req / min</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5">
+                        <div class="text-xs text-gray-400 font-bold uppercase">Daily Request Quota</div>
+                        <div class="text-xl font-bold text-sky-400 mt-1">10,000 req / day</div>
+                        <div class="text-[11px] text-gray-500 mt-1">Enterprise: Unlimited</div>
+                    </div>
+                </div>
+
+                <h4 class="font-bold text-white text-xs uppercase tracking-wider mt-4">HTTP Response Headers</h4>
+                <div class="p-3 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-gray-300 space-y-1">
+                    <div>X-RateLimit-Limit: 60</div>
+                    <div>X-RateLimit-Remaining: 58</div>
+                    <div>X-RateLimit-Reset: 1762194860</div>
                 </div>
             </div>
         `
@@ -1596,32 +2374,69 @@ function loadPlaygroundPreset(key) {
             pickup_lng: -0.18241,
             dropoff_lat: 5.60512,
             dropoff_lng: -0.17721,
-            weight_tier_id: 'standard',
-            item_category: 'food'
+            package_weight_kg: 2.5,
+            category: 'electronics',
+            vehicle_type: 'motorbike'
         }, null, 2);
     } else if (key === 'delivery_create') {
         document.getElementById('playground-method').value = 'POST';
         document.getElementById('playground-endpoint').value = '/v1/deliveries/';
         document.getElementById('playground-payload').value = JSON.stringify({
-            sender_name: "Acme Kitchens",
-            sender_phone: "+233240001122",
-            pickup_address: "Osu Oxford St, Accra",
-            pickup_lat: 5.55602,
-            pickup_lng: -0.18241,
-            recipient_name: "Kwame Koduah",
+            sender_name: "Accra Central Fulfillment",
+            sender_phone: "+233241234567",
+            pickup_address: "Plot 12, Industrial Area, North Kaneshie, Accra",
+            pickup_lat: 5.5681,
+            pickup_lng: -0.2314,
+            recipient_name: "Ama Mensah",
             recipient_phone: "+233209876543",
-            dropoff_address: "East Legon, Accra",
-            dropoff_lat: 5.63512,
-            dropoff_lng: -0.15721,
-            package_description: "Order #8839 Hot Food Package"
+            dropoff_address: "Apartment 4B, Airport Residential, Accra",
+            dropoff_lat: 5.6051,
+            dropoff_lng: -0.1772,
+            package_description: "Order #88432 - Electronics Accessories",
+            package_weight_kg: 1.8,
+            delivery_notes: "Leave with security reception if recipient is in meeting"
+        }, null, 2);
+    } else if (key === 'delivery_track') {
+        document.getElementById('playground-method').value = 'GET';
+        document.getElementById('playground-endpoint').value = '/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/';
+        document.getElementById('playground-payload').value = '';
+    } else if (key === 'delivery_cancel') {
+        document.getElementById('playground-method').value = 'POST';
+        document.getElementById('playground-endpoint').value = '/v1/deliveries/e81d77a0-07bf-4cf2-8321-df54c79401ab/cancel/';
+        document.getElementById('playground-payload').value = JSON.stringify({
+            reason: "Customer changed order to in-store pickup"
         }, null, 2);
     } else if (key === 'ride_estimate') {
+        document.getElementById('playground-method').value = 'POST';
+        document.getElementById('playground-endpoint').value = '/v1/rides/estimate/';
+        document.getElementById('playground-payload').value = JSON.stringify({
+            pickup_lat: 5.6221,
+            pickup_lng: -0.1738,
+            dropoff_lat: 5.5612,
+            dropoff_lng: -0.1432,
+            preferred_tier: "comfort"
+        }, null, 2);
+    } else if (key === 'ride_request') {
+        document.getElementById('playground-method').value = 'POST';
+        document.getElementById('playground-endpoint').value = '/v1/rides/request/';
+        document.getElementById('playground-payload').value = JSON.stringify({
+            passenger_name: "Kweku Hanson",
+            passenger_phone: "+233245009988",
+            tier: "comfort",
+            pickup_lat: 5.6221,
+            pickup_lng: -0.1738,
+            pickup_address: "Stanbic Heights, Airport City, Accra",
+            dropoff_lat: 5.5612,
+            dropoff_lng: -0.1432,
+            dropoff_address: "Labadi Beach Hotel, Accra"
+        }, null, 2);
+    } else if (key === 'ride_status') {
         document.getElementById('playground-method').value = 'GET';
-        document.getElementById('playground-endpoint').value = '/v1/rides/estimate/?pickup_lat=5.5560&pickup_lng=-0.1824&dropoff_lat=5.6051&dropoff_lng=-0.1772';
+        document.getElementById('playground-endpoint').value = '/v1/rides/trip_88fa12bc0991/';
         document.getElementById('playground-payload').value = '';
-    } else if (key === 'vehicle_categories') {
+    } else if (key === 'vehicle_categories' || key === 'delivery_categories') {
         document.getElementById('playground-method').value = 'GET';
-        document.getElementById('playground-endpoint').value = '/v1/settings/vehicle-categories/';
+        document.getElementById('playground-endpoint').value = '/v1/deliveries/categories';
         document.getElementById('playground-payload').value = '';
     }
 }
@@ -1874,8 +2689,18 @@ function tryDocInPlayground(docId) {
         loadPlaygroundPreset('delivery_estimate');
     } else if (docId === 'delivery-create') {
         loadPlaygroundPreset('delivery_create');
+    } else if (docId === 'delivery-track') {
+        loadPlaygroundPreset('delivery_track');
+    } else if (docId === 'delivery-cancel') {
+        loadPlaygroundPreset('delivery_cancel');
     } else if (docId === 'ride-estimate') {
         loadPlaygroundPreset('ride_estimate');
+    } else if (docId === 'ride-request') {
+        loadPlaygroundPreset('ride_request');
+    } else if (docId === 'ride-status') {
+        loadPlaygroundPreset('ride_status');
+    } else if (docId === 'delivery-categories') {
+        loadPlaygroundPreset('delivery_categories');
     }
     showToast('Loaded endpoint into API Playground', 'info');
 }

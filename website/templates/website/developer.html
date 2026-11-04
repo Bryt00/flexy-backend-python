@@ -9,6 +9,24 @@
 {% block footer %}{% endblock %}
 
 {% block content %}
+<style>
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.glass-panel {
+    background: linear-gradient(135deg, rgba(20, 20, 20, 0.8) 0%, rgba(13, 13, 13, 0.95) 100%);
+    backdrop-filter: blur(16px);
+}
+.code-tab-active {
+    background: rgba(140, 198, 63, 0.15);
+    color: #8CC63F;
+    border-color: rgba(140, 198, 63, 0.3);
+}
+</style>
 <div id="developer-app" class="min-h-screen bg-dark-900 text-gray-100 flex flex-col font-sans selection:bg-brand selection:text-black antialiased">
     <!-- DEDICATED DEVELOPER PORTAL HEADER (Void of public site navbar) -->
     <header class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3.5">
@@ -28,7 +46,7 @@
             </div>
 
             <!-- Navigation Tabs -->
-            <nav class="flex items-center gap-1 bg-dark-950 p-1 rounded-2xl border border-white/10 text-xs overflow-x-auto max-w-full">
+            <nav class="flex items-center gap-1 bg-dark-950 p-1 rounded-2xl border border-white/10 text-xs overflow-x-auto max-w-full no-scrollbar shadow-inner">
                 <button
                     onclick="switchTab('overview')"
                     id="tab-btn-overview"
@@ -210,23 +228,86 @@
             </div>
 
             <!-- Quick Access Grid -->
-            <div class="ui-card p-6 md:p-8 rounded-3xl bg-dark-950 border border-white/10 space-y-4">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i data-lucide="terminal" class="w-4 h-4 text-brand"></i>
-                    <span>Quick Integration Sample</span>
-                </h3>
-                <div class="p-4 rounded-2xl bg-black/60 border border-white/10 font-mono text-xs text-gray-300 overflow-x-auto leading-relaxed">
-                    <pre><code># Calculate Parcel Delivery Quote (GHS)
+            <div class="ui-card p-6 md:p-8 rounded-3xl bg-dark-950 border border-white/10 space-y-4 shadow-2xl relative overflow-hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="p-1.5 rounded-lg bg-brand/10 border border-brand/20 text-brand">
+                            <i data-lucide="terminal" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white">Quick Integration Sample</h3>
+                            <p class="text-[11px] text-gray-400">Calculate delivery estimates in real-time</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Code Language Tabs -->
+                        <div class="flex items-center bg-dark-900 p-0.5 rounded-xl border border-white/10 text-xs font-mono">
+                            <button id="quick-tab-curl" onclick="switchQuickCode('curl')" class="px-2.5 py-1 rounded-lg text-brand bg-brand/15 font-semibold transition-all cursor-pointer">cURL</button>
+                            <button id="quick-tab-python" onclick="switchQuickCode('python')" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer">Python</button>
+                            <button id="quick-tab-node" onclick="switchQuickCode('node')" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer">Node.js</button>
+                        </div>
+                        <button onclick="copyQuickCode()" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer" title="Copy code snippet">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span id="quick-copy-text">Copy</span>
+                        </button>
+                        <button onclick="tryDocInPlayground('delivery-estimate')" class="px-2.5 py-1 rounded-xl bg-brand/10 hover:bg-brand/20 border border-brand/30 text-xs font-bold text-brand flex items-center gap-1.5 transition-all cursor-pointer" title="Open directly in API Playground">
+                            <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+                            <span>Test Live</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative rounded-2xl bg-black/80 border border-white/10 p-4 font-mono text-xs text-gray-300 overflow-x-auto leading-relaxed shadow-inner">
+                    <pre id="quick-snippet-curl"><code><span class="text-gray-500"># Calculate Parcel Delivery Quote (GHS)</span>
 curl -X POST https://api.flexyridegh.com/api/v1/deliveries/estimate/ \
-  -H "X-Api-Key: fx_live_your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{
+  -H <span class="text-emerald-400">"X-Api-Key: fx_live_your_api_key_here"</span> \
+  -H <span class="text-purple-400">"Content-Type: application/json"</span> \
+  -d <span class="text-amber-300">'{
     "pickup_lat": 5.55602,
     "pickup_lng": -0.18241,
     "dropoff_lat": 5.60512,
     "dropoff_lng": -0.17721,
     "weight_tier_id": "standard"
-  }'</code></pre>
+  }'</span></code></pre>
+
+                    <pre id="quick-snippet-python" class="hidden"><code><span class="text-gray-500"># Python 3 + requests library</span>
+<span class="text-purple-400">import</span> requests
+
+url = <span class="text-emerald-400">"https://api.flexyridegh.com/api/v1/deliveries/estimate/"</span>
+headers = {
+    <span class="text-emerald-400">"X-Api-Key"</span>: <span class="text-emerald-400">"fx_live_your_api_key_here"</span>,
+    <span class="text-emerald-400">"Content-Type"</span>: <span class="text-emerald-400">"application/json"</span>
+}
+payload = {
+    <span class="text-purple-400">"pickup_lat"</span>: 5.55602,
+    <span class="text-purple-400">"pickup_lng"</span>: -0.18241,
+    <span class="text-purple-400">"dropoff_lat"</span>: 5.60512,
+    <span class="text-purple-400">"dropoff_lng"</span>: -0.17721,
+    <span class="text-purple-400">"weight_tier_id"</span>: <span class="text-emerald-400">"standard"</span>
+}
+
+response = requests.post(url, json=payload, headers=headers)
+quote = response.json()
+print(<span class="text-emerald-400">f"Quote: GH₵ {quote['data']['estimated_fare']}"</span>)</code></pre>
+
+                    <pre id="quick-snippet-node" class="hidden"><code><span class="text-gray-500">// Node.js 18+ native fetch</span>
+<span class="text-purple-400">const</span> response = <span class="text-purple-400">await</span> fetch(<span class="text-emerald-400">'https://api.flexyridegh.com/api/v1/deliveries/estimate/'</span>, {
+  method: <span class="text-emerald-400">'POST'</span>,
+  headers: {
+    <span class="text-emerald-400">'X-Api-Key'</span>: <span class="text-emerald-400">'fx_live_your_api_key_here'</span>,
+    <span class="text-emerald-400">'Content-Type'</span>: <span class="text-emerald-400">'application/json'</span>
+  },
+  body: JSON.stringify({
+    pickup_lat: 5.55602,
+    pickup_lng: -0.18241,
+    dropoff_lat: 5.60512,
+    dropoff_lng: -0.17721,
+    weight_tier_id: <span class="text-emerald-400">'standard'</span>
+  })
+});
+
+<span class="text-purple-400">const</span> { data } = <span class="text-purple-400">await</span> response.json();
+console.log(<span class="text-emerald-400">`Estimated Quote: GH₵ ${data.estimated_fare}`</span>);</code></pre>
                 </div>
             </div>
         </div>
@@ -1695,6 +1776,41 @@ function tryDocInPlayground(docId) {
         loadPlaygroundPreset('ride_estimate');
     }
     showToast('Loaded endpoint into API Playground', 'info');
+}
+
+function switchQuickCode(lang) {
+    const langs = ['curl', 'python', 'node'];
+    langs.forEach(l => {
+        const btn = document.getElementById(`quick-tab-${l}`);
+        const snippet = document.getElementById(`quick-snippet-${l}`);
+        if (btn) {
+            if (l === lang) {
+                btn.className = 'px-2.5 py-1 rounded-lg text-brand bg-brand/15 font-semibold transition-all cursor-pointer';
+            } else {
+                btn.className = 'px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
+            }
+        }
+        if (snippet) {
+            snippet.classList.toggle('hidden', l !== lang);
+        }
+    });
+}
+
+function copyQuickCode() {
+    const langs = ['curl', 'python', 'node'];
+    for (const l of langs) {
+        const snippet = document.getElementById(`quick-snippet-${l}`);
+        if (snippet && !snippet.classList.contains('hidden')) {
+            navigator.clipboard.writeText(snippet.innerText);
+            const copyText = document.getElementById('quick-copy-text');
+            if (copyText) {
+                copyText.innerText = 'Copied!';
+                setTimeout(() => { copyText.innerText = 'Copy'; }, 2000);
+            }
+            showToast('Integration snippet copied to clipboard', 'info');
+            return;
+        }
+    }
 }
 
 function filterDocsSearch() {

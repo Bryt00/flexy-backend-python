@@ -3,6 +3,9 @@ from django.db import models
 from unfold.admin import ModelAdmin
 from unfold.widgets import UnfoldAdminTextInputWidget
 from .models import Vehicle
+
+
+@admin.register(Vehicle)
 class VehicleAdmin(ModelAdmin):
     formfield_overrides = {
         models.TextField: {'widget': UnfoldAdminTextInputWidget},

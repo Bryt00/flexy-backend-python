@@ -1,0 +1,1716 @@
+{% extends 'website/base.html' %}
+{% load static %}
+
+{% block title %}Developer Console &amp; API Docs | FlexyRide{% endblock %}
+
+{% block meta_description %}Integrate FlexyRide on-demand courier parcel delivery and corporate ride-hailing into your e-commerce platform, mobile app, or ERP.{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div id="developer-app" class="min-h-screen bg-dark-900 text-gray-100 flex flex-col font-sans selection:bg-brand selection:text-black antialiased">
+    <!-- DEDICATED DEVELOPER PORTAL HEADER (Void of public site navbar) -->
+    <header class="sticky top-0 z-50 bg-dark-900/95 backdrop-blur-md border-b border-white/10 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Brand & Dev Badge -->
+            <div class="flex items-center gap-3 shrink-0">
+                <a href="{% url 'home' %}" class="text-xl font-black tracking-tight flex items-center gap-1 group">
+                    <span class="text-brand">Flexy</span><span>Ride</span>
+                </a>
+                <span class="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+                    Developer Console
+                </span>
+                <span class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Systems Operational
+                </span>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center gap-1 bg-dark-950 p-1 rounded-2xl border border-white/10 text-xs overflow-x-auto max-w-full">
+                <button
+                    onclick="switchTab('overview')"
+                    id="tab-btn-overview"
+                    class="dev-tab-btn px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 text-brand bg-brand/15 border border-brand/30 shadow-sm cursor-pointer whitespace-nowrap"
+                >
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    <span>Overview</span>
+                </button>
+
+                <button
+                    onclick="switchTab('keys')"
+                    id="tab-btn-keys"
+                    class="dev-tab-btn px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 text-gray-400 hover:text-white border border-transparent cursor-pointer whitespace-nowrap"
+                >
+                    <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                    <span>API Keys</span>
+                </button>
+
+                <button
+                    onclick="switchTab('webhooks')"
+                    id="tab-btn-webhooks"
+                    class="dev-tab-btn px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 text-gray-400 hover:text-white border border-transparent cursor-pointer whitespace-nowrap"
+                >
+                    <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+                    <span>Webhooks</span>
+                </button>
+
+                <button
+                    onclick="switchTab('playground')"
+                    id="tab-btn-playground"
+                    class="dev-tab-btn px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 text-gray-400 hover:text-white border border-transparent cursor-pointer whitespace-nowrap"
+                >
+                    <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+                    <span>API Playground</span>
+                </button>
+
+                <button
+                    onclick="switchTab('docs')"
+                    id="tab-btn-docs"
+                    class="dev-tab-btn px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 text-gray-400 hover:text-white border border-transparent cursor-pointer whitespace-nowrap"
+                >
+                    <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                    <span>Documentation &amp; SDKs</span>
+                </button>
+            </nav>
+
+            <!-- Environment Pill & Session Controls -->
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="flex items-center bg-dark-950 p-0.5 rounded-xl border border-white/10 text-[10px] font-mono">
+                    <button
+                        onclick="setEnvironment('LIVE')"
+                        id="env-btn-live"
+                        class="px-2 py-1 rounded-lg font-bold bg-brand text-black transition-all cursor-pointer"
+                    >
+                        LIVE
+                    </button>
+                    <button
+                        onclick="setEnvironment('SANDBOX')"
+                        id="env-btn-sandbox"
+                        class="px-2 py-1 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer"
+                    >
+                        SANDBOX
+                    </button>
+                </div>
+
+                <!-- User Session Pill -->
+                {% if is_authenticated %}
+                <div class="flex items-center gap-2">
+                    <div class="px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-300 flex items-center gap-1.5">
+                        <i data-lucide="user" class="w-3.5 h-3.5 text-brand"></i>
+                        <span class="max-w-[120px] truncate font-medium">{{ current_user.email }}</span>
+                    </div>
+                    <button
+                        onclick="handleDeveloperLogout()"
+                        class="p-1.5 text-gray-400 hover:text-rose-400 transition-colors cursor-pointer"
+                        title="Sign Out"
+                    >
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                {% else %}
+                <button
+                    onclick="openLoginModal()"
+                    class="btn btn-primary px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 scale-90"
+                >
+                    <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
+                    <span>Developer Sign In</span>
+                </button>
+                {% endif %}
+
+                <a
+                    href="{% url 'home' %}"
+                    class="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1 pl-2 border-l border-white/10"
+                    title="Exit to Consumer Website"
+                >
+                    <span>Website</span>
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN BODY CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+
+        <!-- ==================================================================== -->
+        <!-- TAB 1: OVERVIEW -->
+        <!-- ==================================================================== -->
+        <div id="view-overview" class="tab-view space-y-8 animate-fade-in">
+            <!-- Hero Banner -->
+            <div class="ui-card p-6 md:p-10 rounded-3xl bg-gradient-to-br from-dark-800 via-dark-800 to-brand/5 border border-white/10 relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl space-y-4">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 border border-brand/20 text-brand text-xs font-mono font-bold">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        Programmatic Courier &amp; Ride Dispatch Engine
+                    </div>
+                    <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                        Powering West Africa's <span class="text-brand">On-Demand Logistics</span>
+                    </h1>
+                    <p class="text-sm md:text-base text-gray-300 leading-relaxed">
+                        Integrate instant distance-based parcel delivery quotes, automated courier dispatch, and passenger ride-hailing directly into your e-commerce platform, ERP, or enterprise mobile app.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-3">
+                        <button onclick="switchTab('keys')" class="btn btn-primary px-5 py-2.5 text-xs font-bold flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="key" class="w-4 h-4"></i>
+                            <span>Manage API Keys</span>
+                        </button>
+                        <button onclick="switchTab('playground')" class="btn btn-outline px-5 py-2.5 text-xs font-bold flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="play-circle" class="w-4 h-4 text-emerald-400"></i>
+                            <span>Open API Playground</span>
+                        </button>
+                        <button onclick="switchTab('docs')" class="px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold text-gray-300 transition-colors flex items-center gap-2 cursor-pointer">
+                            <i data-lucide="book-open" class="w-4 h-4 text-purple-400"></i>
+                            <span>Explore Documentation</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="ui-card p-5 rounded-2xl bg-dark-950 border border-white/10 space-y-2">
+                    <div class="text-xs text-gray-400 flex items-center justify-between">
+                        <span>Active API Keys</span>
+                        <i data-lucide="key" class="w-4 h-4 text-brand"></i>
+                    </div>
+                    <div id="stat-active-keys" class="text-2xl font-bold text-white">{{ api_keys|length }} Active</div>
+                    <div class="text-[11px] text-gray-500">Live &amp; Sandbox access tokens</div>
+                </div>
+
+                <div class="ui-card p-5 rounded-2xl bg-dark-950 border border-white/10 space-y-2">
+                    <div class="text-xs text-gray-400 flex items-center justify-between">
+                        <span>Daily Request Quota</span>
+                        <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-white">10,000 / day</div>
+                    <div class="text-[11px] text-gray-500">Standard Tier (60 req/min burst)</div>
+                </div>
+
+                <div class="ui-card p-5 rounded-2xl bg-dark-950 border border-white/10 space-y-2">
+                    <div class="text-xs text-gray-400 flex items-center justify-between">
+                        <span>Webhooks Status</span>
+                        <i data-lucide="radio" class="w-4 h-4 text-sky-400"></i>
+                    </div>
+                    <div id="stat-webhook-status" class="text-2xl font-bold text-white">
+                        {% if api_keys.0.webhook_url %}Configured{% else %}Inactive{% endif %}
+                    </div>
+                    <div class="text-[11px] text-gray-500">HMAC-SHA256 signature verification</div>
+                </div>
+
+                <div class="ui-card p-5 rounded-2xl bg-dark-950 border border-white/10 space-y-2">
+                    <div class="text-xs text-gray-400 flex items-center justify-between">
+                        <span>Platform Latency</span>
+                        <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div class="text-2xl font-bold text-white">~34 ms</div>
+                    <div class="text-[11px] text-emerald-400">Accra / West Africa Edge Nodes</div>
+                </div>
+            </div>
+
+            <!-- Quick Access Grid -->
+            <div class="ui-card p-6 md:p-8 rounded-3xl bg-dark-950 border border-white/10 space-y-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4 text-brand"></i>
+                    <span>Quick Integration Sample</span>
+                </h3>
+                <div class="p-4 rounded-2xl bg-black/60 border border-white/10 font-mono text-xs text-gray-300 overflow-x-auto leading-relaxed">
+                    <pre><code># Calculate Parcel Delivery Quote (GHS)
+curl -X POST https://api.flexyridegh.com/api/v1/deliveries/estimate/ \
+  -H "X-Api-Key: fx_live_your_api_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pickup_lat": 5.55602,
+    "pickup_lng": -0.18241,
+    "dropoff_lat": 5.60512,
+    "dropoff_lng": -0.17721,
+    "weight_tier_id": "standard"
+  }'</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- TAB 2: API KEYS MANAGEMENT -->
+        <!-- ==================================================================== -->
+        <div id="view-keys" class="tab-view space-y-6 hidden animate-fade-in">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="key" class="w-5 h-5 text-brand"></i>
+                        <span>API Keys &amp; Credentials</span>
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Generate and manage cryptographic tokens used to authenticate your application with FlexyRide.
+                    </p>
+                </div>
+
+                <button
+                    onclick="openCreateKeyModal()"
+                    class="btn btn-primary px-4 py-2 text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-brand/10"
+                >
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Generate New API Key</span>
+                </button>
+            </div>
+
+            <!-- Keys Table Container -->
+            <div class="overflow-x-auto rounded-2xl border border-white/10 bg-dark-950">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-white/[0.02] border-b border-white/10 text-gray-400 uppercase tracking-wider text-[10px]">
+                        <tr>
+                            <th class="p-3.5">Key Name</th>
+                            <th class="p-3.5">Environment</th>
+                            <th class="p-3.5">Token Prefix</th>
+                            <th class="p-3.5">Granted Scopes</th>
+                            <th class="p-3.5">Created</th>
+                            <th class="p-3.5 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="keys-table-body" class="divide-y divide-white/5 font-mono">
+                        {% for k in api_keys %}
+                        <tr id="key-row-{{ k.id }}" class="hover:bg-white/[0.02] transition-colors">
+                            <td class="p-3.5 font-sans font-bold text-white">{{ k.name }}</td>
+                            <td class="p-3.5">
+                                {% if k.environment == 'SANDBOX' %}
+                                <span class="px-2 py-0.5 rounded text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30">SANDBOX</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">LIVE</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-3.5 text-brand font-semibold">fx_{{ k.prefix }}...</td>
+                            <td class="p-3.5 font-sans text-gray-400">
+                                <span class="text-[11px]">{{ k.scopes|length }} scopes</span>
+                            </td>
+                            <td class="p-3.5 text-gray-400">{{ k.created_at }}</td>
+                            <td class="p-3.5 text-right font-sans">
+                                <div class="inline-flex items-center gap-2">
+                                    <button
+                                        onclick="rotateKey('{{ k.id }}', '{{ k.name }}')"
+                                        class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-[11px] cursor-pointer"
+                                        title="Rotate Key Secret"
+                                    >
+                                        Rotate
+                                    </button>
+                                    <button
+                                        onclick="revokeKey('{{ k.id }}', '{{ k.name }}')"
+                                        class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] cursor-pointer"
+                                        title="Revoke Key"
+                                    >
+                                        Revoke
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="keys-empty-row">
+                            <td colspan="6" class="p-8 text-center text-gray-400 font-sans text-xs">
+                                <i data-lucide="key" class="w-8 h-8 text-gray-600 mx-auto mb-2 opacity-50"></i>
+                                <p>No API keys generated yet.</p>
+                                <button onclick="openCreateKeyModal()" class="text-brand font-bold mt-2 hover:underline inline-block">
+                                    Generate your first key &rarr;
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- TAB 3: WEBHOOKS -->
+        <!-- ==================================================================== -->
+        <div id="view-webhooks" class="tab-view space-y-6 hidden animate-fade-in">
+            <div class="border-b border-white/10 pb-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="radio" class="w-5 h-5 text-sky-400"></i>
+                    <span>Real-Time Webhooks</span>
+                </h2>
+                <p class="text-xs text-gray-400 mt-1">
+                    Receive cryptographically signed HTTP POST notifications whenever a courier is dispatched, arrives, or finishes delivery.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Webhook Config Card -->
+                <div class="ui-card p-6 rounded-2xl bg-dark-950 border border-white/10 space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-brand"></i>
+                        <span>Active Webhook Destination</span>
+                    </h3>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="text-gray-400 block mb-1">Target Endpoint URL</label>
+                            <div class="p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-gray-300">
+                                {% if api_keys.0.webhook_url %}
+                                {{ api_keys.0.webhook_url }}
+                                {% else %}
+                                <span class="text-gray-500 italic">No webhook configured. Edit or create an API key to set a webhook endpoint.</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-gray-400 block mb-1">HMAC Signature Header</label>
+                            <div class="p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-sky-400">
+                                X-Flexy-Signature: t=1730656800,v1=5d41402abc4b2a76b9719d911017c592...
+                            </div>
+                        </div>
+
+                        {% if api_keys.0 %}
+                        <button
+                            onclick="triggerWebhookTest('{{ api_keys.0.id }}')"
+                            class="btn btn-outline w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 text-sky-400 border-sky-400/30 hover:border-sky-400 cursor-pointer"
+                        >
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                            <span>Dispatch Signed Test Ping</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- HMAC Verification Code Card -->
+                <div class="ui-card p-6 rounded-2xl bg-dark-950 border border-white/10 space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <i data-lucide="code" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Signature Verification (Node.js)</span>
+                    </h3>
+                    <pre class="p-4 rounded-xl bg-black/60 border border-white/10 font-mono text-[11px] text-gray-300 overflow-x-auto leading-relaxed"><code>const crypto = require('crypto');
+
+function verifyWebhook(rawBody, signatureHeader, secret) {
+  const [tPart, v1Part] = signatureHeader.split(',');
+  const timestamp = tPart.split('=')[1];
+  const expectedSig = v1Part.split('=')[1];
+
+  const signedPayload = `${timestamp}.${rawBody}`;
+  const computed = crypto.createHmac('sha256', secret)
+                         .update(signedPayload)
+                         .digest('hex');
+
+  return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(expectedSig));
+}</code></pre>
+                </div>
+            </div>
+
+            <!-- Webhook Event Catalog -->
+            <div class="ui-card p-6 rounded-2xl bg-dark-950 border border-white/10 space-y-4">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Event Types Catalog</h3>
+                <div class="overflow-x-auto rounded-xl border border-white/10">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-white/[0.02] border-b border-white/10 text-gray-400 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-3">Event Name</th>
+                                <th class="p-3">Description</th>
+                                <th class="p-3">Trigger Condition</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 font-mono text-xs">
+                            <tr>
+                                <td class="p-3 font-bold text-emerald-400">delivery.requested</td>
+                                <td class="p-3 font-sans text-gray-300">Courier order created and entering dispatch pool</td>
+                                <td class="p-3 font-sans text-gray-400">POST /v1/deliveries/</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-bold text-sky-400">delivery.driver_assigned</td>
+                                <td class="p-3 font-sans text-gray-300">Courier driver matched and heading to pickup</td>
+                                <td class="p-3 font-sans text-gray-400">Driver accepts assignment</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-bold text-amber-400">delivery.picked_up</td>
+                                <td class="p-3 font-sans text-gray-300">Package collected from sender store</td>
+                                <td class="p-3 font-sans text-gray-400">Pickup OTP verified</td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-bold text-brand">delivery.delivered</td>
+                                <td class="p-3 font-sans text-gray-300">Package safely delivered to recipient</td>
+                                <td class="p-3 font-sans text-gray-400">Handover confirmed</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- TAB 4: API PLAYGROUND -->
+        <!-- ==================================================================== -->
+        <div id="view-playground" class="tab-view space-y-6 hidden animate-fade-in">
+            <div class="border-b border-white/10 pb-4">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="play-circle" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Interactive API Playground</span>
+                </h2>
+                <p class="text-xs text-gray-400 mt-1">
+                    Execute live API requests in the browser and preview response payloads and round-trip latencies.
+                </p>
+            </div>
+
+            <!-- Quick Preset Chips -->
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs text-gray-400 font-semibold mr-1">Presets:</span>
+                <button
+                    onclick="loadPlaygroundPreset('delivery_estimate')"
+                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-300 hover:text-white cursor-pointer"
+                >
+                    Parcel Quote
+                </button>
+                <button
+                    onclick="loadPlaygroundPreset('delivery_create')"
+                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-300 hover:text-white cursor-pointer"
+                >
+                    Create Delivery
+                </button>
+                <button
+                    onclick="loadPlaygroundPreset('ride_estimate')"
+                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-300 hover:text-white cursor-pointer"
+                >
+                    Ride Fare Quote
+                </button>
+                <button
+                    onclick="loadPlaygroundPreset('vehicle_categories')"
+                    class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-gray-300 hover:text-white cursor-pointer"
+                >
+                    Vehicle Categories
+                </button>
+            </div>
+
+            <!-- Request / Response Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left: Request Builder -->
+                <div class="lg:col-span-6 ui-card p-6 rounded-2xl bg-dark-950 border border-white/10 space-y-4">
+                    <div class="flex items-center gap-2">
+                        <select
+                            id="playground-method"
+                            class="px-3 py-2 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs font-bold text-brand focus:outline-none focus:border-brand"
+                        >
+                            <option value="POST">POST</option>
+                            <option value="GET">GET</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+
+                        <input
+                            id="playground-endpoint"
+                            type="text"
+                            value="/v1/deliveries/estimate/"
+                            class="flex-1 px-3 py-2 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-white focus:outline-none focus:border-brand"
+                        />
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <label class="text-gray-400 font-bold uppercase text-[10px]">Request JSON Payload</label>
+                            <button onclick="formatPlaygroundPayload()" class="text-brand hover:underline text-[11px] cursor-pointer">
+                                Format JSON
+                            </button>
+                        </div>
+                        <textarea
+                            id="playground-payload"
+                            rows="10"
+                            class="w-full p-3 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-gray-200 focus:outline-none focus:border-brand/60 resize-y"
+                        >{
+  "pickup_lat": 5.55602,
+  "pickup_lng": -0.18241,
+  "dropoff_lat": 5.60512,
+  "dropoff_lng": -0.17721,
+  "weight_tier_id": "standard",
+  "item_category": "food"
+}</textarea>
+                    </div>
+
+                    <button
+                        onclick="executePlaygroundRequest()"
+                        id="playground-submit-btn"
+                        class="btn btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-brand/10"
+                    >
+                        <i data-lucide="play" class="w-4 h-4"></i>
+                        <span>Execute Request</span>
+                    </button>
+                </div>
+
+                <!-- Right: Response Viewer -->
+                <div class="lg:col-span-6 ui-card p-6 rounded-2xl bg-dark-950 border border-white/10 space-y-4">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span id="response-status-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                                200 OK
+                            </span>
+                            <span id="response-latency-badge" class="text-xs text-gray-400 font-mono">24 ms</span>
+                        </div>
+                        <button onclick="copyResponseText()" class="text-gray-400 hover:text-white text-xs flex items-center gap-1 cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>Copy</span>
+                        </button>
+                    </div>
+
+                    <pre id="playground-response-box" class="p-4 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-emerald-400 overflow-x-auto min-h-[260px] max-h-[460px] leading-relaxed"><code>// Response will appear here after clicking "Execute Request"...</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================================================================== -->
+        <!-- TAB 5: DOCUMENTATION & SDKS (FreeCodeCamp Standard) -->
+        <!-- ==================================================================== -->
+        <div id="view-docs" class="tab-view space-y-6 hidden animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <!-- Sidebar Navigation & Search -->
+                <aside class="lg:col-span-3 space-y-4 lg:sticky lg:top-24">
+                    <div class="ui-card p-4 rounded-2xl bg-dark-950 border border-white/10 space-y-3">
+                        <!-- Search Box -->
+                        <div class="relative">
+                            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input
+                                id="doc-search-input"
+                                onkeyup="filterDocsSearch()"
+                                type="text"
+                                placeholder="Search endpoints &amp; guides..."
+                                class="w-full pl-9 pr-3 py-2 rounded-xl bg-dark-900 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand/60"
+                            />
+                        </div>
+
+                        <!-- Categorized Sidebar Menu -->
+                        <nav id="docs-sidebar-menu" class="space-y-4 max-h-[70vh] overflow-y-auto pr-1 text-xs">
+                            <!-- Items dynamically injected by JavaScript -->
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- Documentation Main Content Area -->
+                <main class="lg:col-span-9 space-y-6">
+                    <article id="doc-article-box" class="ui-card p-6 md:p-8 rounded-3xl bg-dark-950 border border-white/10 space-y-8 min-h-[600px]">
+                        <!-- Injected dynamically by selectDocItem() -->
+                    </article>
+                </main>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- MODALS -->
+    <!-- ==================================================================== -->
+
+    <!-- Modal 1: Generate API Key -->
+    <div id="modal-create-key" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="ui-card p-6 md:p-8 rounded-3xl max-w-lg w-full space-y-5 bg-dark-900 border border-white/20">
+            <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="key" class="w-4 h-4 text-brand"></i>
+                    <span>Generate New API Key</span>
+                </h3>
+                <button onclick="closeModal('modal-create-key')" class="text-gray-400 hover:text-white cursor-pointer">&times;</button>
+            </div>
+
+            <form id="create-key-form" onsubmit="handleCreateKeySubmit(event)" class="space-y-4 text-xs">
+                <div class="space-y-1">
+                    <label class="block text-gray-300 font-bold uppercase text-[10px]">Key Description / Name</label>
+                    <input
+                        id="input-key-name"
+                        type="text"
+                        placeholder="e.g. Accra Central Warehouse Auto-Dispatch"
+                        required
+                        class="w-full px-3 py-2.5 rounded-xl bg-dark-950 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand"
+                    />
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-gray-300 font-bold uppercase text-[10px]">Target Environment</label>
+                    <select
+                        id="input-key-env"
+                        class="w-full px-3 py-2.5 rounded-xl bg-dark-950 border border-white/10 text-white focus:outline-none focus:border-brand font-mono"
+                    >
+                        <option value="LIVE">LIVE (Production Operations)</option>
+                        <option value="SANDBOX">SANDBOX (Simulation &amp; Testing)</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-gray-300 font-bold uppercase text-[10px]">Outbound Webhook Destination (Optional)</label>
+                    <input
+                        id="input-key-webhook"
+                        type="url"
+                        placeholder="https://yourdomain.com/webhooks/flexyride"
+                        class="w-full px-3 py-2.5 rounded-xl bg-dark-950 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand font-mono"
+                    />
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-gray-300 font-bold uppercase text-[10px]">Granted Permission Scopes</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 rounded-xl bg-dark-950 border border-white/10">
+                        {% for sc in available_scopes %}
+                        <label class="flex items-start gap-2 p-1.5 rounded hover:bg-white/5 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                name="scopes"
+                                value="{{ sc.scope }}"
+                                {% if sc.scope in default_scopes %}checked{% endif %}
+                                class="mt-0.5 rounded text-brand focus:ring-brand"
+                            />
+                            <div>
+                                <div class="font-mono text-[11px] font-bold text-white">{{ sc.scope }}</div>
+                                <div class="text-[10px] text-gray-400">{{ sc.description }}</div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-create-key')" class="btn btn-outline px-4 py-2 text-xs cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" id="btn-submit-key" class="btn btn-primary px-5 py-2 text-xs font-bold cursor-pointer">
+                        Generate Credentials
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Reveal Generated Key -->
+    <div id="modal-reveal-key" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="ui-card p-6 md:p-8 rounded-3xl max-w-lg w-full space-y-5 bg-dark-900 border border-white/20">
+            <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+                    <span>Secure Credentials Generated</span>
+                </h3>
+                <button onclick="closeModal('modal-reveal-key')" class="text-gray-400 hover:text-white cursor-pointer">&times;</button>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs leading-relaxed">
+                <strong>Attention:</strong> Copy your API token and HMAC secret now. For security purposes, they will <strong>never</strong> be displayed again.
+            </div>
+
+            <div class="space-y-3 font-mono text-xs">
+                <div>
+                    <label class="text-[10px] uppercase tracking-wider text-gray-400 block mb-1">API Key Token</label>
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-dark-950 border border-white/10 text-emerald-400">
+                        <span id="reveal-raw-token" class="break-all font-bold"></span>
+                        <button onclick="copyElementText('reveal-raw-token')" class="ml-2 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] shrink-0 cursor-pointer">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+
+                <div id="reveal-secret-box" class="hidden">
+                    <label class="text-[10px] uppercase tracking-wider text-gray-400 block mb-1">Webhook Secret (HMAC Signing)</label>
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-dark-950 border border-white/10 text-sky-400">
+                        <span id="reveal-webhook-secret" class="break-all"></span>
+                        <button onclick="copyElementText('reveal-webhook-secret')" class="ml-2 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] shrink-0 cursor-pointer">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="closeModal('modal-reveal-key')" class="btn btn-primary w-full py-2.5 text-xs font-bold cursor-pointer">
+                    I Have Saved These Credentials Securely
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Developer Sign In -->
+    <div id="modal-login" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="ui-card p-6 md:p-8 rounded-3xl max-w-md w-full space-y-5 bg-dark-900 border border-white/20">
+            <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4 text-brand"></i>
+                    <span>Developer Console Sign In</span>
+                </h3>
+                <button onclick="closeModal('modal-login')" class="text-gray-400 hover:text-white cursor-pointer">&times;</button>
+            </div>
+
+            <form id="login-form" onsubmit="handleDeveloperLoginSubmit(event)" class="space-y-4 text-xs">
+                <div class="space-y-1">
+                    <label class="block text-gray-300 font-bold uppercase text-[10px]">Email Address</label>
+                    <input
+                        id="login-email"
+                        type="email"
+                        placeholder="developer@yourcompany.com"
+                        required
+                        class="w-full px-3 py-2.5 rounded-xl bg-dark-950 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand"
+                    />
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-gray-300 font-bold uppercase text-[10px]">Password</label>
+                    <input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••••••"
+                        required
+                        class="w-full px-3 py-2.5 rounded-xl bg-dark-950 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-brand"
+                    />
+                </div>
+
+                <div id="login-error-msg" class="text-xs text-rose-400 hidden"></div>
+
+                <div class="pt-2">
+                    <button type="submit" id="btn-login-submit" class="btn btn-primary w-full py-2.5 text-xs font-bold cursor-pointer">
+                        Authenticate Console
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ==============================================================================
+// DEVELOPER PORTAL LOGIC & CLIENT-SIDE ROUTER
+// ==============================================================================
+
+let currentTab = 'overview';
+let activeEnvironment = 'LIVE';
+let activeDocId = 'overview';
+let activeSnippetLang = 'curl';
+
+// Dynamic documentation catalog matching API_INTEGRATION_GUIDE.md
+const docCatalog = [
+    {
+        id: 'overview',
+        title: 'Platform Overview',
+        category: 'Getting Started',
+        description: 'An architectural and capabilities overview of the FlexyRide On-Demand Logistics & Ride-Hailing API.',
+        icon: 'book-open',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>
+                    FlexyRide provides high-throughput programmatic access to West Africa's leading on-demand transport and parcel logistics fleet.
+                    Via our RESTful API, webhooks, and live WebSocket telemetry streams, enterprise e-commerce platforms, merchants, and corporate partners can seamlessly quote, dispatch, and track orders in real time.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-brand"></span>
+                            On-Demand Courier Deliveries
+                        </h4>
+                        <p class="text-[12px] text-gray-400">
+                            Calculate instant distance-based parcel quotes, dispatch motorcycle and van couriers with automated driver assignment, and receive step-by-step telemetry until package handover.
+                        </p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1.5">
+                        <h4 class="font-bold text-white text-xs flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                            Corporate Ride-Hailing
+                        </h4>
+                        <p class="text-[12px] text-gray-400">
+                            Book passenger rides across FlexyGo, Comfort, and Van tiers. Centralize billing, enforce spending policies, and stream live vehicle GPS coords for employee transport.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `
+    },
+    {
+        id: 'quickstart',
+        title: '3-Minute Quickstart',
+        category: 'Getting Started',
+        description: 'Get up and running with FlexyRide in 3 straightforward steps.',
+        icon: 'terminal',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>Follow these three steps to quote and book your first parcel delivery.</p>
+                <div class="space-y-3">
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">1</span>
+                            Generate API Key
+                        </div>
+                        <p class="text-xs text-gray-400">Switch to the <strong>API Keys</strong> tab and generate a new key with <code>deliveries:create</code> and <code>deliveries:estimate</code> permissions.</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">2</span>
+                            Calculate Instant Quote
+                        </div>
+                        <p class="text-xs text-gray-400">Submit pickup and dropoff GPS coordinates to <code>POST /v1/deliveries/estimate/</code> to calculate the guaranteed fare in Ghanaian Cedis (GHS).</p>
+                    </div>
+                    <div class="p-4 rounded-xl bg-dark-900 border border-white/5 space-y-1">
+                        <div class="font-bold text-white text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-brand text-black flex items-center justify-center font-bold text-[10px]">3</span>
+                            Dispatch Delivery
+                        </div>
+                        <p class="text-xs text-gray-400">Call <code>POST /v1/deliveries/</code> with recipient phone and dropoff coordinates to automatically dispatch the nearest courier.</p>
+                    </div>
+                </div>
+            </div>
+        `,
+        snippets: {
+            curl: `curl -X POST https://api.flexyridegh.com/api/v1/deliveries/estimate/ \\
+  -H "X-Api-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "pickup_lat": 5.55602,
+    "pickup_lng": -0.18241,
+    "dropoff_lat": 5.60512,
+    "dropoff_lng": -0.17721,
+    "weight_tier_id": "standard"
+  }'`,
+            javascript: `import axios from 'axios';
+
+const { data } = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/estimate/', {
+  pickup_lat: 5.55602,
+  pickup_lng: -0.18241,
+  dropoff_lat: 5.60512,
+  dropoff_lng: -0.17721,
+  weight_tier_id: 'standard'
+}, {
+  headers: {
+    'X-Api-Key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  }
+});
+
+console.log('Fare:', data.data.estimated_fare, 'GHS');`,
+            python: `import requests
+
+res = requests.post(
+    'https://api.flexyridegh.com/api/v1/deliveries/estimate/',
+    headers={'X-Api-Key': 'YOUR_API_KEY'},
+    json={
+        'pickup_lat': 5.55602,
+        'pickup_lng': -0.18241,
+        'dropoff_lat': 5.60512,
+        'dropoff_lng': -0.17721,
+        'weight_tier_id': 'standard'
+    }
+)
+print(res.json()['data']['estimated_fare'])`
+        }
+    },
+    {
+        id: 'delivery-estimate',
+        title: 'Calculate Parcel Quote',
+        category: 'Courier & Deliveries',
+        description: 'Calculate distance, estimated duration, and guaranteed fare before dispatching a delivery order.',
+        method: 'POST',
+        isEndpoint: true,
+        endpoint: '/v1/deliveries/estimate/',
+        scope: 'deliveries:estimate',
+        htmlContent: `<p class="text-sm text-gray-300">Calculates an upfront delivery quote based on pickup/dropoff coordinates and package weight category. Quotes remain valid for 15 minutes.</p>`,
+        params: [
+            { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude (-90 to 90).' },
+            { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude (-180 to 180).' },
+            { name: 'dropoff_lat', type: 'float', required: true, description: 'Dropoff GPS latitude.' },
+            { name: 'dropoff_lng', type: 'float', required: true, description: 'Dropoff GPS longitude.' },
+            { name: 'weight_tier_id', type: 'string', required: false, description: 'Package tier: "small", "standard", or "heavy".' }
+        ],
+        snippets: {
+            curl: `curl -X POST https://api.flexyridegh.com/api/v1/deliveries/estimate/ \\
+  -H "X-Api-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "pickup_lat": 5.55602,
+    "pickup_lng": -0.18241,
+    "dropoff_lat": 5.60512,
+    "dropoff_lng": -0.17721,
+    "weight_tier_id": "standard"
+  }'`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/estimate/', {
+  pickup_lat: 5.55602,
+  pickup_lng: -0.18241,
+  dropoff_lat: 5.60512,
+  dropoff_lng: -0.17721,
+  weight_tier_id: 'standard'
+}, {
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});`,
+            python: `import requests
+
+res = requests.post(
+    'https://api.flexyridegh.com/api/v1/deliveries/estimate/',
+    headers={'X-Api-Key': 'YOUR_API_KEY'},
+    json={
+        'pickup_lat': 5.55602,
+        'pickup_lng': -0.18241,
+        'dropoff_lat': 5.60512,
+        'dropoff_lng': -0.17721,
+        'weight_tier_id': 'standard'
+    }
+)`
+        },
+        sampleResponse: {
+            success: true,
+            data: {
+                distance_km: 7.42,
+                duration_minutes: 24,
+                currency: "GHS",
+                base_fare: 10.0,
+                distance_fare: 14.84,
+                estimated_fare: 24.84,
+                weight_tier: "standard",
+                quote_expires_at: "2026-11-03T19:45:00Z"
+            }
+        }
+    },
+    {
+        id: 'delivery-create',
+        title: 'Create Courier Delivery',
+        category: 'Courier & Deliveries',
+        description: 'Dispatch an on-demand courier parcel delivery with automated driver pairing.',
+        method: 'POST',
+        isEndpoint: true,
+        endpoint: '/v1/deliveries/',
+        scope: 'deliveries:create',
+        htmlContent: `<p class="text-sm text-gray-300">Creates a new courier delivery order. FlexyRide broadcasts the request to nearby couriers and creates a live tracking URL.</p>`,
+        params: [
+            { name: 'sender_name', type: 'string', required: true, description: 'Store or sender contact name.' },
+            { name: 'sender_phone', type: 'string', required: true, description: 'Sender phone number (+233241234567).' },
+            { name: 'pickup_address', type: 'string', required: true, description: 'Street address for pickup.' },
+            { name: 'pickup_lat', type: 'float', required: true, description: 'Pickup GPS latitude.' },
+            { name: 'pickup_lng', type: 'float', required: true, description: 'Pickup GPS longitude.' },
+            { name: 'recipient_name', type: 'string', required: true, description: 'Recipient name.' },
+            { name: 'recipient_phone', type: 'string', required: true, description: 'Recipient phone number.' },
+            { name: 'dropoff_address', type: 'string', required: true, description: 'Dropoff destination address.' },
+            { name: 'dropoff_lat', type: 'float', required: true, description: 'Dropoff GPS latitude.' },
+            { name: 'dropoff_lng', type: 'float', required: true, description: 'Dropoff GPS longitude.' },
+            { name: 'package_description', type: 'string', required: true, description: 'Brief description of contents.' }
+        ],
+        snippets: {
+            curl: `curl -X POST https://api.flexyridegh.com/api/v1/deliveries/ \\
+  -H "X-Api-Key: YOUR_API_KEY" \\
+  -H "Idempotency-Key: e9a2c34d-1144-42b7-9ce4-8ff1f298818a" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "sender_name": "Accra Central Store",
+    "sender_phone": "+233241234567",
+    "pickup_address": "Oxford Street, Osu",
+    "pickup_lat": 5.55602,
+    "pickup_lng": -0.18241,
+    "recipient_name": "Ama Mensah",
+    "recipient_phone": "+233209876543",
+    "dropoff_address": "East Legon",
+    "dropoff_lat": 5.63512,
+    "dropoff_lng": -0.15721,
+    "package_description": "Electronics Package #449"
+  }'`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.post('https://api.flexyridegh.com/api/v1/deliveries/', {
+  sender_name: "Accra Central Store",
+  sender_phone: "+233241234567",
+  pickup_address: "Oxford Street, Osu",
+  pickup_lat: 5.55602,
+  pickup_lng: -0.18241,
+  recipient_name: "Ama Mensah",
+  recipient_phone: "+233209876543",
+  dropoff_address: "East Legon",
+  dropoff_lat: 5.63512,
+  dropoff_lng: -0.15721,
+  package_description: "Electronics Package #449"
+}, {
+  headers: {
+    'X-Api-Key': 'YOUR_API_KEY',
+    'Idempotency-Key': 'e9a2c34d-1144-42b7-9ce4-8ff1f298818a'
+  }
+});`,
+            python: `import requests
+import uuid
+
+res = requests.post(
+    'https://api.flexyridegh.com/api/v1/deliveries/',
+    headers={
+        'X-Api-Key': 'YOUR_API_KEY',
+        'Idempotency-Key': str(uuid.uuid4())
+    },
+    json={
+        'sender_name': 'Accra Central Store',
+        'sender_phone': '+233241234567',
+        'pickup_address': 'Oxford Street, Osu',
+        'pickup_lat': 5.55602,
+        'pickup_lng': -0.18241,
+        'recipient_name': 'Ama Mensah',
+        'recipient_phone': '+233209876543',
+        'dropoff_address': 'East Legon',
+        'dropoff_lat': 5.63512,
+        'dropoff_lng': -0.15721,
+        'package_description': 'Electronics Package #449'
+    }
+)`
+        },
+        sampleResponse: {
+            success: true,
+            data: {
+                id: "del_01HN7XYR45K2MN9",
+                tracking_number: "FLX-DEL-89240",
+                status: "REQUESTED",
+                fare: 28.50,
+                currency: "GHS",
+                tracking_url: "https://flexyridegh.com/track/FLX-DEL-89240"
+            }
+        }
+    },
+    {
+        id: 'ride-estimate',
+        title: 'Calculate Ride Estimate',
+        category: 'Ride-Hailing',
+        description: 'Calculate passenger trip fares and ETAs across vehicle categories.',
+        method: 'GET',
+        isEndpoint: true,
+        endpoint: '/v1/rides/estimate/?pickup_lat=5.5560&pickup_lng=-0.1824&dropoff_lat=5.6051&dropoff_lng=-0.1772',
+        scope: 'rides:estimate',
+        htmlContent: `<p class="text-sm text-gray-300">Returns fare estimates across all enabled vehicle tiers (FlexyGo, Comfort, Van) along with estimated driver arrival times.</p>`,
+        snippets: {
+            curl: `curl -X GET "https://api.flexyridegh.com/api/v1/rides/estimate/?pickup_lat=5.5560&pickup_lng=-0.1824&dropoff_lat=5.6051&dropoff_lng=-0.1772" \\
+  -H "X-Api-Key: YOUR_API_KEY"`,
+            javascript: `import axios from 'axios';
+
+const res = await axios.get('https://api.flexyridegh.com/api/v1/rides/estimate/', {
+  params: { pickup_lat: 5.5560, pickup_lng: -0.1824, dropoff_lat: 5.6051, dropoff_lng: -0.1772 },
+  headers: { 'X-Api-Key': 'YOUR_API_KEY' }
+});`,
+            python: `import requests
+
+res = requests.get(
+    'https://api.flexyridegh.com/api/v1/rides/estimate/',
+    params={'pickup_lat': 5.5560, 'pickup_lng': -0.1824, 'dropoff_lat': 5.6051, 'dropoff_lng': -0.1772},
+    headers={'X-Api-Key': 'YOUR_API_KEY'}
+)`
+        },
+        sampleResponse: {
+            success: true,
+            data: {
+                distance_km: 6.8,
+                duration_minutes: 18,
+                tiers: [
+                    { tier_id: "standard", name: "FlexyGo", fare_ghs: 32.50, eta_minutes: 3 },
+                    { tier_id: "comfort", name: "FlexyComfort", fare_ghs: 48.00, eta_minutes: 5 },
+                    { tier_id: "van", name: "FlexyVan (7 Seater)", fare_ghs: 75.00, eta_minutes: 8 }
+                ]
+            }
+        }
+    },
+    {
+        id: 'webhooks-guide',
+        title: 'Webhooks & HMAC Verification',
+        category: 'Real-Time Integration',
+        description: 'Listen to asynchronous state updates signed cryptographically with your Webhook Secret.',
+        icon: 'radio',
+        htmlContent: `
+            <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                <p>FlexyRide sends HTTP POST notifications to your webhook URL whenever an order status changes.</p>
+                <h4 class="text-white font-bold text-xs uppercase">HMAC Header</h4>
+                <div class="p-3 rounded-xl bg-dark-900 border border-white/10 font-mono text-xs text-sky-400">
+                    X-Flexy-Signature: t=1730656800,v1=5d41402abc4b2a76b9719d911017c592...
+                </div>
+            </div>
+        `
+    }
+];
+
+// Switch Tabs
+function switchTab(tabId) {
+    currentTab = tabId;
+    document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.dev-tab-btn').forEach(btn => {
+        btn.classList.remove('text-brand', 'bg-brand/15', 'border-brand/30', 'shadow-sm');
+        btn.classList.add('text-gray-400', 'border-transparent');
+    });
+
+    const activeView = document.getElementById(`view-${tabId}`);
+    if (activeView) activeView.classList.remove('hidden');
+
+    const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+    if (activeBtn) {
+        activeBtn.classList.add('text-brand', 'bg-brand/15', 'border-brand/30', 'shadow-sm');
+        activeBtn.classList.remove('text-gray-400', 'border-transparent');
+    }
+
+    lucide.createIcons();
+}
+
+// Environment Switcher
+function setEnvironment(env) {
+    activeEnvironment = env;
+    const btnLive = document.getElementById('env-btn-live');
+    const btnSandbox = document.getElementById('env-btn-sandbox');
+    if (env === 'LIVE') {
+        btnLive.className = 'px-2 py-1 rounded-lg font-bold bg-brand text-black transition-all cursor-pointer';
+        btnSandbox.className = 'px-2 py-1 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
+        showToast('Switched console to LIVE environment', 'info');
+    } else {
+        btnSandbox.className = 'px-2 py-1 rounded-lg font-bold bg-amber-500 text-black transition-all cursor-pointer';
+        btnLive.className = 'px-2 py-1 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer';
+        showToast('Switched console to SANDBOX test environment', 'info');
+    }
+}
+
+// Modal Helpers
+function openModal(id) {
+    const m = document.getElementById(id);
+    if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+    }
+}
+
+function closeModal(id) {
+    const m = document.getElementById(id);
+    if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+    }
+}
+
+function openCreateKeyModal() {
+    openModal('modal-create-key');
+}
+
+function openLoginModal() {
+    openModal('modal-login');
+}
+
+// Toast Notifications
+function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    const borderCls = type === 'success' ? 'border-emerald-500/40 text-emerald-300' :
+                      type === 'error' ? 'border-rose-500/40 text-rose-300' :
+                      'border-brand/40 text-brand';
+    toast.className = `p-3.5 rounded-2xl bg-dark-950/95 border ${borderCls} shadow-2xl text-xs font-semibold backdrop-blur-md animate-fade-in pointer-events-auto flex items-center gap-2 max-w-sm`;
+    toast.innerHTML = `<span>${msg}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
+}
+
+function copyElementText(elId) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    navigator.clipboard.writeText(el.innerText.trim());
+    showToast('Copied to clipboard', 'info');
+}
+
+// AJAX Key Actions
+async function handleCreateKeySubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('input-key-name').value.trim();
+    const env = document.getElementById('input-key-env').value;
+    const webhook = document.getElementById('input-key-webhook').value.trim();
+    const checkedScopes = Array.from(document.querySelectorAll('input[name="scopes"]:checked')).map(el => el.value);
+
+    const btn = document.getElementById('btn-submit-key');
+    btn.disabled = true;
+    btn.innerText = 'Generating...';
+
+    try {
+        const res = await fetch("{% url 'developer_ajax_keys' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                environment: env,
+                scopes: checkedScopes,
+                webhook_url: webhook
+            })
+        });
+
+        if (res.status === 401) {
+            closeModal('modal-create-key');
+            openLoginModal();
+            showToast('Please sign in to generate API keys', 'error');
+            return;
+        }
+
+        const data = await res.json();
+        if (data.success) {
+            closeModal('modal-create-key');
+            document.getElementById('reveal-raw-token').innerText = data.raw_key;
+            if (data.webhook_secret) {
+                document.getElementById('reveal-webhook-secret').innerText = data.webhook_secret;
+                document.getElementById('reveal-secret-box').classList.remove('hidden');
+            } else {
+                document.getElementById('reveal-secret-box').classList.add('hidden');
+            }
+            openModal('modal-reveal-key');
+            showToast('API Key generated successfully!', 'success');
+            refreshKeysTable();
+        } else {
+            showToast(data.error || 'Failed to generate key', 'error');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Generate Credentials';
+    }
+}
+
+async function rotateKey(keyId, keyName) {
+    if (!confirm(`Are you sure you want to rotate secret for "${keyName}"? Existing requests using this key will immediately fail.`)) {
+        return;
+    }
+    try {
+        const res = await fetch(`/developer/api/keys/${keyId}/rotate/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('reveal-raw-token').innerText = data.raw_key;
+            document.getElementById('reveal-secret-box').classList.add('hidden');
+            openModal('modal-reveal-key');
+            showToast('Key secret rotated successfully', 'success');
+            refreshKeysTable();
+        } else {
+            showToast(data.error || 'Rotation failed', 'error');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function revokeKey(keyId, keyName) {
+    if (!confirm(`Revoke key "${keyName}"? All external integrations using this key will be revoked immediately.`)) {
+        return;
+    }
+    try {
+        const res = await fetch(`/developer/api/keys/${keyId}/revoke/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            const row = document.getElementById(`key-row-${keyId}`);
+            if (row) row.remove();
+            showToast('API key revoked', 'info');
+            refreshKeysTable();
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function refreshKeysTable() {
+    try {
+        const res = await fetch("{% url 'developer_ajax_keys' %}");
+        if (res.ok) {
+            const data = await res.json();
+            const keys = data.keys || [];
+            const tbody = document.getElementById('keys-table-body');
+            document.getElementById('stat-active-keys').innerText = `${keys.length} Active`;
+            if (keys.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-400 font-sans text-xs">
+                            <p>No active API keys found.</p>
+                            <button onclick="openCreateKeyModal()" class="text-brand font-bold mt-2 hover:underline">Generate your first key &rarr;</button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            tbody.innerHTML = keys.map(k => `
+                <tr id="key-row-${k.id}" class="hover:bg-white/[0.02] transition-colors">
+                    <td class="p-3.5 font-sans font-bold text-white">${k.name}</td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] ${k.environment === 'SANDBOX' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}">
+                            ${k.environment}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-brand font-semibold">fx_${k.prefix}...</td>
+                    <td class="p-3.5 font-sans text-gray-400">
+                        <span class="text-[11px]">${(k.scopes || []).length} scopes</span>
+                    </td>
+                    <td class="p-3.5 text-gray-400">${k.created_at}</td>
+                    <td class="p-3.5 text-right font-sans">
+                        <div class="inline-flex items-center gap-2">
+                            <button onclick="rotateKey('${k.id}', '${k.name}')" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-[11px] cursor-pointer">
+                                Rotate
+                            </button>
+                            <button onclick="revokeKey('${k.id}', '${k.name}')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-[11px] cursor-pointer">
+                                Revoke
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+    } catch (_) {}
+}
+
+async function triggerWebhookTest(keyId) {
+    showToast('Dispatching signed HMAC test ping...', 'info');
+    try {
+        const res = await fetch(`/developer/api/keys/${keyId}/test-webhook/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success || data.status_code === 200) {
+            showToast(`Webhook ping delivered! Status: ${data.status_code || 200}`, 'success');
+        } else {
+            showToast(`Webhook delivery failed: ${data.error || 'Connection error'}`, 'error');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+// Authentication Handlers
+async function handleDeveloperLoginSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errBox = document.getElementById('login-error-msg');
+    errBox.classList.add('hidden');
+
+    try {
+        const res = await fetch("{% url 'developer_ajax_login' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeModal('modal-login');
+            showToast('Welcome to FlexyRide Developer Console', 'success');
+            window.location.reload();
+        } else {
+            errBox.innerText = data.error || 'Invalid credentials.';
+            errBox.classList.remove('hidden');
+        }
+    } catch (err) {
+        errBox.innerText = err.message;
+        errBox.classList.remove('hidden');
+    }
+}
+
+async function handleDeveloperLogout() {
+    if (!confirm('Sign out from Developer Console?')) return;
+    await fetch("{% url 'developer_ajax_logout' %}", { method: 'POST' });
+    window.location.reload();
+}
+
+// ==============================================================================
+// PLAYGROUND RUNNER
+// ==============================================================================
+
+function loadPlaygroundPreset(key) {
+    if (key === 'delivery_estimate') {
+        document.getElementById('playground-method').value = 'POST';
+        document.getElementById('playground-endpoint').value = '/v1/deliveries/estimate/';
+        document.getElementById('playground-payload').value = JSON.stringify({
+            pickup_lat: 5.55602,
+            pickup_lng: -0.18241,
+            dropoff_lat: 5.60512,
+            dropoff_lng: -0.17721,
+            weight_tier_id: 'standard',
+            item_category: 'food'
+        }, null, 2);
+    } else if (key === 'delivery_create') {
+        document.getElementById('playground-method').value = 'POST';
+        document.getElementById('playground-endpoint').value = '/v1/deliveries/';
+        document.getElementById('playground-payload').value = JSON.stringify({
+            sender_name: "Acme Kitchens",
+            sender_phone: "+233240001122",
+            pickup_address: "Osu Oxford St, Accra",
+            pickup_lat: 5.55602,
+            pickup_lng: -0.18241,
+            recipient_name: "Kwame Koduah",
+            recipient_phone: "+233209876543",
+            dropoff_address: "East Legon, Accra",
+            dropoff_lat: 5.63512,
+            dropoff_lng: -0.15721,
+            package_description: "Order #8839 Hot Food Package"
+        }, null, 2);
+    } else if (key === 'ride_estimate') {
+        document.getElementById('playground-method').value = 'GET';
+        document.getElementById('playground-endpoint').value = '/v1/rides/estimate/?pickup_lat=5.5560&pickup_lng=-0.1824&dropoff_lat=5.6051&dropoff_lng=-0.1772';
+        document.getElementById('playground-payload').value = '';
+    } else if (key === 'vehicle_categories') {
+        document.getElementById('playground-method').value = 'GET';
+        document.getElementById('playground-endpoint').value = '/v1/settings/vehicle-categories/';
+        document.getElementById('playground-payload').value = '';
+    }
+}
+
+function formatPlaygroundPayload() {
+    const txt = document.getElementById('playground-payload');
+    if (!txt.value.trim()) return;
+    try {
+        txt.value = JSON.stringify(JSON.parse(txt.value), null, 2);
+    } catch (_) {
+        showToast('Invalid JSON syntax', 'error');
+    }
+}
+
+async function executePlaygroundRequest() {
+    const method = document.getElementById('playground-method').value;
+    const endpoint = document.getElementById('playground-endpoint').value.trim();
+    const rawPayload = document.getElementById('playground-payload').value.trim();
+    const btn = document.getElementById('playground-submit-btn');
+    const responseBox = document.getElementById('playground-response-box');
+    const statusBadge = document.getElementById('response-status-badge');
+    const latencyBadge = document.getElementById('response-latency-badge');
+
+    let parsed = null;
+    if (rawPayload && method !== 'GET') {
+        try {
+            parsed = JSON.parse(rawPayload);
+        } catch (_) {
+            showToast('Invalid JSON in payload', 'error');
+            return;
+        }
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin"></i><span>Executing...</span>`;
+    lucide.createIcons();
+
+    try {
+        const res = await fetch("{% url 'developer_playground_proxy' %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                method: method,
+                endpoint: endpoint,
+                payload: parsed
+            })
+        });
+
+        const data = await res.json();
+        statusBadge.innerText = `${data.status || 200} ${data.status_text || 'OK'}`;
+        latencyBadge.innerText = `${data.latency_ms || 24} ms`;
+        responseBox.innerText = JSON.stringify(data.data, null, 2);
+    } catch (err) {
+        statusBadge.innerText = '500 ERROR';
+        responseBox.innerText = JSON.stringify({ error: err.message }, null, 2);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i><span>Execute Request</span>`;
+        lucide.createIcons();
+    }
+}
+
+function copyResponseText() {
+    copyElementText('playground-response-box');
+}
+
+// ==============================================================================
+// DOCUMENTATION EXPLORER
+// ==============================================================================
+
+function renderDocsSidebar() {
+    const menu = document.getElementById('docs-sidebar-menu');
+    if (!menu) return;
+
+    // Group categories
+    const groups = {};
+    docCatalog.forEach(item => {
+        if (!groups[item.category]) groups[item.category] = [];
+        groups[item.category].push(item);
+    });
+
+    menu.innerHTML = Object.keys(groups).map(catName => `
+        <div class="space-y-1">
+            <div class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 flex justify-between">
+                <span>${catName}</span>
+                <span class="font-mono text-[9px]">${groups[catName].length}</span>
+            </div>
+            <div class="space-y-0.5">
+                ${groups[catName].map(item => `
+                    <button
+                        onclick="selectDocItem('${item.id}')"
+                        id="doc-menu-${item.id}"
+                        class="w-full text-left px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-between text-gray-300 hover:bg-white/5 hover:text-white cursor-pointer ${item.id === activeDocId ? 'bg-brand/15 text-brand font-bold border border-brand/30' : ''}"
+                    >
+                        <div class="flex items-center gap-2 truncate">
+                            ${item.method ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase ${item.method === 'POST' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-sky-500/20 text-sky-400'}">${item.method}</span>` : `<i data-lucide="${item.icon || 'book-open'}" class="w-3.5 h-3.5 opacity-70"></i>`}
+                            <span class="truncate">${item.title}</span>
+                        </div>
+                    </button>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    lucide.createIcons();
+}
+
+function selectDocItem(docId) {
+    activeDocId = docId;
+    const doc = docCatalog.find(d => d.id === docId) || docCatalog[0];
+    const box = document.getElementById('doc-article-box');
+    if (!box) return;
+
+    document.querySelectorAll('[id^="doc-menu-"]').forEach(btn => {
+        btn.classList.remove('bg-brand/15', 'text-brand', 'font-bold', 'border', 'border-brand/30');
+        btn.classList.add('text-gray-300');
+    });
+    const currentBtn = document.getElementById(`doc-menu-${docId}`);
+    if (currentBtn) {
+        currentBtn.classList.add('bg-brand/15', 'text-brand', 'font-bold', 'border', 'border-brand/30');
+        currentBtn.classList.remove('text-gray-300');
+    }
+
+    box.innerHTML = `
+        <div class="border-b border-white/10 pb-6 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 text-[10px] uppercase font-bold tracking-wider">${doc.category}</span>
+                    ${doc.scope ? `<span class="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-[10px] font-mono">Scope: ${doc.scope}</span>` : ''}
+                </div>
+                ${doc.isEndpoint ? `
+                    <button onclick="tryDocInPlayground('${doc.id}')" class="btn btn-secondary px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 text-brand border border-brand/30 hover:border-brand cursor-pointer">
+                        <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+                        <span>Try in API Playground</span>
+                    </button>
+                ` : ''}
+            </div>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-white flex items-center gap-3">
+                ${doc.method ? `<span class="px-2 py-0.5 rounded-md text-xs font-mono font-bold ${doc.method === 'POST' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'}">${doc.method}</span>` : ''}
+                <span>${doc.title}</span>
+            </h1>
+            <p class="text-xs md:text-sm text-gray-400 leading-relaxed">${doc.description}</p>
+            ${doc.endpoint ? `
+                <div class="p-3 rounded-xl bg-dark-900 border border-white/10 flex items-center justify-between font-mono text-xs">
+                    <span class="text-brand font-bold">${doc.endpoint}</span>
+                    <button onclick="copySnippet('${doc.endpoint}')" class="text-gray-400 hover:text-white p-1 cursor-pointer"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button>
+                </div>
+            ` : ''}
+        </div>
+
+        <div>${doc.htmlContent || ''}</div>
+
+        ${doc.params && doc.params.length ? `
+            <div class="space-y-3">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Request Parameters</h3>
+                <div class="overflow-x-auto rounded-2xl border border-white/10">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-dark-900 border-b border-white/10 text-gray-400 uppercase text-[10px]">
+                            <tr><th class="p-3">Field</th><th class="p-3">Type</th><th class="p-3">Required</th><th class="p-3">Description</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 bg-dark-950/50">
+                            ${doc.params.map(p => `
+                                <tr>
+                                    <td class="p-3 font-mono font-bold text-white">${p.name}</td>
+                                    <td class="p-3 font-mono text-sky-400">${p.type}</td>
+                                    <td class="p-3"><span class="px-1.5 py-0.5 rounded text-[10px] border ${p.required ? 'text-amber-400 bg-amber-400/10 border-amber-400/30' : 'text-gray-400 bg-white/5 border-white/10'}">${p.required ? 'Required' : 'Optional'}</span></td>
+                                    <td class="p-3 text-gray-300">${p.description}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        ` : ''}
+
+        ${doc.snippets ? `
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Code Example</h3>
+                    <div class="flex items-center gap-1 bg-dark-900 p-1 rounded-xl border border-white/10 text-xs font-mono">
+                        <button onclick="setSnippetLang('curl')" id="btn-lang-curl" class="px-2 py-0.5 rounded-lg ${activeSnippetLang === 'curl' ? 'bg-brand text-black font-bold' : 'text-gray-400 hover:text-white'} cursor-pointer">cURL</button>
+                        <button onclick="setSnippetLang('javascript')" id="btn-lang-js" class="px-2 py-0.5 rounded-lg ${activeSnippetLang === 'javascript' ? 'bg-brand text-black font-bold' : 'text-gray-400 hover:text-white'} cursor-pointer">JavaScript</button>
+                        <button onclick="setSnippetLang('python')" id="btn-lang-py" class="px-2 py-0.5 rounded-lg ${activeSnippetLang === 'python' ? 'bg-brand text-black font-bold' : 'text-gray-400 hover:text-white'} cursor-pointer">Python</button>
+                    </div>
+                </div>
+                <div class="rounded-2xl bg-dark-900 border border-white/10 overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <button onclick="copyCurrentSnippet()" class="text-xs text-gray-300 hover:text-white flex items-center gap-1 bg-white/10 px-2 py-1 rounded cursor-pointer">
+                            <i data-lucide="copy" class="w-3 h-3"></i><span>Copy</span>
+                        </button>
+                    </div>
+                    <pre id="doc-code-block" class="p-4 overflow-x-auto text-gray-200 text-xs font-mono leading-relaxed whitespace-pre"><code>${doc.snippets[activeSnippetLang] || ''}</code></pre>
+                </div>
+            </div>
+        ` : ''}
+
+        ${doc.sampleResponse ? `
+            <div class="space-y-3">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Sample Response (200 OK)</h3>
+                <div class="rounded-2xl bg-dark-900 border border-white/10 p-4">
+                    <pre class="overflow-x-auto text-emerald-400 text-xs font-mono leading-relaxed"><code>${JSON.stringify(doc.sampleResponse, null, 2)}</code></pre>
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+    lucide.createIcons();
+}
+
+function setSnippetLang(lang) {
+    activeSnippetLang = lang;
+    const doc = docCatalog.find(d => d.id === activeDocId);
+    if (doc && doc.snippets) {
+        document.getElementById('doc-code-block').innerHTML = `<code>${doc.snippets[lang] || ''}</code>`;
+        ['curl', 'js', 'py'].forEach(l => {
+            const el = document.getElementById(`btn-lang-${l}`);
+            if (el) {
+                el.className = 'px-2 py-0.5 rounded-lg text-gray-400 hover:text-white cursor-pointer';
+            }
+        });
+        const activeKey = lang === 'curl' ? 'curl' : lang === 'javascript' ? 'js' : 'py';
+        const activeEl = document.getElementById(`btn-lang-${activeKey}`);
+        if (activeEl) {
+            activeEl.className = 'px-2 py-0.5 rounded-lg bg-brand text-black font-bold cursor-pointer';
+        }
+    }
+}
+
+function copyCurrentSnippet() {
+    const block = document.getElementById('doc-code-block');
+    if (block) {
+        navigator.clipboard.writeText(block.innerText);
+        showToast('Code snippet copied to clipboard', 'info');
+    }
+}
+
+function copySnippet(text) {
+    navigator.clipboard.writeText(text);
+    showToast('Copied to clipboard', 'info');
+}
+
+function tryDocInPlayground(docId) {
+    switchTab('playground');
+    if (docId === 'delivery-estimate') {
+        loadPlaygroundPreset('delivery_estimate');
+    } else if (docId === 'delivery-create') {
+        loadPlaygroundPreset('delivery_create');
+    } else if (docId === 'ride-estimate') {
+        loadPlaygroundPreset('ride_estimate');
+    }
+    showToast('Loaded endpoint into API Playground', 'info');
+}
+
+function filterDocsSearch() {
+    const q = document.getElementById('doc-search-input').value.toLowerCase().trim();
+    document.querySelectorAll('[id^="doc-menu-"]').forEach(btn => {
+        const text = btn.innerText.toLowerCase();
+        btn.style.display = text.includes(q) ? 'flex' : 'none';
+    });
+}
+
+// Initial bootstrap on load
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+    renderDocsSidebar();
+    selectDocItem('overview');
+});
+</script>
+{% endblock %}
+

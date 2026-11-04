@@ -26,6 +26,60 @@
     color: #8CC63F;
     border-color: rgba(140, 198, 63, 0.3);
 }
+
+/* Developer Console Input & Field Theme Enforcement (Fix for invisible text on white background) */
+input,
+select,
+textarea {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+#developer-app input,
+#developer-app select,
+#developer-app textarea,
+.ui-card input,
+.ui-card select,
+.ui-card textarea {
+    background-color: #0b0b0b !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    -webkit-text-fill-color: #ffffff !important;
+    caret-color: #8CC63F !important;
+}
+#developer-app input:focus,
+#developer-app select:focus,
+#developer-app textarea:focus,
+.ui-card input:focus,
+.ui-card select:focus,
+.ui-card textarea:focus {
+    background-color: #121212 !important;
+    color: #ffffff !important;
+    border-color: #8CC63F !important;
+    box-shadow: 0 0 0 2px rgba(140, 198, 63, 0.25) !important;
+    outline: none !important;
+}
+#developer-app input::placeholder,
+#developer-app textarea::placeholder,
+.ui-card input::placeholder,
+.ui-card textarea::placeholder {
+    color: #71717a !important;
+    -webkit-text-fill-color: #71717a !important;
+}
+#developer-app select option,
+.ui-card select option {
+    background-color: #141414 !important;
+    color: #ffffff !important;
+}
+/* Override browser autofill background and text */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0px 1000px #0b0b0b inset !important;
+    box-shadow: 0 0 0px 1000px #0b0b0b inset !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
 </style>
 <div id="developer-app" class="min-h-screen bg-dark-900 text-gray-100 flex flex-col font-sans selection:bg-brand selection:text-black antialiased">
     <!-- DEDICATED DEVELOPER PORTAL HEADER (Void of public site navbar) -->
@@ -38,10 +92,6 @@
                 </a>
                 <span class="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/30 text-purple-400 font-mono text-[10px] font-bold uppercase tracking-wider">
                     Developer Console
-                </span>
-                <span class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Systems Operational
                 </span>
             </div>
 
@@ -327,6 +377,7 @@ console.log(<span class="text-emerald-400">`Estimated Quote: GH₵ ${data.estima
                     </p>
                 </div>
 
+                {% if is_authenticated %}
                 <button
                     onclick="openCreateKeyModal()"
                     class="btn btn-primary px-4 py-2 text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-brand/10"
@@ -334,7 +385,29 @@ console.log(<span class="text-emerald-400">`Estimated Quote: GH₵ ${data.estima
                     <i data-lucide="plus-circle" class="w-4 h-4"></i>
                     <span>Generate New API Key</span>
                 </button>
+                {% else %}
+                <button
+                    onclick="openLoginModal()"
+                    class="btn btn-primary px-4 py-2 text-xs font-bold flex items-center gap-2 cursor-pointer shadow-lg shadow-brand/10"
+                >
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    <span>Sign In to Generate Keys</span>
+                </button>
+                {% endif %}
             </div>
+
+            {% if not is_authenticated %}
+            <!-- Authentication Required Warning Banner -->
+            <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-300">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                    <span><strong>Authentication Required:</strong> You must sign in with a verified FlexyRide developer account to generate, rotate, or revoke live/sandbox API keys.</span>
+                </div>
+                <button onclick="openLoginModal()" class="px-4 py-2 rounded-xl bg-amber-400 text-black font-bold hover:bg-amber-300 transition-colors shrink-0 text-center cursor-pointer">
+                    Developer Sign In
+                </button>
+            </div>
+            {% endif %}
 
             <!-- Keys Table Container -->
             <div class="overflow-x-auto rounded-2xl border border-white/10 bg-dark-950">
@@ -388,10 +461,17 @@ console.log(<span class="text-emerald-400">`Estimated Quote: GH₵ ${data.estima
                         <tr id="keys-empty-row">
                             <td colspan="6" class="p-8 text-center text-gray-400 font-sans text-xs">
                                 <i data-lucide="key" class="w-8 h-8 text-gray-600 mx-auto mb-2 opacity-50"></i>
+                                {% if is_authenticated %}
                                 <p>No API keys generated yet.</p>
                                 <button onclick="openCreateKeyModal()" class="text-brand font-bold mt-2 hover:underline inline-block">
                                     Generate your first key &rarr;
                                 </button>
+                                {% else %}
+                                <p>Sign in to view and manage your API keys.</p>
+                                <button onclick="openLoginModal()" class="text-brand font-bold mt-2 hover:underline inline-block">
+                                    Authenticate developer console &rarr;
+                                </button>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

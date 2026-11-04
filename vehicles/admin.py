@@ -7,16 +7,17 @@ from .models import Vehicle
 
 @admin.register(Vehicle)
 class VehicleAdmin(ModelAdmin):
-    formfield_overrides = {
-        models.TextField: {'widget': UnfoldAdminTextInputWidget},
-    }
     list_per_page = 20
     list_display = ('license_plate', 'make', 'model', 'type', 'status', 'is_active', 'is_verified', 'driver')
     list_filter = ('type', 'status', 'is_active', 'is_verified', 'created_at', 'updated_at')
     search_fields = ('license_plate', 'make', 'model', 'driver__user__email', 'driver__full_name')
     list_editable = ('is_active', 'is_verified', 'status')
-    list_per_page = 25
     ordering = ('-is_active', '-is_verified', 'license_plate')
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if isinstance(db_field, models.TextField):
+            kwargs['widget'] = UnfoldAdminTextInputWidget
+        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     fieldsets = (
         ('Vehicle Identity', {

@@ -169,13 +169,14 @@ input:-webkit-autofill:active {
                         <i data-lucide="user" class="w-3.5 h-3.5 text-brand"></i>
                         <span class="max-w-[120px] truncate font-medium">{{ current_user.email }}</span>
                     </div>
-                    <button
-                        onclick="handleDeveloperLogout()"
-                        class="p-1.5 text-gray-400 hover:text-rose-400 transition-colors cursor-pointer"
+                    <a
+                        href="{% url 'developer_ajax_logout' %}"
+                        onclick="return confirm('Sign out from Developer Console?')"
+                        class="p-1.5 text-gray-400 hover:text-rose-400 transition-colors cursor-pointer inline-flex items-center"
                         title="Sign Out"
                     >
                         <i data-lucide="log-out" class="w-4 h-4"></i>
-                    </button>
+                    </a>
                 </div>
                 {% else %}
                 <button
@@ -942,7 +943,7 @@ function verifyWebhook(rawBody, signatureHeader, secret) {
 // DEVELOPER PORTAL LOGIC & CLIENT-SIDE ROUTER
 // ==============================================================================
 
-const IS_AUTHENTICATED = {{ is_authenticated|yesno:"true,false" }};
+const IS_AUTHENTICATED = "{{ is_authenticated|yesno:'true,false' }}" === "true";
 
 let currentTab = 'overview';
 let activeEnvironment = 'LIVE';
@@ -2355,10 +2356,21 @@ async function handleDeveloperLoginSubmit(e) {
     }
 }
 
-async function handleDeveloperLogout() {
-    if (!confirm('Sign out from Developer Console?')) return;
-    await fetch("{% url 'developer_ajax_logout' %}", { method: 'POST' });
-    window.location.reload();
+async function handleDeveloperLogout(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!confirm('Sign out from Developer Console?')) return false;
+    try {
+        await fetch("{% url 'developer_ajax_logout' %}", {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+    } catch (_) {}
+    window.location.href = "{% url 'developer_ajax_logout' %}";
+    return false;
 }
 
 // ==============================================================================

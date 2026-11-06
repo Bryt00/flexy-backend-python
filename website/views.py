@@ -551,10 +551,30 @@ class DeveloperAjaxLoginView(View):
         return JsonResponse({'success': False, 'error': 'Invalid email or password.'}, status=401)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class DeveloperAjaxLogoutView(View):
+    """Logs out the developer user from the session via POST or GET."""
     def post(self, request, *args, **kwargs):
         logout(request)
-        return JsonResponse({'success': True})
+        try:
+            request.session.flush()
+        except Exception:
+            pass
+        response = JsonResponse({'success': True})
+        session_cookie = getattr(settings, 'SESSION_COOKIE_NAME', 'sessionid')
+        response.delete_cookie(session_cookie)
+        return response
+
+    def get(self, request, *args, **kwargs):
+        logout(request)
+        try:
+            request.session.flush()
+        except Exception:
+            pass
+        response = redirect('developer')
+        session_cookie = getattr(settings, 'SESSION_COOKIE_NAME', 'sessionid')
+        response.delete_cookie(session_cookie)
+        return response
 
 
 @method_decorator(csrf_exempt, name='dispatch')
